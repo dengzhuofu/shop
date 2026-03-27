@@ -57,7 +57,12 @@
     <section class="best-sellers-section container">
     <!-- Best Sellers 模块顶部标题区域 -->
     <div class="section-header flex-between align-center mb-xl">
-      <h2 class="section-title mb-0">Best Sellers</h2>
+      <h2 class="section-title mb-0 best-sellers-title">
+        Best Sellers
+        <svg class="wave-underline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <path d="M0,10 Q12.5,20 25,10 T50,10 T75,10 T100,10" fill="none" stroke="#58cc02" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </h2>
       <NuxtLink to="/collections/all" class="view-all-link">
         All Commuter Scooter (7) <ArrowRightIcon class="icon-right" />
       </NuxtLink>
@@ -1043,8 +1048,18 @@ const blogs = ref([
     align-items: center;
     margin-bottom: 40px;
 
-    .section-title {
+    .best-sellers-title {
+      position: relative;
+      display: inline-block;
       margin-bottom: 0;
+
+      .wave-underline {
+        position: absolute;
+        bottom: -12px;
+        left: 0;
+        width: 100%;
+        height: 12px;
+      }
     }
 
     .view-all-link {
@@ -1075,12 +1090,13 @@ const blogs = ref([
   // 选项卡样式
   .tabs-wrapper {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     margin-bottom: 40px;
 
     .tabs {
       display: inline-flex;
-      background: $bg-light;
+      // background: $bg-light;
+      gap: 20px;
       border-radius: 40px;
       padding: 4px;
 
@@ -1092,6 +1108,8 @@ const blogs = ref([
         font-size: 16px;
         background: transparent;
         color: $text-light;
+      background: $bg-light;
+
         border: none;
         cursor: pointer;
         transition: all 0.3s ease;

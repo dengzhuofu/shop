@@ -287,7 +287,7 @@ const handleActionClick = (product) => {
   }
 
   .mega-menu-inner {
-    max-width: 1880px; // 增加最大宽度以减小左右边距
+    max-width: 1760px; // 增加最大宽度以减小左右边距
     margin: 0 auto;
     display: flex;
     gap: 60px; // 增加左右区块的间距

@@ -1144,6 +1144,8 @@ const toggleAccordion = (panelName) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+  max-width: 1440px;
+
 
     .product-mini-info {
       display: flex;
@@ -1153,7 +1155,7 @@ const toggleAccordion = (panelName) => {
       .mini-img {
         width: 48px;
         height: 48px;
-        object-fit: contain;
+        object-fit: cover;
         background: #f9f9f9;
         border-radius: 4px;
       }
@@ -1200,7 +1202,23 @@ const toggleAccordion = (panelName) => {
       }
 
       .btn-add-to-cart.mini {
-        padding: 10px 40px;
+        padding: 15px;
+           flex: 1;
+      background: #111;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 30px;
+      transition: all 0.3s;
+
+      &:hover {
+        background: #333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    
+
+
       }
     }
   }
