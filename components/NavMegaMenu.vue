@@ -17,22 +17,19 @@
           </ul>
         </div>
         
-        <!-- 底部横幅 -->
-        <div class="banner" v-if="menuData.banner">
-          <div class="discount-tag">{{ menuData.banner.tag }}</div>
-          <div class="banner-content">
-            <div class="trustpilot" v-if="menuData.banner.trustpilot">
-              <span class="star-icon">★</span> Trustpilot
-              <span class="rating-stars">
-                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star half">★</span>
-              </span>
-              <span class="score">{{ menuData.banner.trustpilot }}</span>
-            </div>
-            <NuxtLink :to="menuData.banner.linkUrl" class="combo-link">
-              {{ menuData.banner.linkText }} <span class="arrow">→</span>
-            </NuxtLink>
-          </div>
-        </div>
+       <!-- 底部横幅 -->
+       <div class="sidebar-bottom" v-if="menuData.banner">
+         <div class="trustpilot" v-if="menuData.banner.trustpilot">
+           <span class="star-icon">★</span> Trustpilot
+           <span class="rating-stars">
+             <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star half">★</span>
+           </span>
+           <span class="score">{{ menuData.banner.trustpilot }}</span>
+         </div>
+         <NuxtLink :to="menuData.banner.linkUrl" class="combo-link">
+           {{ menuData.banner.linkText }} <span class="arrow">→</span>
+         </NuxtLink>
+       </div>
       </div>
 
       <!-- 右侧商品区 -->
@@ -45,14 +42,67 @@
         </div>
         
         <div class="products-grid">
-          <div class="product-card" v-for="product in activeCategory.products" :key="product.id">
+          <div 
+            class="product-card" 
+            v-for="product in activeCategory.products" 
+            :key="product.id"
+            @mouseenter="handleMouseEnter(product)"
+            @mouseleave="handleMouseLeave(product)"
+          >
             <div class="image-wrapper">
-              <div class="tags" v-if="product.tags && product.tags.length">
-                <span class="tag" v-for="tag in product.tags" :key="tag" :class="tag.toLowerCase().replace(' ', '-')">{{ tag }}</span>
+              <!-- 左上角动态标签 (NEW/HOT) -->
+              <div class="tags-left" v-if="getLeftTags(product).length">
+                <span class="tag-label" v-for="tag in getLeftTags(product)" :key="tag" :class="tag.toLowerCase()">{{ tag }}</span>
               </div>
-              <img :src="product.image" :alt="product.title" class="main-img" />
-              <div class="sold-out-overlay" v-if="product.soldOut">
-                <span class="sold-out-text">Sold Out</span>
+              <!-- 右上角动态标签 (Spring Sale) -->
+              <div class="tags-right" v-if="hasSpringSale(product)">
+                <div class="spring-sale-badge">
+                  <span class="text">Spring<br>Sale</span>
+                </div>
+              </div>
+
+              <!-- 图片轮播区域 -->
+              <div class="image-carousel">
+                <img 
+                  v-for="(img, index) in getDisplayImages(product)" 
+                  :key="index"
+                  :src="img" 
+                  :alt="`${product.title} - ${index + 1}`" 
+                  class="main-img" 
+                  :class="{ 'is-active': getActiveImageIndex(product) === index }"
+                />
+              </div>
+
+              <!-- 轮播指示器 -->
+              <div class="carousel-indicators" v-if="getDisplayImages(product).length > 1 && product._isHovered">
+                <span 
+                  v-for="(_, index) in getDisplayImages(product)" 
+                  :key="index"
+                  class="indicator-dot"
+                  :class="{ 'is-active': getActiveImageIndex(product) === index }"
+                  @mouseenter="setActiveImageIndex(product, index)"
+                ></span>
+              </div>
+              
+              <!-- 手机APP预览图 -->
+              <img v-if="product.appImage" :src="product.appImage" class="app-preview-img" alt="App Preview" />
+
+              <!-- 悬停操作按钮 -->
+              <div class="hover-actions" :class="{ 'is-visible': product._isHovered || product.soldOut }">
+                <button 
+                  v-if="!product.soldOut" 
+                  class="btn-action" 
+                  @click.stop="handleActionClick(product)"
+                >
+                  {{ product.hasOptions !== false ? 'Choose options' : 'Add to cart' }}
+                </button>
+                <button 
+                  v-else 
+                  class="btn-action btn-sold-out" 
+                  disabled
+                >
+                  Sold Out
+                </button>
               </div>
             </div>
             <div class="info">
@@ -73,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 
 const props = defineProps({
   menuData: {
@@ -95,6 +145,68 @@ watch(() => props.menuData, (newData) => {
 const activeCategory = computed(() => {
   return props.menuData.categories.find(c => c.id === activeCategoryId.value) || props.menuData.categories[0]
 })
+
+// 分离标签
+const getLeftTags = (product) => {
+  if (!product.tags) return []
+  return product.tags.filter(t => t.toUpperCase() === 'NEW' || t.toUpperCase() === 'HOT')
+}
+
+const hasSpringSale = (product) => {
+  if (!product.tags) return false
+  return product.tags.some(t => t.toLowerCase().includes('spring sale'))
+}
+
+// 图片轮播相关逻辑
+const hoverTimers = ref({})
+
+const getDisplayImages = (product) => {
+  if (product.images && product.images.length > 0) {
+    return product.images
+  }
+  if (product.image) {
+    return [product.image]
+  }
+  return ['https://via.placeholder.com/400x400?text=No+Image']
+}
+
+const getActiveImageIndex = (product) => {
+  return product._activeImageIndex || 0
+}
+
+const setActiveImageIndex = (product, index) => {
+  product._activeImageIndex = index
+}
+
+const handleMouseEnter = (product) => {
+  product._isHovered = true
+  // 自动轮播逻辑 (可选)
+  // 如果有多张图片，可以设置定时器自动切换
+}
+
+const handleMouseLeave = (product) => {
+  product._isHovered = false
+  product._activeImageIndex = 0 // 鼠标移出时重置为第一张
+}
+
+// 注入全局弹窗和购物车侧边栏方法
+const openQuickView = inject('openQuickView', () => {
+  console.warn('openQuickView not provided')
+})
+
+const openCartSidebar = inject('openCartSidebar', () => {
+  console.warn('openCartSidebar not provided')
+})
+
+const handleActionClick = (product) => {
+  if (product.soldOut) return
+  if (product.hasOptions !== false) {
+    openQuickView(product)
+  } else {
+    // 模拟加入购物车并打开侧边栏
+    openCartSidebar()
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -117,11 +229,11 @@ const activeCategory = computed(() => {
   }
 
   .mega-menu-inner {
-    max-width: 1200px;
+    max-width: 1600px; // 增加最大宽度以减小左右边距
     margin: 0 auto;
     display: flex;
-    gap: 40px;
-    padding: 0 20px;
+    gap: 60px; // 增加左右区块的间距
+    padding: 0 40px;
   }
 
   .sidebar {
@@ -281,9 +393,11 @@ const activeCategory = computed(() => {
         display: flex;
         flex-direction: column;
         cursor: pointer;
+        transition: transform 0.3s ease;
         
         &:hover {
-          .image-wrapper img {
+          transform: translateY(-4px); // 整体悬浮轻微上移
+          .image-wrapper img.main-img {
             transform: scale(1.05);
           }
           .title {
@@ -293,108 +407,219 @@ const activeCategory = computed(() => {
 
         .image-wrapper {
           position: relative;
-          background: #f8f8f8;
+          background: #fff;
           border-radius: 12px;
+          border: 1px solid #eee;
           padding-top: 100%; // 1:1 比例
           margin-bottom: 16px;
           overflow: hidden;
 
-          .main-img {
+          // 左上角标签容器
+          .tags-left {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            padding: 16px;
-            transition: transform 0.3s ease;
-          }
-
-          .tags {
-            position: absolute;
-            top: 10px;
-            left: 10px;
             z-index: 2;
-            display: flex;
-            gap: 4px;
 
-            .tag {
-              font-size: 10px;
-              padding: 2px 6px;
-              border-radius: 4px;
-              font-weight: bold;
+            .tag-label {
+              display: inline-block;
               color: $white;
+              font-size: 10px;
+              padding: 4px 8px;
+              font-weight: bold;
               text-transform: uppercase;
+              border-radius: 0 0 8px 0; // 仅右下角圆角
               
-              &.new { background: #ff3b30; }
-              &.hot { background: #ff9500; }
-              &.spring-sale { 
-                background: $white;
-                color: #58cc02;
-                border: 1px solid #58cc02;
-                border-radius: 20px;
-                padding: 2px 8px;
+              &.new {
+                background: #e62332; // 红色
+              }
+              &.hot {
+                background: #ff5722; // 橙色
               }
             }
           }
 
-          .sold-out-overlay {
+          // 右上角标签容器
+          .tags-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+
+            .spring-sale-badge {
+              background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+              border: 2px solid #fff;
+              box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+              border-radius: 12px;
+              padding: 4px 10px;
+              transform: rotate(5deg);
+              
+              .text {
+                color: #2e7d32;
+                font-weight: 900;
+                font-size: 10px;
+                line-height: 1.1;
+                display: block;
+                text-align: center;
+                text-transform: uppercase;
+                text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+              }
+            }
+          }
+
+          // 图片轮播区域
+          .image-carousel {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3;
 
-            .sold-out-text {
-              background: rgba(0,0,0,0.6);
-              color: $white;
-              padding: 6px 16px;
-              border-radius: 20px;
-              font-size: 14px;
-              font-weight: bold;
+            .main-img {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              padding: 24px;
+              opacity: 0;
+              transition: opacity 0.4s ease, transform 0.4s ease;
+
+              &.is-active {
+                opacity: 1;
+              }
             }
           }
+
+          // 轮播指示器
+          .carousel-indicators {
+            position: absolute;
+            bottom: 70px; // 在按钮上方
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            z-index: 5;
+            padding: 10px 0;
+
+            .indicator-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              background: rgba(0, 0, 0, 0.2);
+              cursor: pointer;
+              transition: all 0.2s ease;
+
+              &:hover, &.is-active {
+                background: #111;
+                transform: scale(1.2);
+              }
+            }
+          }
+
+          // 手机APP预览图
+          .app-preview-img {
+            position: absolute;
+            top: 30px;
+            right: 15px;
+            width: 45px;
+            height: auto;
+            object-fit: contain;
+            z-index: 1;
+          }
+
+          .hover-actions {
+              position: absolute;
+              bottom: 15px;
+              left: 0;
+              width: 100%;
+              display: flex;
+              justify-content: center;
+              opacity: 0;
+              transform: translateY(10px);
+              transition: all 0.3s ease;
+              z-index: 10;
+
+              &.is-visible {
+                opacity: 1;
+                transform: translateY(0);
+              }
+
+              .btn-action {
+                background: #111;
+                color: $white;
+                padding: 10px 20px;
+                border-radius: 30px;
+                font-weight: 600;
+                font-size: 13px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                
+                &:hover:not(:disabled) {
+                  background: #333;
+                  transform: translateY(-2px);
+                  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+                }
+
+                &.btn-sold-out {
+                  background: rgba(0, 0, 0, 0.6);
+                  color: $white;
+                  cursor: not-allowed;
+                  box-shadow: none;
+                }
+              }
+            }
         }
 
         .info {
-          display: flex;
-          flex-direction: column;
-
-          .title {
-            font-size: 14px;
-            font-weight: 500;
-            line-height: 1.4;
-            margin-bottom: 8px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s ease;
-          }
-
-          .price-area {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
 
-            .current-price {
-              color: $danger-color;
-              font-weight: 700;
-              font-size: 16px;
+            .title {
+              font-size: 13px;
+              font-weight: 500;
+              line-height: 1.4;
+              margin-bottom: 8px;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+              transition: color 0.3s ease;
             }
 
-            .old-price {
-              color: $text-light;
-              text-decoration: line-through;
-              font-size: 12px;
+            .price-area {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+
+              .current-price {
+                color: #e62332;
+                font-weight: 700;
+                font-size: 15px;
+              }
+
+              .old-price {
+                color: #999;
+                font-size: 12px;
+                position: relative;
+                
+                &::after {
+                  content: '';
+                  position: absolute;
+                  left: -2px;
+                  right: -2px;
+                  top: 50%;
+                  height: 1px;
+                  background-color: #e62332;
+                  transform: rotate(-10deg);
+                }
+              }
             }
           }
-        }
       }
     }
   }

@@ -23,7 +23,7 @@
 
     <!-- 分类导览 (Explore Categories) -->
     <section class="explore-section container">
-      <h2 class="section-title">Explore <i>isinwheel</i></h2>
+      <h2 class="section-title explore-title">Explore <i>isinwheel</i></h2>
       <div class="category-grid">
         <div class="category-card" v-for="cat in categories" :key="cat.title">
           <div class="bg-placeholder"></div>
@@ -66,18 +66,26 @@
 
     <!-- 明星产品展示区 (Best Sellers) -->
     <section class="best-sellers-section container">
-      <h2 class="section-title">Best Sellers</h2>
+    <!-- Best Sellers 模块顶部标题区域 -->
+    <div class="section-header flex-between align-center mb-xl">
+      <h2 class="section-title mb-0">Best Sellers</h2>
+      <NuxtLink to="/collections/all" class="view-all-link">
+        All Commuter Scooter (7) <ArrowRightIcon class="icon-right" />
+      </NuxtLink>
+    </div>
       
       <!-- 选项卡 -->
-      <div class="tabs">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab"
-          :class="['tab-btn', { active: currentTab === tab }]"
-          @click="currentTab = tab"
-        >
-          {{ tab }}
-        </button>
+      <div class="tabs-wrapper">
+        <div class="tabs">
+          <button 
+            v-for="tab in tabs" 
+            :key="tab"
+            :class="['tab-btn', { active: currentTab === tab }]"
+            @click="currentTab = tab"
+          >
+            {{ tab }}
+          </button>
+        </div>
       </div>
 
       <!-- 产品网格 -->
@@ -151,7 +159,7 @@
           <div class="img-small"></div>
         </div>
         <div class="text-content">
-          <h2 class="section-title">Why Choose <span class="highlight-green">isinwheel</span></h2>
+          <h2 class="section-title">Why Choose isinwheel</h2>
           <p class="description">
             we believe that technology makes communication easier and easier, but it becomes more difficult to connect the people, places, and experiences that are most important to us. isinwheel brings all the things you want closer to you, enriching your life in an easier, cheaper and more interesting way. Your office, the new ramen shop, the friends you are eager to bring to the new ramen shop.
           </p>
@@ -277,7 +285,11 @@ const products = ref([
     compareAtPrice: 399.99,
     isFrom: true,
     tags: ['Spring Sale', 'Save $130.00'],
-    image: 'https://via.placeholder.com/400x400?text=S9+Pro',
+    images: [
+      'https://via.placeholder.com/400x400?text=S9+Pro+1',
+      'https://via.placeholder.com/400x400?text=S9+Pro+2'
+    ],
+    appImage: 'https://via.placeholder.com/60x120?text=APP',
     specs: [
       { label: 'Motor Capacity', value: '350W', icon: markRaw(ZapIcon) },
       { label: 'Max Range', value: '19 Miles', icon: markRaw(NavigationIcon) },
@@ -292,7 +304,11 @@ const products = ref([
     price: 489.99,
     compareAtPrice: 599.99,
     tags: ['NEW', 'Spring Sale', 'Save $110.00'],
-    image: 'https://via.placeholder.com/400x400?text=S+Nova+Pro',
+    images: [
+      'https://via.placeholder.com/400x400?text=S+Nova+Pro+1',
+      'https://via.placeholder.com/400x400?text=S+Nova+Pro+2'
+    ],
+    appImage: 'https://via.placeholder.com/60x120?text=APP',
     specs: [
       { label: 'Max Power', value: '1000W', icon: markRaw(ZapIcon) },
       { label: 'Max Range', value: '38 Miles', icon: markRaw(NavigationIcon) },
@@ -307,7 +323,7 @@ const products = ref([
     price: 649.99,
     compareAtPrice: 799.99,
     tags: ['NEW', 'Spring Sale', 'Save $150.00'],
-    image: 'https://via.placeholder.com/400x400?text=GT1',
+    images: ['https://via.placeholder.com/400x400?text=GT1'],
     specs: [
       { label: 'Motor Capacity', value: '800W*2', icon: markRaw(ZapIcon) },
       { label: 'Max Range', value: '35 Miles', icon: markRaw(NavigationIcon) },
@@ -322,7 +338,7 @@ const products = ref([
     price: 849.99,
     compareAtPrice: 1099.99,
     tags: ['HOT', 'Spring Sale', 'Save $250.00'],
-    image: 'https://via.placeholder.com/400x400?text=H7Pro',
+    images: ['https://via.placeholder.com/400x400?text=H7Pro'],
     specs: [
       { label: 'Motor Capacity', value: '1200W', icon: markRaw(ZapIcon) },
       { label: 'Max Range', value: '43 Miles', icon: markRaw(NavigationIcon) },
@@ -337,7 +353,7 @@ const products = ref([
     price: 899.99,
     compareAtPrice: 1199.99,
     tags: ['HOT', 'Save $300.00'],
-    image: 'https://via.placeholder.com/400x400?text=U1+Bike',
+    images: ['https://via.placeholder.com/400x400?text=U1+Bike'],
     specs: [
       { label: 'Motor Capacity', value: '500W', icon: markRaw(ZapIcon) },
       { label: 'Max Range', value: '45 Miles', icon: markRaw(NavigationIcon) },
@@ -352,7 +368,7 @@ const products = ref([
     price: 199.99,
     compareAtPrice: 299.99,
     tags: ['Flash Sale'],
-    image: 'https://via.placeholder.com/400x400?text=V8+Skateboard',
+    images: ['https://via.placeholder.com/400x400?text=V8+Skateboard'],
     specs: [
       { label: 'Motor Capacity', value: '400W', icon: markRaw(ZapIcon) },
       { label: 'Max Range', value: '12 Miles', icon: markRaw(NavigationIcon) },
@@ -471,10 +487,6 @@ const blogs = ref([
   font-size: 40px;
   font-weight: 800;
   margin-bottom: 30px;
-  i {
-    color: #58cc02;
-    font-style: italic;
-  }
 }
 
 // 首屏 Banner 样式 - 满铺视窗模块
@@ -596,6 +608,28 @@ const blogs = ref([
 .explore-section {
   margin-bottom: 80px;
 
+  .explore-title {
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 40px;
+    i {
+      color: $text-color;
+      font-style: normal;
+      position: relative;
+      display: inline-block;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 100%;
+        height: 16px;
+        background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M5,15 Q25,5 50,15 T95,10" fill="none" stroke="%2358cc02" stroke-width="4" stroke-linecap="round"/></svg>') no-repeat center/100% 100%;
+      }
+    }
+  }
+
   // 网格布局容器
   .category-grid {
     display: grid;
@@ -641,23 +675,21 @@ const blogs = ref([
         
         // 标题样式
         h3 {
-          font-size: 24px;
+          font-size: 28px;
           font-weight: 700;
           margin-bottom: 0; // 初始无下边距
           display: flex;
-          align-items: center;
-          gap: 8px;
+          align-items: flex-start;
+          gap: 4px;
           transform: translateY(20px); // 初始下移
           transition: transform 0.4s ease;
 
           // 数量角标
           .count {
-            font-size: 14px;
-            font-weight: 500;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 8px;
-            border-radius: 12px;
-            vertical-align: middle;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 4px; // 模拟上标
           }
         }
 
@@ -877,29 +909,71 @@ const blogs = ref([
 .best-sellers-section {
   margin-bottom: 80px;
 
-  // 选项卡样式
-  .tabs {
+  .section-header {
     display: flex;
-    justify-content: center;
-    gap: 16px;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 40px;
 
-    // 单个选项卡按钮
-    .tab-btn {
-      padding: 10px 24px;
-      border-radius: 30px;
-      font-weight: 600;
-      font-size: 16px;
-      background: $bg-light;
-      color: $text-color;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.3s ease;
+    .section-title {
+      margin-bottom: 0;
+    }
 
-      // 激活与悬停状态
-      &.active, &:hover {
-        background: $primary-color;
-        color: $white;
+    .view-all-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: $text-color;
+      text-decoration: none;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: #58cc02;
+        .icon-right {
+          transform: translateX(4px);
+        }
+      }
+
+      .icon-right {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.3s ease;
+      }
+    }
+  }
+
+  // 选项卡样式
+  .tabs-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+
+    .tabs {
+      display: inline-flex;
+      background: $bg-light;
+      border-radius: 40px;
+      padding: 4px;
+
+      // 单个选项卡按钮
+      .tab-btn {
+        padding: 12px 32px;
+        border-radius: 36px;
+        font-weight: 600;
+        font-size: 16px;
+        background: transparent;
+        color: $text-light;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        // 激活与悬停状态
+        &.active, &:hover {
+          background: $primary-color;
+          color: $white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
       }
     }
   }
@@ -1207,30 +1281,43 @@ const blogs = ref([
     flex: 1;
     position: relative;
     width: 100%;
-    min-height: 400px;
+    min-height: 500px; // 增加高度以容纳倾斜的图片
 
     .img-large {
       position: absolute;
-      top: 0;
-      right: 0;
-      width: 80%;
-      height: 90%;
-      border-radius: 24px;
+      top: 5%;
+      right: 15%;
+      width: 65%;
+      height: 80%;
+      border-radius: 16px;
       background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800') center/cover;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      transform: rotate(6deg);
+      z-index: 1;
+      transition: transform 0.5s ease;
+      
+      &:hover {
+        transform: rotate(2deg) scale(1.02);
+      }
     }
 
     .img-small {
       position: absolute;
-      bottom: 0;
-      left: 0;
+      bottom: 15%;
+      left: 10%;
       width: 50%;
-      height: 60%;
-      border-radius: 16px;
+      height: 55%;
+      border-radius: 12px;
       background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600') center/cover;
-      border: 8px solid $white;
+      border: 6px solid $white;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
       z-index: 2;
+      transform: rotate(-4deg);
+      transition: transform 0.5s ease;
+      
+      &:hover {
+        transform: rotate(-1deg) scale(1.05);
+      }
     }
   }
 
@@ -1242,13 +1329,10 @@ const blogs = ref([
       font-weight: 800;
       margin-bottom: 24px;
       line-height: 1.2;
+      color: #58cc02; // 标题整体变绿
 
       @media (min-width: $bp-lg) {
         font-size: 48px;
-      }
-
-      .highlight-green {
-        color: $secondary-color;
       }
     }
 
@@ -1266,11 +1350,12 @@ const blogs = ref([
       padding: 12px 32px;
       border-radius: 30px;
       font-weight: 600;
-      background-color: $text-color; // 黑色背景
+      background-color: #111; // 黑色背景
       color: $white;
+      border: none;
       
       &:hover {
-        background-color: lighten($text-color, 20%);
+        background-color: #333;
         .icon-right {
           transform: translateX(4px);
         }
@@ -1278,6 +1363,8 @@ const blogs = ref([
 
       .icon-right {
         transition: transform 0.3s ease;
+        width: 16px;
+        height: 16px;
       }
     }
   }

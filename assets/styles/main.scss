@@ -33,11 +33,11 @@ button {
 
 // 全局通用样式
 .container {
-  max-width: 1440px;
+  max-width: 100%;
+  padding: 0 40px;
   margin: 0 auto;
-  padding: 0 $spacing-lg;
   
   @media (max-width: $bp-md) {
-    padding: 0 $spacing-md;
+    padding: 0 20px;
   }
 }
