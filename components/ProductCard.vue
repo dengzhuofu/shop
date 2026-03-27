@@ -36,7 +36,7 @@
       </div>
       
       <!-- 手机APP预览图 -->
-      <img v-if="product.appImage" :src="product.appImage" class="app-preview-img" alt="App Preview" />
+      <!-- <img v-if="product.appImage" :src="product.appImage" class="app-preview-img" alt="App Preview" /> -->
 
       <!-- Hover 出现的按钮 -->
       <div class="hover-actions" :class="{ 'is-visible': isHovered || isSoldOut }">
@@ -249,13 +249,14 @@ const displayImages = computed(() => {
           left: 0;
           width: 100%;
           height: 100%;
-          object-fit: contain;
-          padding: 30px;
+          object-fit: cover; // 改为 cover 占满盒子
+          padding: 0; // 移除 padding
           opacity: 0;
           transition: opacity 0.4s ease, transform 0.4s ease;
 
           &.is-active {
             opacity: 1;
+            z-index: 1;
           }
         }
       }
@@ -269,34 +270,43 @@ const displayImages = computed(() => {
         display: flex;
         justify-content: center;
         gap: 6px;
-        z-index: 5;
+        z-index: 15; // 提高层级
         padding: 10px 0;
 
         .indicator-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: rgba(0, 0, 0, 0.2);
+          width: 6px;
+          height: 6px;
+          border-radius: 4px;
+          background: rgba(0, 0, 0, 0.3);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.3s ease;
+          box-shadow: 0 1px 2px rgba(255,255,255,0.5);
 
-          &:hover, &.is-active {
+          &.is-active {
+            width: 16px;
             background: #111;
-            transform: scale(1.2);
+          }
+          
+          &:hover:not(.is-active) {
+            background: rgba(0, 0, 0, 0.6);
           }
         }
       }
 
       // 手机APP预览图
       .app-preview-img {
-      position: absolute;
-      top: 40px;
-      right: 20px;
-      width: 60px;
-      height: auto;
-      object-fit: contain;
-      z-index: 1;
-    }
+        position: absolute;
+        top: 60px; // 下移，避免与标签重叠
+        right: 10px;
+        width: 40px;
+        height: auto;
+        object-fit: contain;
+        z-index: 10;
+        background: #fff;
+        padding: 2px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      }
 
     // 悬停时出现的操作按钮区域
     .hover-actions {

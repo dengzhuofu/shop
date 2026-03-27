@@ -2,9 +2,27 @@
   <div class="home-page">
     <!-- 首屏满铺视窗大图轮播 (Hero Banner) -->
     <section class="hero-section">
-      <!-- 视频或大图背景 -->
-      <div class="hero-bg">
-        <!-- 为了展示响应式和动画效果，加入一层半透明遮罩 -->
+      <!-- 轮播图背景 -->
+      <div class="hero-carousel">
+        <div 
+          class="hero-slide" 
+          v-for="(slide, index) in heroSlides" 
+          :key="index"
+          :class="{ 'is-active': currentHeroIndex === index }"
+        >
+          <div class="hero-bg" :style="{ backgroundImage: `url(${slide.image})` }"></div>
+        </div>
+        <!-- 轮播指示器 -->
+        <div class="hero-indicators">
+          <span 
+            v-for="(_, index) in heroSlides" 
+            :key="index"
+            class="indicator-dot"
+            :class="{ 'is-active': currentHeroIndex === index }"
+            @click="currentHeroIndex = index"
+          ></span>
+        </div>
+        <!-- 半透明遮罩 -->
         <div class="hero-overlay"></div>
       </div>
       
@@ -35,36 +53,7 @@
         </div>
       </div>
     </section>
-
-    <!-- 视频介绍模块 (Video Introduction) -->
-    <section class="video-section container">
-      <div class="video-container" @click="toggleVideo">
-        <!-- 视频元素 -->
-        <video 
-          ref="videoRef"
-          class="promo-video"
-          src="https://www.w3schools.com/html/mov_bbb.mp4" 
-          loop
-          muted
-          playsinline
-        ></video>
-        
-        <!-- 视频封面图 -->
-        <div class="video-cover" :class="{ 'is-hidden': isPlaying }">
-          <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920" alt="Video Cover" />
-        </div>
-
-        <!-- 播放控制覆盖层 -->
-        <div class="video-controls" :class="{ 'is-playing': isPlaying }">
-          <button class="play-pause-btn">
-            <PlayIcon v-if="!isPlaying" class="icon play-icon" />
-            <PauseIcon v-else class="icon pause-icon" />
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 明星产品展示区 (Best Sellers) -->
+  <!-- 明星产品展示区 (Best Sellers) -->
     <section class="best-sellers-section container">
     <!-- Best Sellers 模块顶部标题区域 -->
     <div class="section-header flex-between align-center mb-xl">
@@ -97,10 +86,36 @@
         />
       </div>
     </section>
+    <!-- 视频介绍模块 (Video Introduction) -->
+    <section class="video-section container">
+      <div class="video-container" @click="toggleVideo">
+        <!-- 视频元素 -->
+        <video 
+          ref="videoRef"
+          class="promo-video"
+          src="https://www.w3schools.com/html/mov_bbb.mp4" 
+          loop
+          muted
+          playsinline
+        ></video>
+        
+        <!-- 视频封面图 -->
+        <div class="video-cover" :class="{ 'is-hidden': isPlaying }">
+          <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920" alt="Video Cover" />
+        </div>
 
-    <!-- 达人视频展示区 (Influencer Videos) -->
+        <!-- 播放控制覆盖层 -->
+        <div class="video-controls" :class="{ 'is-playing': isPlaying }">
+          <button class="play-pause-btn">
+            <PlayIcon v-if="!isPlaying" class="icon play-icon" />
+            <PauseIcon v-else class="icon pause-icon" />
+          </button>
+        </div>
+      </div>
+    </section>
+  <!-- 达人视频展示区 (Influencer Videos) -->
     <section class="influencer-section container">
-      <h2 class="section-title">Rider Stories</h2>
+      <!-- <h2 class="section-title">Rider Stories</h2> -->
       <div class="influencer-grid">
         <div class="video-card" v-for="video in influencerVideos" :key="video.id">
           <!-- 背景图 -->
@@ -131,6 +146,9 @@
         </div>
       </div>
     </section>
+  
+
+  
 
     <!-- 媒体评价模块 (Media Review) -->
     <section class="media-review-section">
@@ -239,7 +257,7 @@
 </template>
 
 <script setup>
-import { ref, computed, markRaw } from 'vue'
+import { ref, computed, markRaw, onMounted, onUnmounted } from 'vue'
 import { 
   ArrowRightIcon, ZapIcon, NavigationIcon, BatteryIcon, ActivityIcon, 
   PlayIcon, PauseIcon, ChevronLeftIcon, ChevronRightIcon, StarIcon, 
@@ -251,6 +269,47 @@ import ProductCard from '~/components/ProductCard.vue'
 // 视频播放状态控制
 const isPlaying = ref(false)
 const videoRef = ref(null)
+
+// 英雄区轮播数据
+const heroSlides = ref([
+  {
+    image: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1920',
+    title: '探索无界',
+    subtitle: '智能骑行'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920',
+    title: '极致性能',
+    subtitle: '绿色出行'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=1920',
+    title: '城市通勤',
+    subtitle: '最佳伴侣'
+  }
+])
+
+const currentHeroIndex = ref(0)
+
+// 英雄区自动轮播
+let heroTimer = null
+const startHeroTimer = () => {
+  heroTimer = setInterval(() => {
+    currentHeroIndex.value = (currentHeroIndex.value + 1) % heroSlides.value.length
+  }, 5000)
+}
+const stopHeroTimer = () => {
+  if (heroTimer) clearInterval(heroTimer)
+}
+
+// 页面加载时启动轮播
+onMounted(() => {
+  startHeroTimer()
+})
+
+onUnmounted(() => {
+  stopHeroTimer()
+})
 
 const toggleVideo = () => {
   if (!videoRef.value) return
@@ -411,7 +470,7 @@ const influencerVideos = ref([
   },
   {
     id: 4,
-    bgImage: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=400&h=700',
+  bgImage: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
     avatar: 'https://i.pravatar.cc/150?u=4',
     username: '@eco_traveler',
     quote: 'A green way to travel around the city.',
@@ -492,28 +551,90 @@ const blogs = ref([
 // 首屏 Banner 样式 - 满铺视窗模块
 .hero-section {
   position: relative;
-  min-height: 100vh; // 全屏高度响应式
+  min-height: 85vh; // 全屏高度响应式，稍微减少一点底部空间
   display: flex;
   align-items: center;
   background-color: $bg-light;
   overflow: hidden;
   margin-bottom: $spacing-xl;
+  padding: 40px 0; // 增加内边距
 
-  // 背景图与遮罩
-  .hero-bg {
+  // 轮播容器
+  .hero-carousel {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: url('https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1920') center/cover;
     z-index: 1;
+
+    // 轮播幻灯片
+    .hero-slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease;
+
+      &.is-active {
+        opacity: 1;
+      }
+
+      .hero-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        border-radius: 24px; // 圆角效果
+      }
+    }
+
+    // 轮播指示器
+    .hero-indicators {
+      position: absolute;
+      bottom: 40px;
+      right: 20%;
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+
+      .indicator-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        &.is-active {
+            width: 20px;
+        height: 8px;
+        border-radius: 50px;
+          background: #fff;
+          transform: scale(1.2);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        &:hover:not(.is-active) {
+          background: rgba(255, 255, 255, 0.7);
+        }
+      }
+    }
 
     // 半透明遮罩，增强文字对比度
     .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(to right, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 100%);
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.3) 100%);
+      border-radius: 24px; // 保持圆角
     }
   }
 
@@ -524,6 +645,7 @@ const blogs = ref([
     width: 100%;
     color: $white; // 文字使用白色
     padding: 0 $spacing-md;
+    
 
     .text-content {
       max-width: 600px;
@@ -790,6 +912,7 @@ const blogs = ref([
 // 视频介绍模块样式
 .video-section {
   margin-bottom: 80px;
+  max-width: $max-width;
 
   // 视频容器
   .video-container {
@@ -1007,6 +1130,7 @@ const blogs = ref([
 // 达人视频展示区样式
 .influencer-section {
   margin-bottom: 80px;
+  max-width: $max-width;
 
   // 网格布局，适配不同断点
   .influencer-grid {
@@ -1022,9 +1146,9 @@ const blogs = ref([
       grid-template-columns: repeat(4, 1fr); // 桌面 4 列
     }
 
-    @media (min-width: $bp-xl) {
-      grid-template-columns: repeat(5, 1fr); // 大屏 5 列
-    }
+    // @media (min-width: $bp-xl) {
+    //   grid-template-columns: repeat(5, 1fr); // 大屏 5 列
+    // }
 
     // 单个视频卡片
     .video-card {
@@ -1264,11 +1388,11 @@ const blogs = ref([
 // 品牌介绍模块样式
 .why-choose-section {
   margin-bottom: 80px;
-
+  max-width: $max-width;
   .content-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 20px;
     align-items: center;
 
     @media (min-width: $bp-lg) {
@@ -1373,7 +1497,7 @@ const blogs = ref([
 // 用户评价模块样式
 .customer-reviews-section {
   margin-bottom: 80px;
-
+  max-width: $max-width;
   .section-header {
     margin-bottom: 40px;
     
@@ -1510,7 +1634,7 @@ const blogs = ref([
 // 博客文章模块样式
 .blog-section {
   margin-bottom: 80px;
-
+  max-width: $max-width;
   .flex-between {
     display: flex;
     justify-content: space-between;

@@ -11,9 +11,9 @@
         <div class="image-gallery">
           <div class="main-image">
             <img :src="product.image" :alt="product.title" />
-            <div class="app-preview" v-if="product.appImage">
+            <!-- <div class="app-preview" v-if="product.appImage">
               <img :src="product.appImage" alt="App Preview" />
-            </div>
+            </div> -->
           </div>
           <!-- 缩略图指示器 (仅作展示) -->
           <div class="thumbnails-indicator">

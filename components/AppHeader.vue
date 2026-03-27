@@ -469,8 +469,8 @@ const supportLinks = [
           &.hot {
             .badge {
               position: absolute;
-              top: 0px;
-              right: -10px;
+              top: 15px;
+              right: -20px;
               background-color: $danger-color;
               color: $white;
               font-size: 10px;

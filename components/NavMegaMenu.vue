@@ -3,6 +3,9 @@
     <div class="mega-menu-inner container">
       <!-- 左侧分类与横幅 -->
       <div class="sidebar">
+        <div class="discount-tag" v-if="menuData.banner && menuData.banner.tag">
+          {{ menuData.banner.tag }}
+        </div>
         <div class="categories">
           <div class="section-title">Collections</div>
           <ul>
@@ -42,24 +45,31 @@
         </div>
         
         <div class="products-grid">
-          <div 
-            class="product-card" 
+            <div class="product-card" 
             v-for="product in activeCategory.products" 
             :key="product.id"
-            @mouseenter="handleMouseEnter(product)"
-            @mouseleave="handleMouseLeave(product)"
+            @mouseenter="handleMouseEnter(product.id)"
+            @mouseleave="handleMouseLeave(product.id)"
           >
             <div class="image-wrapper">
               <!-- 左上角动态标签 (NEW/HOT) -->
               <div class="tags-left" v-if="getLeftTags(product).length">
                 <span class="tag-label" v-for="tag in getLeftTags(product)" :key="tag" :class="tag.toLowerCase()">{{ tag }}</span>
               </div>
+              
               <!-- 右上角动态标签 (Spring Sale) -->
               <div class="tags-right" v-if="hasSpringSale(product)">
+                <img src="https://cdn.shopify.com/s/files/1/0553/7624/8930/files/spring_sale_icon.png" class="spring-sale-img" alt="Spring Sale" v-if="false" />
+                <!-- 用样式模拟原图中的弹簧打折标签 -->
                 <div class="spring-sale-badge">
                   <span class="text">Spring<br>Sale</span>
                 </div>
               </div>
+              
+              <!-- 悬停时右上角的眼睛图标 (Quick View) -->
+              <!-- <div class="quick-view-icon" v-if="hoveredProductId === product.id" @click.stop="handleQuickView(product)">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </div> -->
 
               <!-- 图片轮播区域 -->
               <div class="image-carousel">
@@ -69,26 +79,26 @@
                   :src="img" 
                   :alt="`${product.title} - ${index + 1}`" 
                   class="main-img" 
-                  :class="{ 'is-active': getActiveImageIndex(product) === index }"
+                  :class="{ 'is-active': getActiveImageIndex(product.id) === index }"
                 />
               </div>
 
               <!-- 轮播指示器 -->
-              <div class="carousel-indicators" v-if="getDisplayImages(product).length > 1 && product._isHovered">
+              <div class="carousel-indicators" v-if="getDisplayImages(product).length > 1 && hoveredProductId === product.id">
                 <span 
                   v-for="(_, index) in getDisplayImages(product)" 
                   :key="index"
                   class="indicator-dot"
-                  :class="{ 'is-active': getActiveImageIndex(product) === index }"
-                  @mouseenter="setActiveImageIndex(product, index)"
+                  :class="{ 'is-active': getActiveImageIndex(product.id) === index }"
+                  @mouseenter="setActiveImageIndex(product.id, index)"
                 ></span>
               </div>
               
               <!-- 手机APP预览图 -->
-              <img v-if="product.appImage" :src="product.appImage" class="app-preview-img" alt="App Preview" />
+              <!-- <img v-if="product.appImage" :src="product.appImage" class="app-preview-img" alt="App Preview" /> -->
 
               <!-- 悬停操作按钮 -->
-              <div class="hover-actions" :class="{ 'is-visible': product._isHovered || product.soldOut }">
+              <div class="hover-actions" :class="{ 'is-visible': hoveredProductId === product.id || product.soldOut }">
                 <button 
                   v-if="!product.soldOut" 
                   class="btn-action" 
@@ -159,6 +169,8 @@ const hasSpringSale = (product) => {
 
 // 图片轮播相关逻辑
 const hoverTimers = ref({})
+const hoveredProductId = ref(null)
+const activeImageIndices = ref({})
 
 const getDisplayImages = (product) => {
   if (product.images && product.images.length > 0) {
@@ -170,23 +182,56 @@ const getDisplayImages = (product) => {
   return ['https://via.placeholder.com/400x400?text=No+Image']
 }
 
-const getActiveImageIndex = (product) => {
-  return product._activeImageIndex || 0
+const getActiveImageIndex = (productId) => {
+  return activeImageIndices.value[productId] || 0
 }
 
-const setActiveImageIndex = (product, index) => {
-  product._activeImageIndex = index
+const setActiveImageIndex = (productId, index) => {
+  activeImageIndices.value = {
+    ...activeImageIndices.value,
+    [productId]: index
+  }
 }
 
-const handleMouseEnter = (product) => {
-  product._isHovered = true
-  // 自动轮播逻辑 (可选)
-  // 如果有多张图片，可以设置定时器自动切换
+const handleMouseEnter = (productId) => {
+  hoveredProductId.value = productId
+  
+  // 清除可能存在的旧定时器
+  if (hoverTimers.value[productId]) {
+    clearInterval(hoverTimers.value[productId])
+  }
+  
+  // 获取当前产品
+  const product = activeCategory.value.products.find(p => p.id === productId)
+  if (!product) return
+  const images = getDisplayImages(product)
+  
+  // 只有多张图才开启自动轮播
+  if (images.length > 1) {
+    hoverTimers.value[productId] = setInterval(() => {
+      const currentIndex = getActiveImageIndex(productId)
+      const nextIndex = (currentIndex + 1) % images.length
+      setActiveImageIndex(productId, nextIndex)
+    }, 1500) // 每 1.5 秒切换一次
+  }
 }
 
-const handleMouseLeave = (product) => {
-  product._isHovered = false
-  product._activeImageIndex = 0 // 鼠标移出时重置为第一张
+const handleMouseLeave = (productId) => {
+  if (hoveredProductId.value === productId) {
+    hoveredProductId.value = null
+  }
+  
+  // 清除定时器
+  if (hoverTimers.value[productId]) {
+    clearInterval(hoverTimers.value[productId])
+    delete hoverTimers.value[productId]
+  }
+  
+  // 鼠标移出时重置为第一张
+  activeImageIndices.value = {
+    ...activeImageIndices.value,
+    [productId]: 0
+  }
 }
 
 // 注入全局弹窗和购物车侧边栏方法
@@ -197,6 +242,10 @@ const openQuickView = inject('openQuickView', () => {
 const openCartSidebar = inject('openCartSidebar', () => {
   console.warn('openCartSidebar not provided')
 })
+
+const handleQuickView = (product) => {
+  openQuickView(product)
+}
 
 const handleActionClick = (product) => {
   if (product.soldOut) return
@@ -229,7 +278,7 @@ const handleActionClick = (product) => {
   }
 
   .mega-menu-inner {
-    max-width: 1600px; // 增加最大宽度以减小左右边距
+    max-width: 1880px; // 增加最大宽度以减小左右边距
     margin: 0 auto;
     display: flex;
     gap: 60px; // 增加左右区块的间距
@@ -237,11 +286,27 @@ const handleActionClick = (product) => {
   }
 
   .sidebar {
+    position: relative;
     width: 250px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+
+    .discount-tag {
+      position: absolute;
+      left: -20px;
+      top: 50%;
+      transform: translateY(-50%) translateX(-50%) rotate(-90deg);
+      background-color: #58cc02;
+      color: $white;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 6px 16px;
+      border-radius: 4px 4px 0 0;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
 
     .categories {
       margin-bottom: 20px;
@@ -262,88 +327,72 @@ const handleActionClick = (product) => {
           font-weight: 600;
           color: $text-light;
           cursor: pointer;
-          border-radius: 4px;
           transition: all 0.3s ease;
-          margin-bottom: 8px;
+          margin-bottom: 4px;
 
           &:hover {
             color: $text-color;
           }
 
           &.active {
-            background: linear-gradient(90deg, rgba(88, 204, 2, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
-            color: $text-color;
-            border-left: 4px solid #58cc02;
+            background: linear-gradient(90deg, #bcf093 0%, #eefbe2 100%); // 模拟原图左侧绿色高亮
+            color: #111;
+            font-weight: 800;
+            border-left: 6px solid #58cc02;
           }
         }
       }
     }
 
-    .banner {
+    .sidebar-bottom {
       margin-top: 30px;
-      position: relative;
+      padding-right: 20px;
       
-      .discount-tag {
-        position: absolute;
-        left: -32px;
-        top: 50%;
-        transform: translateY(-50%) rotate(-90deg);
-        background-color: #58cc02;
-        color: $white;
-        font-weight: 800;
-        font-size: 14px;
-        padding: 4px 16px;
-        border-radius: 4px 4px 0 0;
-        letter-spacing: 1px;
-      }
-
-      .banner-content {
-        padding-left: 20px;
+      .trustpilot {
+        border: 1px solid $border-color;
+        padding: 12px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        margin-bottom: 16px;
         
-        .trustpilot {
-          border: 1px solid $border-color;
-          padding: 12px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          margin-bottom: 16px;
-          
-          .star-icon {
-            color: #00b67a;
-            font-size: 16px;
-          }
-
-          .rating-stars {
-            display: flex;
-            background: #00b67a;
-            padding: 2px 4px;
-            border-radius: 2px;
-            
-            .star {
-              color: $white;
-              font-size: 10px;
-            }
-          }
-          
-          .score {
-            font-weight: bold;
-          }
+        .star-icon {
+          color: #00b67a;
+          font-size: 16px;
         }
 
-        .combo-link {
-          font-weight: 700;
-          font-size: 14px;
+        .rating-stars {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          color: $text-color;
-          text-decoration: none;
-
-          &:hover {
-            color: #58cc02;
+          background: #00b67a;
+          padding: 2px 4px;
+          border-radius: 2px;
+          
+          .star {
+            color: $white;
+            font-size: 10px;
           }
+        }
+        
+        .score {
+          font-weight: bold;
+        }
+      }
+
+      .combo-link {
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: $text-color;
+        text-decoration: none;
+        padding-bottom: 8px;
+        border-bottom: 1px solid $border-color;
+
+        &:hover {
+          color: #58cc02;
         }
       }
     }
@@ -360,7 +409,6 @@ const handleActionClick = (product) => {
       align-items: center;
       margin-bottom: 20px;
       padding-bottom: 10px;
-      border-bottom: 1px solid $border-color;
 
       .title {
         font-size: 12px;
@@ -409,10 +457,15 @@ const handleActionClick = (product) => {
           position: relative;
           background: #fff;
           border-radius: 12px;
-          border: 1px solid #eee;
+          border: 1px solid transparent; // 取消边框，让它看起来更干净
           padding-top: 100%; // 1:1 比例
           margin-bottom: 16px;
           overflow: hidden;
+
+          // 悬停时稍微加深一点背景，如果是透明的话。原图背景是白色，可以加点灰度或者阴影
+          &:hover {
+             border-color: #eee;
+          }
 
           // 左上角标签容器
           .tags-left {
@@ -467,6 +520,30 @@ const handleActionClick = (product) => {
             }
           }
 
+          // 右上角眼睛图标 (Quick View)
+          .quick-view-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            z-index: 10;
+            color: #333;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #f5f5f5;
+              transform: scale(1.1);
+            }
+          }
+
           // 图片轮播区域
           .image-carousel {
             position: absolute;
@@ -481,13 +558,14 @@ const handleActionClick = (product) => {
               left: 0;
               width: 100%;
               height: 100%;
-              object-fit: contain;
-              padding: 24px;
+              object-fit: cover; // 占满整个盒子
+              padding: 0; // 去除内边距
               opacity: 0;
               transition: opacity 0.4s ease, transform 0.4s ease;
 
               &.is-active {
                 opacity: 1;
+                z-index: 1;
               }
             }
           }
@@ -501,20 +579,25 @@ const handleActionClick = (product) => {
             display: flex;
             justify-content: center;
             gap: 6px;
-            z-index: 5;
+            z-index: 15; // 提高层级确保可见
             padding: 10px 0;
 
             .indicator-dot {
-              width: 8px;
-              height: 8px;
-              border-radius: 50%;
-              background: rgba(0, 0, 0, 0.2);
+              width: 6px;
+              height: 6px;
+              border-radius: 4px;
+              background: rgba(0, 0, 0, 0.3);
               cursor: pointer;
-              transition: all 0.2s ease;
+              transition: all 0.3s ease;
+              box-shadow: 0 1px 2px rgba(255,255,255,0.5); // 增加对比度
 
-              &:hover, &.is-active {
+              &.is-active {
+                width: 16px;
                 background: #111;
-                transform: scale(1.2);
+              }
+              
+              &:hover:not(.is-active) {
+                background: rgba(0, 0, 0, 0.6);
               }
             }
           }
@@ -522,12 +605,16 @@ const handleActionClick = (product) => {
           // 手机APP预览图
           .app-preview-img {
             position: absolute;
-            top: 30px;
-            right: 15px;
-            width: 45px;
+            top: 60px; // 下移，避免与标签重叠
+            right: 10px;
+            width: 40px;
             height: auto;
             object-fit: contain;
-            z-index: 1;
+            z-index: 10;
+            background: #fff;
+            padding: 2px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
           }
 
           .hover-actions {
@@ -580,7 +667,7 @@ const handleActionClick = (product) => {
             flex-direction: column;
 
             .title {
-              font-size: 13px;
+              font-size: 14px;
               font-weight: 500;
               line-height: 1.4;
               margin-bottom: 8px;
@@ -589,6 +676,7 @@ const handleActionClick = (product) => {
               -webkit-box-orient: vertical;
               overflow: hidden;
               transition: color 0.3s ease;
+              color: #333;
             }
 
             .price-area {
@@ -599,7 +687,7 @@ const handleActionClick = (product) => {
               .current-price {
                 color: #e62332;
                 font-weight: 700;
-                font-size: 15px;
+                font-size: 16px;
               }
 
               .old-price {
