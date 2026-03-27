@@ -216,7 +216,12 @@
     <!-- 博客文章模块 (Blog Section) -->
     <section class="blog-section container">
       <div class="section-header flex-between">
-        <h2 class="section-title blog-title-main">isinwheel Blog</h2>
+        <h2 class="section-title blog-title-main">
+          isinwheel Blog
+          <svg class="wave-underline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none">
+            <path d="M0,10 Q12.5,20 25,10 T50,10 T75,10 T100,10" fill="none" stroke="#58cc02" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </h2>
         <Button variant="outline" class="btn-view-all">
           <FileTextIcon class="icon-left" /> View all
         </Button>
@@ -1646,6 +1651,16 @@ const blogs = ref([
 
   .blog-title-main {
     margin-bottom: 0;
+    position: relative;
+    display: inline-block;
+
+    .wave-underline {
+      position: absolute;
+      bottom: -12px;
+      left: 0;
+      width: 100%;
+      height: 12px;
+    }
   }
 
   .btn-view-all {
