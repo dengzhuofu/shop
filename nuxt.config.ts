@@ -8,6 +8,13 @@ export default defineNuxtConfig({
     buildAssetsDir: '/_nuxt/',
   },
 
+  // 避免静态生成 (generate) 时由于死链或 API 报错导致部署直接失败
+  nitro: {
+    prerender: {
+      failOnError: false,
+    },
+  },
+
   devtools: { enabled: true },
   modules: [
     '@pinia/nuxt'
