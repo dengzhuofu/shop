@@ -105,14 +105,49 @@
                 pay</span> <a href="#" class="check-link">Check your purchasing power</a></p>
           </div>
 
-          <!-- 颜色选择 -->
-          <div class="color-selector">
-            <p class="selector-label">Color: <strong>{{ selectedColor }}</strong></p>
-            <div class="color-options">
-              <button v-for="color in product.colors" :key="color.name" class="color-btn"
-                :class="{ 'is-active': selectedColor === color.name }" @click="selectedColor = color.name">
-                <img :src="color.thumbnail" :alt="color.name" />
-              </button>
+          <!-- 规格选择 (Variants) -->
+          <div class="variant-selectors">
+            <!-- 款式 (Style) 选择 -->
+            <div class="selector-group" v-if="product.styles && product.styles.length">
+              <p class="selector-label">Style: <strong>{{ selectedStyle }}</strong></p>
+              <div class="options-list">
+                <button 
+                  v-for="style in product.styles" 
+                  :key="style"
+                  class="text-btn"
+                  :class="{ 'is-active': selectedStyle === style }"
+                  @click="selectedStyle = style"
+                >
+                  {{ style }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 套餐/数量 (Buy More Save More) 选择 -->
+            <div class="selector-group" v-if="product.bundles && product.bundles.length">
+              <p class="selector-label">Buy More Save More: <strong>{{ selectedBundle }}</strong></p>
+              <div class="options-list">
+                <button 
+                  v-for="bundle in product.bundles" 
+                  :key="bundle"
+                  class="text-btn"
+                  :class="{ 'is-active': selectedBundle === bundle }"
+                  @click="selectedBundle = bundle"
+                >
+                  {{ bundle }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 颜色选择 (保留原有逻辑，如果有颜色配置的话) -->
+            <div class="selector-group" v-if="product.colors && product.colors.length">
+              <p class="selector-label">Color: <strong>{{ selectedColor }}</strong></p>
+              <div class="color-options">
+                <button v-for="color in product.colors" :key="color.name" class="color-btn"
+                  :class="{ 'is-active': selectedColor === color.name }" @click="selectedColor = color.name">
+                  <img :src="color.thumbnail" :alt="color.name" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -301,10 +336,9 @@ const product = ref({
     { label: 'Charging Time', value: '6-7 Hours', icon: markRaw(BatteryIcon) },
     { label: 'Max Load', value: '264 Lbs', icon: markRaw(ActivityIcon) }
   ],
-  colors: [
-    { name: 'White', thumbnail: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=100' },
-    { name: 'Black', thumbnail: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=100' }
-  ],
+  styles: ['2026 Upgraded Edition'],
+  bundles: ['S9 Pro*1', 'S9 Pro*2'],
+  colors: [], // 原图里没有颜色选择，暂时清空
   upsells: [
     { id: 1, name: 'Cable Lock for Escooter', image: 'https://via.placeholder.com/80x80?text=Lock', value: '35.99' },
     { id: 2, name: '14-Day Free Trial', image: 'https://via.placeholder.com/80x80?text=Trial', value: '75.99' },
@@ -321,7 +355,9 @@ const product = ref({
 })
 
 const activeImageIndex = ref(0)
-const selectedColor = ref('White')
+const selectedStyle = ref('2026 Upgraded Edition')
+const selectedBundle = ref('S9 Pro*1')
+const selectedColor = ref('')
 const quantity = ref(1)
 const activeAccordion = ref('quick-know') // 默认展开第一个面板
 
@@ -705,55 +741,61 @@ const toggleAccordion = (panelName) => {
   }
 
   .installment-info {
-    font-size: 13px;
-    color: #555;
-    background: #f9f9f9;
-    padding: 12px 16px;
-    border-radius: 8px;
-
-    .shop-pay {
-      color: #5a31f4;
-      font-weight: bold;
-    }
-
-    .check-link {
-      color: #666;
-      text-decoration: underline;
-    }
+    font-size: 13px; color: #555; background: #f9f9f9; padding: 12px 16px; border-radius: 8px;
+    .shop-pay { color: #5a31f4; font-weight: bold; }
+    .check-link { color: #666; text-decoration: underline; }
   }
 
-  .color-selector {
+  // 规格选择
+  .variant-selectors {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     margin-top: 10px;
 
-    .selector-label {
-      font-size: 14px;
-      margin-bottom: 12px;
-      color: #333;
-    }
+    .selector-group {
+      .selector-label { 
+        font-size: 14px; 
+        margin-bottom: 12px; 
+        color: #333; 
+        strong { font-weight: 600; color: #111; }
+      }
 
-    .color-options {
-      display: flex;
-      gap: 12px;
+      .options-list {
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: 12px;
 
-      .color-btn {
-        width: 60px;
-        height: 60px;
-        border-radius: 8px;
-        border: 2px solid #eee;
-        padding: 2px;
-        background: #fff;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
+        .text-btn {
+          padding: 10px 20px;
+          border: 1px solid #ccc;
           border-radius: 4px;
-        }
+          background: #fff;
+          font-size: 14px;
+          color: #333;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 500;
 
-        &.is-active {
-          border-color: #111;
+          &:hover {
+            border-color: #999;
+          }
+
+          &.is-active {
+            border-color: #111;
+            border-width: 2px;
+            padding: 9px 19px; // 补偿边框宽度防止跳动
+          }
+        }
+      }
+
+      .color-options {
+        display: flex; gap: 12px;
+        .color-btn {
+          width: 60px; height: 60px; border-radius: 8px; border: 2px solid #eee; padding: 2px;
+          background: #fff; cursor: pointer; transition: all 0.2s;
+          img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+          &.is-active { border-color: #111; }
         }
       }
     }
