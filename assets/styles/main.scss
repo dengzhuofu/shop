@@ -37,7 +37,7 @@ button {
   margin: 0 auto;
   padding: 0 $spacing-lg;
   
-  @media (max-width: $bp-mobile) {
+  @media (max-width: $bp-md) {
     padding: 0 $spacing-md;
   }
 }

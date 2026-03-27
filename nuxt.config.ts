@@ -1,5 +1,13 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  // 部署到 GitHub Pages 的基础路径配置
+  // 如果你的仓库名叫 my-project，且通过 username.github.io/my-project 访问
+  // 那么你应该在部署时设置 NUXT_APP_BASE_URL=/my-project/
+  app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/',
+    buildAssetsDir: '/_nuxt/',
+  },
+
   devtools: { enabled: true },
   modules: [
     '@pinia/nuxt'

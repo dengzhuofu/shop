@@ -1,0 +1,22 @@
+# Tasks
+- [x] Task 1: 搭建首页基础结构与全局样式
+  - [x] SubTask 1.1: 确认项目依赖中包含 sass/scss 支持
+  - [x] SubTask 1.2: 定义全局 CSS 变量（颜色、字体、断点 768/1024/1440）
+  - [x] SubTask 1.3: 创建首页页面容器及基础布局，加入必要的中文注释
+- [x] Task 2: 实现首页满铺视窗模块 (Hero Section)
+  - [x] SubTask 2.1: 编写 HTML/组件结构
+  - [x] SubTask 2.2: 使用 SASS 嵌套编写样式，确保全屏高度（100vh）和响应式背景
+  - [x] SubTask 2.3: 添加进入动画和高质量文字排版细节
+- [x] Task 3: 实现探索模块 (Explore Section)
+  - [x] SubTask 3.1: 创建图文卡片网格布局
+  - [x] SubTask 3.2: 编写卡片悬浮动效（Hover effects）和空间布局细节，使用 SASS 嵌套
+- [x] Task 4: 实现商品模块 (Best Sellers Section)
+  - [x] SubTask 4.1: 实现分类切换（Tab）的 UI
+  - [x] SubTask 4.2: 编写商品卡片（包括价格、打折标签、关键参数图标）的 SASS 样式
+  - [x] SubTask 4.3: 适配 768/1024/1440 分辨率下的网格列数
+- [x] Task 5: 实现视频介绍模块 (Video Intro Section)
+  - [x] SubTask 5.1: 嵌入视频播放器容器和封面图
+  - [x] SubTask 5.2: 调整视频容器比例和自定义播放控件样式
+- [x] Task 6: 实现达人视频模块 (Influencer Videos Section)
+  - [x] SubTask 6.1: 创建垂直视频卡片的横向滚动或网格布局
+  - [x] SubTask 6.2: 添加用户信息（头像、用户名）及播放图标遮罩
