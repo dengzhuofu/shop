@@ -50,6 +50,7 @@
             :key="product.id"
             @mouseenter="handleMouseEnter(product.id)"
             @mouseleave="handleMouseLeave(product.id)"
+            @click="goToDetail(product)"
           >
             <div class="image-wrapper">
               <!-- 左上角动态标签 (NEW/HOT) -->
@@ -134,6 +135,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue'
+import { useRouter } from 'nuxt/app'
 
 const props = defineProps({
   menuData: {
@@ -141,6 +143,13 @@ const props = defineProps({
     required: true
   }
 })
+
+const router = useRouter()
+
+const goToDetail = (product) => {
+  const id = product.id || 's-nova-pro'
+  router.push(`/products/${id}`)
+}
 
 // 默认选中第一个分类
 const activeCategoryId = ref('')

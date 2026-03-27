@@ -1,5 +1,5 @@
 <template>
-  <div class="product-card" @mouseenter="isHovered = true" @mouseleave="isHovered = false">
+  <div class="product-card" @mouseenter="isHovered = true" @mouseleave="isHovered = false" @click="goToDetail">
     <!-- 商品图片区域 -->
     <div class="image-wrapper">
       <!-- 动态标签：左上角 (NEW/HOT) 和 右上角 (Spring Sale) -->
@@ -92,6 +92,7 @@
 
 <script setup>
 import { computed, ref, inject } from 'vue'
+import { useRouter } from 'nuxt/app'
 
 const props = defineProps({
   product: {
@@ -99,6 +100,14 @@ const props = defineProps({
     required: true
   }
 })
+
+const router = useRouter()
+
+const goToDetail = () => {
+  // 如果有商品 ID，使用 ID，否则使用固定路由测试
+  const id = props.product.id || 's-nova-pro'
+  router.push(`/products/${id}`)
+}
 
 // 模拟状态
 const isHovered = ref(false)
@@ -169,6 +178,7 @@ const displayImages = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%; // 确保网格中的卡片高度一致
+  cursor: pointer; // 增加鼠标手型提示可点击
 
   // 悬停时的阴影与动效
   &:hover {
