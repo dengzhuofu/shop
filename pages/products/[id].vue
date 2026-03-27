@@ -29,7 +29,7 @@
               <img :src="product.images[activeImageIndex]" :alt="product.title" class="main-image" />
 
               <!-- App 预览图标 -->
-              <img v-if="product.appImage" :src="product.appImage" class="app-preview" alt="App Support" />
+              <!-- <img v-if="product.appImage" :src="product.appImage" class="app-preview" alt="App Support" /> -->
             </div>
 
             <!-- 缩略图列表 -->
@@ -290,7 +290,7 @@ const product = ref({
     'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800',
     'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=800',
     'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=800'
+    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=800'
   ],
   appImage: 'https://via.placeholder.com/60x120?text=APP',
   specs: [
@@ -527,7 +527,7 @@ const toggleAccordion = (panelName) => {
         img {
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: cover;
         }
 
         &.is-active {
