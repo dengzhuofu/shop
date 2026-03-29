@@ -37,7 +37,7 @@
         <nav class="desktop-nav">
           <ul class="nav-list">
             <li class="nav-item" :class="{ 'is-active': activeMenu === 'scooter' }" @mouseenter="handleMouseEnter('scooter')" @mouseleave="handleMouseLeave">
-              <NuxtLink to="/collections/electric-scooter">Electric Scooter</NuxtLink>
+              <NuxtLink to="/collections/electric-scooters">Electric Scooter</NuxtLink>
             </li>
             <li class="nav-item hot">
               <NuxtLink to="/collections/spring-sale">Spring Sale</NuxtLink>
