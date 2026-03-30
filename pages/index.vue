@@ -4,18 +4,21 @@
     <section class="hero-section">
       <!-- 轮播图背景 -->
       <div class="hero-carousel">
-        <div 
-          class="hero-slide" 
-          v-for="(slide, index) in heroSlides" 
+        <div
+          class="hero-slide"
+          v-for="(slide, index) in heroSlides"
           :key="index"
           :class="{ 'is-active': currentHeroIndex === index }"
         >
-          <div class="hero-bg" :style="{ backgroundImage: `url(${slide.image})` }"></div>
+          <div
+            class="hero-bg"
+            :style="{ backgroundImage: `url(${slide.image})` }"
+          ></div>
         </div>
         <!-- 轮播指示器 -->
         <div class="hero-indicators">
-          <span 
-            v-for="(_, index) in heroSlides" 
+          <span
+            v-for="(_, index) in heroSlides"
             :key="index"
             class="indicator-dot"
             :class="{ 'is-active': currentHeroIndex === index }"
@@ -25,15 +28,24 @@
         <!-- 半透明遮罩 -->
         <div class="hero-overlay"></div>
       </div>
-      
+
       <!-- 主要内容区域 -->
       <div class="container hero-content">
         <div class="text-content">
-          <h1 class="title">探索无界 <br> <span class="highlight">智能骑行</span></h1>
-          <p class="subtitle">采用领先科技，带来更加环保、便捷与酷炫的出行体验。</p>
+          <h1 class="title">
+            探索无界 <br />
+            <span class="highlight">智能骑行</span>
+          </h1>
+          <p class="subtitle">
+            采用领先科技，带来更加环保、便捷与酷炫的出行体验。
+          </p>
           <div class="action-group">
-            <Button variant="primary" size="lg" class="btn-main">即刻出发</Button>
-            <Button variant="outline" size="lg" class="btn-secondary">了解更多</Button>
+            <Button variant="primary" size="lg" class="btn-main"
+              >即刻出发</Button
+            >
+            <Button variant="outline" size="lg" class="btn-secondary"
+              >了解更多</Button
+            >
           </div>
         </div>
       </div>
@@ -46,33 +58,46 @@
         <div class="category-card" v-for="cat in categories" :key="cat.title">
           <div class="bg-placeholder"></div>
           <div class="content">
-            <h3>{{ cat.title }} <span class="count">{{ cat.count }}</span></h3>
+            <h3>
+              {{ cat.title }} <span class="count">{{ cat.count }}</span>
+            </h3>
             <p>{{ cat.desc }}</p>
             <ArrowRightIcon class="icon" />
           </div>
         </div>
       </div>
     </section>
-  <!-- 明星产品展示区 (Best Sellers) -->
+    <!-- 明星产品展示区 (Best Sellers) -->
     <section class="best-sellers-section container">
-    <!-- Best Sellers 模块顶部标题区域 -->
-    <div class="section-header flex-between align-center mb-xl">
-      <h2 class="section-title mb-0 best-sellers-title">
-        Best Sellers
-        <svg class="wave-underline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none">
-          <path d="M0,10 Q12.5,20 25,10 T50,10 T75,10 T100,10" fill="none" stroke="#58cc02" stroke-width="4" stroke-linecap="round"/>
-        </svg>
-      </h2>
-      <NuxtLink to="/collections/all" class="view-all-link">
-        All Commuter Scooter (7) <ArrowRightIcon class="icon-right" />
-      </NuxtLink>
-    </div>
-      
+      <!-- Best Sellers 模块顶部标题区域 -->
+      <div class="section-header flex-between align-center mb-xl">
+        <h2 class="section-title mb-0 best-sellers-title">
+          Best Sellers
+          <svg
+            class="wave-underline"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 100 20"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,10 Q12.5,20 25,10 T50,10 T75,10 T100,10"
+              fill="none"
+              stroke="#58cc02"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+          </svg>
+        </h2>
+        <NuxtLink to="/collections/all" class="view-all-link">
+          All Commuter Scooter (7) <ArrowRightIcon class="icon-right" />
+        </NuxtLink>
+      </div>
+
       <!-- 选项卡 -->
       <div class="tabs-wrapper">
         <div class="tabs">
-          <button 
-            v-for="tab in tabs" 
+          <button
+            v-for="tab in tabs"
             :key="tab"
             :class="['tab-btn', { active: currentTab === tab }]"
             @click="currentTab = tab"
@@ -84,10 +109,11 @@
 
       <!-- 产品网格 -->
       <div class="product-grid">
-        <ProductCard 
-          v-for="product in filteredProducts" 
+        <ProductCard
+          v-for="product in filteredProducts"
           :key="product.id"
           :product="product"
+          @click="navigateTo(`/products/${product.id}`)"
         />
       </div>
     </section>
@@ -95,18 +121,21 @@
     <section class="video-section container">
       <div class="video-container" @click="toggleVideo">
         <!-- 视频元素 -->
-        <video 
+        <video
           ref="videoRef"
           class="promo-video"
-          src="https://www.w3schools.com/html/mov_bbb.mp4" 
+          src="https://www.w3schools.com/html/mov_bbb.mp4"
           loop
           muted
           playsinline
         ></video>
-        
+
         <!-- 视频封面图 -->
         <div class="video-cover" :class="{ 'is-hidden': isPlaying }">
-          <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920" alt="Video Cover" />
+          <img
+            src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920"
+            alt="Video Cover"
+          />
         </div>
 
         <!-- 播放控制覆盖层 -->
@@ -118,14 +147,21 @@
         </div>
       </div>
     </section>
-  <!-- 达人视频展示区 (Influencer Videos) -->
+    <!-- 达人视频展示区 (Influencer Videos) -->
     <section class="influencer-section container">
       <!-- <h2 class="section-title">Rider Stories</h2> -->
       <div class="influencer-grid">
-        <div class="video-card" v-for="video in influencerVideos" :key="video.id">
+        <div
+          class="video-card"
+          v-for="video in influencerVideos"
+          :key="video.id"
+        >
           <!-- 背景图 -->
-          <div class="bg-image" :style="{ backgroundImage: `url(${video.bgImage})` }"></div>
-          
+          <div
+            class="bg-image"
+            :style="{ backgroundImage: `url(${video.bgImage})` }"
+          ></div>
+
           <!-- 渐变遮罩 -->
           <div class="overlay"></div>
 
@@ -145,15 +181,14 @@
             <p class="quote">"{{ video.quote }}"</p>
             <!-- 标签 -->
             <div class="tags">
-              <span v-for="tag in video.tags" :key="tag" class="tag">{{ tag }}</span>
+              <span v-for="tag in video.tags" :key="tag" class="tag">{{
+                tag
+              }}</span>
             </div>
           </div>
         </div>
       </div>
     </section>
-  
-
-  
 
     <!-- 媒体评价模块 (Media Review) -->
     <section class="media-review-section">
@@ -162,7 +197,9 @@
       </div>
       <div class="container media-content">
         <div class="quote-icon">“</div>
-        <h2 class="review-title">isinwheel S10Max Review: A Powerful Yet Portable Last-Mile Scooter</h2>
+        <h2 class="review-title">
+          isinwheel S10Max Review: A Powerful Yet Portable Last-Mile Scooter
+        </h2>
         <div class="media-logo">
           <span class="logo-circle">CNET</span>
           <span class="logo-text">— CNET</span>
@@ -184,9 +221,16 @@
         <div class="text-content">
           <h2 class="section-title">Why Choose isinwheel</h2>
           <p class="description">
-            we believe that technology makes communication easier and easier, but it becomes more difficult to connect the people, places, and experiences that are most important to us. isinwheel brings all the things you want closer to you, enriching your life in an easier, cheaper and more interesting way. Your office, the new ramen shop, the friends you are eager to bring to the new ramen shop.
+            we believe that technology makes communication easier and easier,
+            but it becomes more difficult to connect the people, places, and
+            experiences that are most important to us. isinwheel brings all the
+            things you want closer to you, enriching your life in an easier,
+            cheaper and more interesting way. Your office, the new ramen shop,
+            the friends you are eager to bring to the new ramen shop.
           </p>
-          <Button variant="primary" class="btn-brand-story">Brand Story <ArrowRightIcon class="icon-right" /></Button>
+          <Button variant="primary" class="btn-brand-story"
+            >Brand Story <ArrowRightIcon class="icon-right"
+          /></Button>
         </div>
       </div>
     </section>
@@ -200,15 +244,24 @@
       <div class="reviews-carousel">
         <div class="nav-btn prev"><ChevronLeftIcon /></div>
         <div class="reviews-grid">
-            <div class="review-card" v-for="review in customerReviews" :key="review.id">
-              <div class="review-img" :style="{ backgroundImage: `url(${review.image})` }"></div>
-              <div class="review-content">
-                <div class="stars">
+          <div
+            class="review-card"
+            v-for="review in customerReviews"
+            :key="review.id"
+          >
+            <div
+              class="review-img"
+              :style="{ backgroundImage: `url(${review.image})` }"
+            ></div>
+            <div class="review-content">
+              <div class="stars">
                 <StarIcon v-for="i in 5" :key="i" class="star-icon filled" />
               </div>
               <h4 class="reviewer-name">
-                {{ review.name }} 
-                <span v-if="review.verified" class="verified-badge">Verified</span>
+                {{ review.name }}
+                <span v-if="review.verified" class="verified-badge"
+                  >Verified</span
+                >
               </h4>
               <p class="review-text">{{ review.text }}</p>
             </div>
@@ -223,8 +276,19 @@
       <div class="section-header flex-between">
         <h2 class="section-title blog-title-main">
           isinwheel Blog
-          <svg class="wave-underline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none">
-            <path d="M0,10 Q12.5,20 25,10 T50,10 T75,10 T100,10" fill="none" stroke="#58cc02" stroke-width="4" stroke-linecap="round"/>
+          <svg
+            class="wave-underline"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 100 20"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,10 Q12.5,20 25,10 T50,10 T75,10 T100,10"
+              fill="none"
+              stroke="#58cc02"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
           </svg>
         </h2>
         <Button variant="outline" class="btn-view-all">
@@ -234,12 +298,20 @@
       <div class="blog-grid">
         <div class="blog-main">
           <div class="blog-card large">
-            <div class="bg-img" :style="{ backgroundImage: `url(${blogs[0].image})` }"></div>
+            <div
+              class="bg-img"
+              :style="{ backgroundImage: `url(${blogs[0].image})` }"
+            ></div>
             <div class="overlay"></div>
             <div class="blog-content">
               <div class="meta">
-                <span class="date"><CalendarIcon class="meta-icon" /> {{ blogs[0].date }}</span>
-                <span class="comments"><MessageCircleIcon class="meta-icon" /> {{ blogs[0].comments }} comments</span>
+                <span class="date"
+                  ><CalendarIcon class="meta-icon" /> {{ blogs[0].date }}</span
+                >
+                <span class="comments"
+                  ><MessageCircleIcon class="meta-icon" />
+                  {{ blogs[0].comments }} comments</span
+                >
               </div>
               <h3 class="blog-title">{{ blogs[0].title }}</h3>
               <a href="#" class="read-more">Read more</a>
@@ -247,14 +319,23 @@
           </div>
         </div>
         <div class="blog-side">
-          <div class="blog-card small" v-for="blog in blogs.slice(1)" :key="blog.id">
+          <div
+            class="blog-card small"
+            v-for="blog in blogs.slice(1)"
+            :key="blog.id"
+          >
             <div class="img-wrapper">
               <img :src="blog.image" :alt="blog.title" />
             </div>
             <div class="blog-content">
               <div class="meta">
-                <span class="date"><CalendarIcon class="meta-icon" /> {{ blog.date }}</span>
-                <span class="comments"><MessageCircleIcon class="meta-icon" /> {{ blog.comments }} comments</span>
+                <span class="date"
+                  ><CalendarIcon class="meta-icon" /> {{ blog.date }}</span
+                >
+                <span class="comments"
+                  ><MessageCircleIcon class="meta-icon" />
+                  {{ blog.comments }} comments</span
+                >
               </div>
               <h3 class="blog-title">{{ blog.title }}</h3>
               <a href="#" class="read-more">Read more</a>
@@ -268,10 +349,20 @@
 
 <script setup>
 import { ref, computed, markRaw, onMounted, onUnmounted } from 'vue'
-import { 
-  ArrowRightIcon, ZapIcon, NavigationIcon, BatteryIcon, ActivityIcon, 
-  PlayIcon, PauseIcon, ChevronLeftIcon, ChevronRightIcon, StarIcon, 
-  CalendarIcon, MessageCircleIcon, FileTextIcon 
+import {
+  ArrowRightIcon,
+  ZapIcon,
+  NavigationIcon,
+  BatteryIcon,
+  ActivityIcon,
+  PlayIcon,
+  PauseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  StarIcon,
+  CalendarIcon,
+  MessageCircleIcon,
+  FileTextIcon,
 } from 'lucide-vue-next'
 import Button from '~/components/Button.vue'
 import ProductCard from '~/components/ProductCard.vue'
@@ -283,20 +374,23 @@ const videoRef = ref(null)
 // 英雄区轮播数据
 const heroSlides = ref([
   {
-    image: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1920',
+    image:
+      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1920',
     title: '探索无界',
-    subtitle: '智能骑行'
+    subtitle: '智能骑行',
   },
   {
-    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920',
+    image:
+      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920',
     title: '极致性能',
-    subtitle: '绿色出行'
+    subtitle: '绿色出行',
   },
   {
-    image: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=1920',
+    image:
+      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=1920',
     title: '城市通勤',
-    subtitle: '最佳伴侣'
-  }
+    subtitle: '最佳伴侣',
+  },
 ])
 
 const currentHeroIndex = ref(0)
@@ -305,16 +399,18 @@ const currentHeroIndex = ref(0)
 let heroTimer = null
 const startHeroTimer = () => {
   heroTimer = setInterval(() => {
-    currentHeroIndex.value = (currentHeroIndex.value + 1) % heroSlides.value.length
+    currentHeroIndex.value =
+      (currentHeroIndex.value + 1) % heroSlides.value.length
   }, 5000)
 }
 const stopHeroTimer = () => {
   if (heroTimer) clearInterval(heroTimer)
 }
 
-// 页面加载时启动轮播
+// 页面加载时启动轮播和获取数据
 onMounted(() => {
   startHeroTimer()
+  fetchProducts()
 })
 
 onUnmounted(() => {
@@ -334,10 +430,26 @@ const toggleVideo = () => {
 
 // 分类 Mock 数据
 const categories = [
-  { title: 'Electric Scooter', count: 15, desc: 'Foldable freedom for your daily commute' },
-  { title: 'Electric Bike', count: 18, desc: 'Conquer hills and long distances with ease' },
-  { title: 'Electric Skateboard', count: 5, desc: 'Electrify your ride with smooth carving and high-speed fun' },
-  { title: 'Accessories', count: 333, desc: 'Everything you need to upgrade, protect, and personalize your ride' },
+  {
+    title: 'Electric Scooter',
+    count: 15,
+    desc: 'Foldable freedom for your daily commute',
+  },
+  {
+    title: 'Electric Bike',
+    count: 18,
+    desc: 'Conquer hills and long distances with ease',
+  },
+  {
+    title: 'Electric Skateboard',
+    count: 5,
+    desc: 'Electrify your ride with smooth carving and high-speed fun',
+  },
+  {
+    title: 'Accessories',
+    count: 333,
+    desc: 'Everything you need to upgrade, protect, and personalize your ride',
+  },
 ]
 
 // Best Sellers 选项卡
@@ -345,204 +457,158 @@ const tabs = ['Electric Scooter', 'Electric Bike', 'E Skateboard']
 const currentTab = ref(tabs[0])
 
 // 产品 Mock 数据
-const products = ref([
-  {
-    id: 's9-pro',
-    category: 'Electric Scooter',
-    title: 'isinwheel S9 Pro Pneumatic Tire Electric Scooter...',
-    price: 269.99,
-    compareAtPrice: 399.99,
-    isFrom: true,
-    tags: ['Spring Sale', 'Save $130.00'],
-    images: [
-      'https://via.placeholder.com/400x400?text=S9+Pro+1',
-      'https://via.placeholder.com/400x400?text=S9+Pro+2'
-    ],
-    appImage: 'https://via.placeholder.com/60x120?text=APP',
-    specs: [
-      { label: 'Motor Capacity', value: '350W', icon: markRaw(ZapIcon) },
-      { label: 'Max Range', value: '19 Miles', icon: markRaw(NavigationIcon) },
-      { label: 'Top Speed', value: '19 MPH', icon: markRaw(ActivityIcon) },
-      { label: 'Battery Capacity', value: '36V 7.5Ah', icon: markRaw(BatteryIcon) }
-    ]
-  },
-  {
-    id: 's-nova-pro',
-    category: 'Electric Scooter',
-    title: 'S Nova Pro Commuting Electric Scooter...',
-    price: 489.99,
-    compareAtPrice: 599.99,
-    tags: ['NEW', 'Spring Sale', 'Save $110.00'],
-    images: [
-      'https://via.placeholder.com/400x400?text=S+Nova+Pro+1',
-      'https://via.placeholder.com/400x400?text=S+Nova+Pro+2'
-    ],
-    appImage: 'https://via.placeholder.com/60x120?text=APP',
-    specs: [
-      { label: 'Max Power', value: '1000W', icon: markRaw(ZapIcon) },
-      { label: 'Max Range', value: '38 Miles', icon: markRaw(NavigationIcon) },
-      { label: 'Top Speed', value: '28 MPH', icon: markRaw(ActivityIcon) },
-      { label: 'Battery Capacity', value: '48V 13Ah', icon: markRaw(BatteryIcon) }
-    ]
-  },
-  {
-    id: 'gt1-dual',
-    category: 'Electric Scooter',
-    title: 'GT1 Dual Motor Off-Road Electric Scooter...',
-    price: 649.99,
-    compareAtPrice: 799.99,
-    tags: ['NEW', 'Spring Sale', 'Save $150.00'],
-    images: ['https://via.placeholder.com/400x400?text=GT1'],
-    specs: [
-      { label: 'Motor Capacity', value: '800W*2', icon: markRaw(ZapIcon) },
-      { label: 'Max Range', value: '35 Miles', icon: markRaw(NavigationIcon) },
-      { label: 'Top Speed', value: '32 MPH', icon: markRaw(ActivityIcon) },
-      { label: 'Battery Capacity', value: '48V 13Ah', icon: markRaw(BatteryIcon) }
-    ]
-  },
-  {
-    id: 'h7pro',
-    category: 'Electric Scooter',
-    title: 'isinwheel H7Pro 1200W High-End Commuting Electric Scooter...',
-    price: 849.99,
-    compareAtPrice: 1099.99,
-    tags: ['HOT', 'Spring Sale', 'Save $250.00'],
-    images: ['https://via.placeholder.com/400x400?text=H7Pro'],
-    specs: [
-      { label: 'Motor Capacity', value: '1200W', icon: markRaw(ZapIcon) },
-      { label: 'Max Range', value: '43 Miles', icon: markRaw(NavigationIcon) },
-      { label: 'Top Speed', value: '38 MPH', icon: markRaw(ActivityIcon) },
-      { label: 'Fat Tires', value: '16*4"', icon: markRaw(BatteryIcon) }
-    ]
-  },
-  {
-    id: 'u1-bike',
-    category: 'Electric Bike',
-    title: 'U1 Electric Bike Commuter Ebike...',
-    price: 899.99,
-    compareAtPrice: 1199.99,
-    tags: ['HOT', 'Save $300.00'],
-    images: ['https://via.placeholder.com/400x400?text=U1+Bike'],
-    specs: [
-      { label: 'Motor Capacity', value: '500W', icon: markRaw(ZapIcon) },
-      { label: 'Max Range', value: '45 Miles', icon: markRaw(NavigationIcon) },
-      { label: 'Top Speed', value: '20 MPH', icon: markRaw(ActivityIcon) },
-      { label: 'Battery Capacity', value: '48V 15Ah', icon: markRaw(BatteryIcon) }
-    ]
-  },
-  {
-    id: 'v8-skateboard',
-    category: 'E Skateboard',
-    title: 'V8 Electric Skateboard with Remote...',
-    price: 199.99,
-    compareAtPrice: 299.99,
-    tags: ['Flash Sale'],
-    images: ['https://via.placeholder.com/400x400?text=V8+Skateboard'],
-    specs: [
-      { label: 'Motor Capacity', value: '400W', icon: markRaw(ZapIcon) },
-      { label: 'Max Range', value: '12 Miles', icon: markRaw(NavigationIcon) },
-      { label: 'Top Speed', value: '15 MPH', icon: markRaw(ActivityIcon) },
-      { label: 'Battery Capacity', value: '36V 4Ah', icon: markRaw(BatteryIcon) }
-    ]
+const products = ref([])
+
+// 获取产品数据
+const fetchProducts = async () => {
+  try {
+    const res = await useHttp(
+      '/api/product/list?pageNum=1&pageSize=10&lang=en',
+    )
+    if (res && res.code === 200 && res.data && res.data.records) {
+      // 映射后端返回的数据到前端格式
+      products.value = res.data.records.map((p) => ({
+        id: p.id,
+        // 这里为了演示前端的分类切换功能，如果后端没有category字段，可以模拟分配
+        category:
+          p.title && p.title.includes('Bike')
+            ? 'Electric Bike'
+            : p.title && p.title.includes('Skateboard')
+              ? 'E Skateboard'
+              : 'Electric Scooter',
+        title: p.title,
+        price: p.price,
+        compareAtPrice: p.compareAtPrice,
+        tags: p.tags || [],
+        images: p.images || [p.pic],
+        appImage: p.appImage,
+        specs: (p.specs || []).map((s) => ({
+          ...s,
+          // 简易映射图标
+          icon:
+            s.icon === 'ZapIcon'
+              ? markRaw(ZapIcon)
+              : s.icon === 'NavigationIcon'
+                ? markRaw(NavigationIcon)
+                : markRaw(ActivityIcon),
+        })),
+      }))
+    }
+  } catch (error) {
+    console.error('Failed to fetch products:', error)
   }
-])
+}
 
 // 过滤后的产品列表
 const filteredProducts = computed(() => {
-  return products.value.filter(p => p.category === currentTab.value)
+  return products.value.filter((p) => p.category === currentTab.value)
 })
 
 // 达人视频 Mock 数据
 const influencerVideos = ref([
   {
     id: 1,
-    bgImage: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=400&h=700',
+    bgImage:
+      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=400&h=700',
     avatar: 'https://i.pravatar.cc/150?u=1',
     username: '@ride_master',
     quote: 'Best scooter I have ever ridden! Smooth and fast.',
-    tags: ['#escooter', '#cityride']
+    tags: ['#escooter', '#cityride'],
   },
   {
     id: 2,
-    bgImage: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
+    bgImage:
+      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
     avatar: 'https://i.pravatar.cc/150?u=2',
     username: '@urban_explorer',
     quote: 'Perfect for my daily commute. Highly recommend!',
-    tags: ['#ebike', '#commute']
+    tags: ['#ebike', '#commute'],
   },
   {
     id: 3,
-    bgImage: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400&h=700',
+    bgImage:
+      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400&h=700',
     avatar: 'https://i.pravatar.cc/150?u=3',
     username: '@skate_pro',
     quote: 'Incredible speed and stability on this electric skateboard.',
-    tags: ['#eskate', '#fun']
+    tags: ['#eskate', '#fun'],
   },
   {
     id: 4,
-  bgImage: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
+    bgImage:
+      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
     avatar: 'https://i.pravatar.cc/150?u=4',
     username: '@eco_traveler',
     quote: 'A green way to travel around the city.',
-    tags: ['#ecofriendly', '#travel']
-  }
+    tags: ['#ecofriendly', '#travel'],
+  },
 ])
 
 // 用户评价 Mock 数据
 const customerReviews = ref([
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
+    image:
+      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
     name: 'Andrew',
     verified: false,
-    text: 'I have this a 4 before because the shocks were tight. After playing around a bit I now understand why they are so tight. It is easier to loosen the tension...'
+    text: 'I have this a 4 before because the shocks were tight. After playing around a bit I now understand why they are so tight. It is easier to loosen the tension...',
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=400',
+    image:
+      'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=400',
     name: 'Joseph P.',
     verified: true,
-    text: 'This board is amazing!! I could go on & on about how the specs really live up to the description. Just a monster of a board & the power is perfect &...'
+    text: 'This board is amazing!! I could go on & on about how the specs really live up to the description. Just a monster of a board & the power is perfect &...',
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=400',
+    image:
+      'https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=400',
     name: 'Pamela',
     verified: false,
-    text: 'I purchased a gt4 electric scooter. The assembly was extremely easy and it was completely put together in less than 30 minutes. I love the way...'
+    text: 'I purchased a gt4 electric scooter. The assembly was extremely easy and it was completely put together in less than 30 minutes. I love the way...',
   },
   {
     id: 4,
-    image: 'https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=400',
+    image:
+      'https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=400',
     name: 'Chad S.',
     verified: false,
-    text: 'It\'s everything you need to piss off people in town. If you keep it slow you can get 40-45 miles on a single charge which is boring. Top speed is...'
-  }
+    text: "It's everything you need to piss off people in town. If you keep it slow you can get 40-45 miles on a single charge which is boring. Top speed is...",
+  },
 ])
 
 // 博客文章 Mock 数据
 const blogs = ref([
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
-    title: 'Best Suspension for Value Off-Road Scooters: What Matters on Rough Paths',
+    image:
+      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
+    title:
+      'Best Suspension for Value Off-Road Scooters: What Matters on Rough Paths',
     date: 'Mar 26, 2026',
-    comments: 0
+    comments: 0,
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400',
-    title: '3 Best Value-for-Money Electric Scooters with the Best Off-Road Suspension',
+    image:
+      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400',
+    title:
+      '3 Best Value-for-Money Electric Scooters with the Best Off-Road Suspension',
     date: 'Mar 17, 2026',
-    comments: 0
+    comments: 0,
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
-    title: 'Neighborhood Errands Under $500: 4 Best Scooters for Families Who Want an Easy-to-Ride Vehicle',
+    image:
+      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
+    title:
+      'Neighborhood Errands Under $500: 4 Best Scooters for Families Who Want an Easy-to-Ride Vehicle',
     date: 'Mar 11, 2026',
-    comments: 0
-  }
+    comments: 0,
+  },
 ])
 </script>
 
@@ -622,9 +688,9 @@ const blogs = ref([
         transition: all 0.3s ease;
 
         &.is-active {
-            width: 20px;
-        height: 8px;
-        border-radius: 50px;
+          width: 20px;
+          height: 8px;
+          border-radius: 50px;
           background: #fff;
           transform: scale(1.2);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -643,7 +709,11 @@ const blogs = ref([
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(to right, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.3) 100%);
+      background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.75) 0%,
+        rgba(0, 0, 0, 0.3) 100%
+      );
       border-radius: 24px; // 保持圆角
     }
   }
@@ -655,7 +725,6 @@ const blogs = ref([
     width: 100%;
     color: $white; // 文字使用白色
     padding: 0 $spacing-md;
-    
 
     .text-content {
       max-width: 600px;
@@ -667,7 +736,7 @@ const blogs = ref([
         line-height: 1.2;
         margin-bottom: $spacing-md;
         letter-spacing: 2px;
-        
+
         // 高亮文字
         .highlight {
           color: $secondary-color;
@@ -685,7 +754,7 @@ const blogs = ref([
       .action-group {
         display: flex;
         gap: $spacing-md;
-        
+
         // 响应式：在小屏幕上按钮垂直排列
         @media (max-width: 768px) {
           flex-direction: column;
@@ -698,27 +767,39 @@ const blogs = ref([
   @media (min-width: $bp-md) {
     .hero-content {
       .text-content {
-        .title { font-size: 56px; }
-        .subtitle { font-size: 20px; }
+        .title {
+          font-size: 56px;
+        }
+        .subtitle {
+          font-size: 20px;
+        }
       }
     }
   }
-  
+
   @media (min-width: $bp-lg) {
     .hero-content {
       .text-content {
-        .title { font-size: 72px; }
-        .subtitle { font-size: 24px; }
+        .title {
+          font-size: 72px;
+        }
+        .subtitle {
+          font-size: 24px;
+        }
       }
     }
   }
-  
+
   @media (min-width: $bp-xl) {
     .hero-content {
       .text-content {
         max-width: 800px;
-        .title { font-size: 88px; }
-        .subtitle { font-size: 28px; }
+        .title {
+          font-size: 88px;
+        }
+        .subtitle {
+          font-size: 28px;
+        }
       }
     }
   }
@@ -749,7 +830,7 @@ const blogs = ref([
       font-style: normal;
       position: relative;
       display: inline-block;
-      
+
       &::after {
         content: '';
         position: absolute;
@@ -757,7 +838,8 @@ const blogs = ref([
         left: 0;
         width: 100%;
         height: 16px;
-        background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M5,15 Q25,5 50,15 T95,10" fill="none" stroke="%2358cc02" stroke-width="4" stroke-linecap="round"/></svg>') no-repeat center/100% 100%;
+        background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M5,15 Q25,5 50,15 T95,10" fill="none" stroke="%2358cc02" stroke-width="4" stroke-linecap="round"/></svg>')
+          no-repeat center/100% 100%;
       }
     }
   }
@@ -790,10 +872,22 @@ const blogs = ref([
       }
 
       // 为不同的卡片配置不同的背景图，增加区分度
-      &:nth-child(1) .bg-placeholder { background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600') center/cover; }
-      &:nth-child(2) .bg-placeholder { background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=600') center/cover; }
-      &:nth-child(3) .bg-placeholder { background: url('https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=600') center/cover; }
-      &:nth-child(4) .bg-placeholder { background: url('https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=600') center/cover; }
+      &:nth-child(1) .bg-placeholder {
+        background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600')
+          center/cover;
+      }
+      &:nth-child(2) .bg-placeholder {
+        background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=600')
+          center/cover;
+      }
+      &:nth-child(3) .bg-placeholder {
+        background: url('https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=600')
+          center/cover;
+      }
+      &:nth-child(4) .bg-placeholder {
+        background: url('https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=600')
+          center/cover;
+      }
 
       // 内容层
       .content {
@@ -802,9 +896,14 @@ const blogs = ref([
         left: 0;
         width: 100%;
         padding: 30px 24px 24px;
-        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.85) 0%,
+          rgba(0, 0, 0, 0.4) 60%,
+          transparent 100%
+        );
         transition: all 0.4s ease;
-        
+
         // 标题样式
         h3 {
           font-size: 28px;
@@ -861,8 +960,13 @@ const blogs = ref([
 
         // 内容区渐变加深
         .content {
-          background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%);
-          
+          background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.95) 0%,
+            rgba(0, 0, 0, 0.6) 70%,
+            transparent 100%
+          );
+
           // 标题复位
           h3 {
             transform: translateY(0);
@@ -896,22 +1000,24 @@ const blogs = ref([
   @media (max-width: $bp-md) {
     .category-grid {
       grid-template-columns: 1fr; // 手机端显示1列
-      
+
       .category-card {
         height: 280px; // 手机端稍微减小高度
-        
+
         // 手机端默认显示部分悬浮效果，避免无法悬浮查看
         .content {
-          h3 { transform: translateY(0); }
-          p { 
-            opacity: 1; 
-            transform: translateY(0); 
+          h3 {
+            transform: translateY(0);
+          }
+          p {
+            opacity: 1;
+            transform: translateY(0);
             max-height: 60px;
             margin-top: 12px;
           }
-          .icon { 
-            opacity: 1; 
-            transform: translateX(0); 
+          .icon {
+            opacity: 1;
+            transform: translateX(0);
           }
         }
       }
@@ -1005,12 +1111,12 @@ const blogs = ref([
         .icon {
           width: 32px;
           height: 32px;
-          
+
           // 播放图标稍微偏右以居中视觉效果
           &.play-icon {
             margin-left: 4px;
           }
-          
+
           &.pause-icon {
             margin-left: 0;
           }
@@ -1108,17 +1214,18 @@ const blogs = ref([
         font-size: 16px;
         background: transparent;
         color: $text-light;
-      background: $bg-light;
+        background: $bg-light;
 
         border: none;
         cursor: pointer;
         transition: all 0.3s ease;
 
         // 激活与悬停状态
-        &.active, &:hover {
+        &.active,
+        &:hover {
           background: $primary-color;
           color: $white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
       }
     }
@@ -1128,7 +1235,7 @@ const blogs = ref([
   .product-grid {
     display: grid;
     gap: 24px;
-    
+
     // 默认手机端显示 1 列
     grid-template-columns: repeat(1, 1fr);
 
@@ -1182,7 +1289,9 @@ const blogs = ref([
       overflow: hidden;
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s ease, box-shadow 0.3s ease; // 卡片整体过渡效果
+      transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease; // 卡片整体过渡效果
 
       // 悬浮动效
       &:hover {
@@ -1218,7 +1327,12 @@ const blogs = ref([
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.8) 0%,
+          rgba(0, 0, 0, 0.2) 50%,
+          transparent 100%
+        );
       }
 
       // 中心播放按钮
@@ -1324,7 +1438,8 @@ const blogs = ref([
     left: 0;
     width: 100%;
     height: 100%;
-    background: url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920') center/cover fixed; // 视差效果
+    background: url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920')
+      center/cover fixed; // 视差效果
     z-index: 1;
 
     .overlay {
@@ -1399,7 +1514,8 @@ const blogs = ref([
         cursor: pointer;
         transition: all 0.3s ease;
 
-        &.active, &:hover {
+        &.active,
+        &:hover {
           background: $white;
           transform: scale(1.2);
         }
@@ -1437,12 +1553,13 @@ const blogs = ref([
       width: 65%;
       height: 80%;
       border-radius: 16px;
-      background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800') center/cover;
+      background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800')
+        center/cover;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
       transform: rotate(6deg);
       z-index: 1;
       transition: transform 0.5s ease;
-      
+
       &:hover {
         transform: rotate(2deg) scale(1.02);
       }
@@ -1455,13 +1572,14 @@ const blogs = ref([
       width: 50%;
       height: 55%;
       border-radius: 12px;
-      background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600') center/cover;
+      background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600')
+        center/cover;
       border: 6px solid $white;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
       z-index: 2;
       transform: rotate(-4deg);
       transition: transform 0.5s ease;
-      
+
       &:hover {
         transform: rotate(-1deg) scale(1.05);
       }
@@ -1500,7 +1618,7 @@ const blogs = ref([
       background-color: #111; // 黑色背景
       color: $white;
       border: none;
-      
+
       &:hover {
         background-color: #333;
         .icon-right {
@@ -1523,16 +1641,16 @@ const blogs = ref([
   max-width: $max-width;
   .section-header {
     margin-bottom: 40px;
-    
+
     .section-title {
       font-size: 32px;
       margin-bottom: 8px;
-      
+
       @media (min-width: $bp-md) {
         font-size: 40px;
       }
     }
-    
+
     .subtitle {
       color: $text-light;
       font-size: 16px;
@@ -1563,7 +1681,7 @@ const blogs = ref([
         background: $secondary-color;
         color: $white;
       }
-      
+
       // 移动端隐藏按钮，改用滑动
       @media (max-width: $bp-lg) {
         display: none;
@@ -1577,7 +1695,9 @@ const blogs = ref([
       padding: 20px 0;
       scroll-snap-type: x mandatory;
       scrollbar-width: none; // Firefox
-      &::-webkit-scrollbar { display: none; } // Chrome/Safari
+      &::-webkit-scrollbar {
+        display: none;
+      } // Chrome/Safari
       flex: 1;
 
       .review-card {
@@ -1614,7 +1734,7 @@ const blogs = ref([
             display: flex;
             gap: 4px;
             color: #ffc107; // 星星黄色
-            
+
             .star-icon {
               width: 16px;
               height: 16px;
@@ -1691,7 +1811,7 @@ const blogs = ref([
   .blog-grid {
     display: grid;
     gap: 24px;
-    
+
     @media (min-width: $bp-lg) {
       grid-template-columns: 1.5fr 1fr; // 左侧大图，右侧列表
     }
@@ -1708,7 +1828,7 @@ const blogs = ref([
         font-size: 12px;
         margin-bottom: 12px;
         align-items: center;
-        
+
         .meta-icon {
           width: 14px;
           height: 14px;
@@ -1752,7 +1872,11 @@ const blogs = ref([
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+          background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.8) 0%,
+            transparent 100%
+          );
         }
 
         .blog-content {
@@ -1775,7 +1899,9 @@ const blogs = ref([
 
         .read-more {
           color: $white;
-          &:hover { color: $secondary-color; }
+          &:hover {
+            color: $secondary-color;
+          }
         }
 
         &:hover .bg-img {
@@ -1789,7 +1915,9 @@ const blogs = ref([
         flex-direction: column;
         background: $white;
         border: 1px solid $border-color;
-        transition: box-shadow 0.3s ease, transform 0.3s ease;
+        transition:
+          box-shadow 0.3s ease,
+          transform 0.3s ease;
         height: 100%;
 
         @media (min-width: $bp-md) {
@@ -1806,7 +1934,7 @@ const blogs = ref([
         }
 
         &:hover {
-          box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
           transform: translateY(-4px);
         }
 
@@ -1844,7 +1972,9 @@ const blogs = ref([
 
           .read-more {
             color: $text-color;
-            &:hover { color: $secondary-color; }
+            &:hover {
+              color: $secondary-color;
+            }
           }
         }
 
@@ -1853,7 +1983,7 @@ const blogs = ref([
         }
       }
     }
-    
+
     .blog-side {
       display: flex;
       flex-direction: column;

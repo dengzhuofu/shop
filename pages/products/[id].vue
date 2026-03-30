@@ -16,17 +16,27 @@
           <div class="media-sticky-wrapper">
             <div class="main-image-container">
               <!-- 左上角和右上角的徽章 -->
-              <div class="tags-left" v-if="product.tags && product.tags.includes('NEW')">
+              <div
+                class="tags-left"
+                v-if="product.tags && product.tags.includes('NEW')"
+              >
                 <span class="tag-label new">NEW</span>
               </div>
-              <div class="tags-right" v-if="product.tags && product.tags.includes('Spring Sale')">
+              <div
+                class="tags-right"
+                v-if="product.tags && product.tags.includes('Spring Sale')"
+              >
                 <div class="spring-sale-badge">
-                  <span class="text">Spring<br>Sale</span>
+                  <span class="text">Spring<br />Sale</span>
                 </div>
               </div>
 
               <!-- 主图 -->
-              <img :src="product.images[activeImageIndex]" :alt="product.title" class="main-image" />
+              <img
+                :src="product.images[activeImageIndex]"
+                :alt="product.title"
+                class="main-image"
+              />
 
               <!-- App 预览图标 -->
               <!-- <img v-if="product.appImage" :src="product.appImage" class="app-preview" alt="App Support" /> -->
@@ -38,9 +48,17 @@
                 <ChevronLeftIcon />
               </button>
               <div class="thumbs-list">
-                <button v-for="(img, index) in product.images" :key="index" class="thumbnail-btn"
-                  :class="{ 'is-active': activeImageIndex === index }" @click="activeImageIndex = index">
-                  <img :src="img" :alt="`${product.title} thumbnail ${index + 1}`" />
+                <button
+                  v-for="(img, index) in product.images"
+                  :key="index"
+                  class="thumbnail-btn"
+                  :class="{ 'is-active': activeImageIndex === index }"
+                  @click="activeImageIndex = index"
+                >
+                  <img
+                    :src="img"
+                    :alt="`${product.title} thumbnail ${index + 1}`"
+                  />
                 </button>
               </div>
               <button class="nav-btn next">
@@ -60,7 +78,11 @@
 
             <!-- 核心参数区 -->
             <div class="key-specs">
-              <div class="spec-item" v-for="spec in product.specs" :key="spec.label">
+              <div
+                class="spec-item"
+                v-for="spec in product.specs"
+                :key="spec.label"
+              >
                 <component :is="spec.icon" class="spec-icon" />
                 <div class="spec-text">
                   <span class="value">{{ spec.value }}</span>
@@ -85,34 +107,56 @@
           <div class="price-review-row">
             <div class="price-area">
               <span class="current-price">${{ product.price }}</span>
-              <span class="old-price" v-if="product.compareAtPrice">${{ product.compareAtPrice }}</span>
+              <span class="old-price" v-if="product.compareAtPrice"
+                >${{ product.compareAtPrice }}</span
+              >
               <span class="save-badge" v-if="product.compareAtPrice">
                 Save ${{ (product.compareAtPrice - product.price).toFixed(2) }}
               </span>
             </div>
           </div>
 
-          <div class="review-stars">
+          <div
+            class="review-stars"
+            @click="scrollToReviews"
+            style="cursor: pointer"
+          >
             <div class="stars">
-              <StarIcon v-for="i in 5" :key="i" class="star-icon filled" />
+              <template v-for="i in 5" :key="i">
+                <StarIcon
+                  v-if="i <= Math.round(reviewSummary.averageRating)"
+                  class="star-icon filled"
+                />
+                <StarIcon v-else class="star-icon" />
+              </template>
             </div>
-            <span class="review-count">61 reviews</span>
+            <span class="review-count"
+              >{{ reviewSummary.totalReviews }} reviews</span
+            >
           </div>
 
           <!-- 分期付款提示 -->
           <div class="installment-info">
-            <p>4 interest-free installments, or from <strong>$44.23</strong>/mo with <span class="shop-pay">shop
-                pay</span> <a href="#" class="check-link">Check your purchasing power</a></p>
+            <p>
+              4 interest-free installments, or from <strong>$44.23</strong>/mo
+              with <span class="shop-pay">shop pay</span>
+              <a href="#" class="check-link">Check your purchasing power</a>
+            </p>
           </div>
 
           <!-- 规格选择 (Variants) -->
           <div class="variant-selectors">
             <!-- 款式 (Style) 选择 -->
-            <div class="selector-group" v-if="product.styles && product.styles.length">
-              <p class="selector-label">Style: <strong>{{ selectedStyle }}</strong></p>
+            <div
+              class="selector-group"
+              v-if="product.styles && product.styles.length"
+            >
+              <p class="selector-label">
+                Style: <strong>{{ selectedStyle }}</strong>
+              </p>
               <div class="options-list">
-                <button 
-                  v-for="style in product.styles" 
+                <button
+                  v-for="style in product.styles"
                   :key="style"
                   class="text-btn"
                   :class="{ 'is-active': selectedStyle === style }"
@@ -124,11 +168,16 @@
             </div>
 
             <!-- 套餐/数量 (Buy More Save More) 选择 -->
-            <div class="selector-group" v-if="product.bundles && product.bundles.length">
-              <p class="selector-label">Buy More Save More: <strong>{{ selectedBundle }}</strong></p>
+            <div
+              class="selector-group"
+              v-if="product.bundles && product.bundles.length"
+            >
+              <p class="selector-label">
+                Buy More Save More: <strong>{{ selectedBundle }}</strong>
+              </p>
               <div class="options-list">
-                <button 
-                  v-for="bundle in product.bundles" 
+                <button
+                  v-for="bundle in product.bundles"
                   :key="bundle"
                   class="text-btn"
                   :class="{ 'is-active': selectedBundle === bundle }"
@@ -140,11 +189,21 @@
             </div>
 
             <!-- 颜色选择 (保留原有逻辑，如果有颜色配置的话) -->
-            <div class="selector-group" v-if="product.colors && product.colors.length">
-              <p class="selector-label">Color: <strong>{{ selectedColor }}</strong></p>
+            <div
+              class="selector-group"
+              v-if="product.colors && product.colors.length"
+            >
+              <p class="selector-label">
+                Color: <strong>{{ selectedColor }}</strong>
+              </p>
               <div class="color-options">
-                <button v-for="color in product.colors" :key="color.name" class="color-btn"
-                  :class="{ 'is-active': selectedColor === color.name }" @click="selectedColor = color.name">
+                <button
+                  v-for="color in product.colors"
+                  :key="color.name"
+                  class="color-btn"
+                  :class="{ 'is-active': selectedColor === color.name }"
+                  @click="selectedColor = color.name"
+                >
                   <img :src="color.thumbnail" :alt="color.name" />
                 </button>
               </div>
@@ -157,12 +216,23 @@
               <button class="qty-btn" @click="quantity > 1 && quantity--">
                 <MinusIcon class="icon" />
               </button>
-              <input type="number" v-model="quantity" min="1" class="qty-input" />
+              <input
+                type="number"
+                v-model="quantity"
+                min="1"
+                class="qty-input"
+              />
               <button class="qty-btn" @click="quantity++">
                 <PlusIcon class="icon" />
               </button>
             </div>
-            <button class="btn-add-to-cart">Add to cart</button>
+            <button
+              class="btn-add-to-cart"
+              @click="addToCart"
+              :disabled="isAddingToCart"
+            >
+              {{ isAddingToCart ? 'Adding...' : 'Add to cart' }}
+            </button>
           </div>
 
           <!-- 促销配件 (Upsell) -->
@@ -171,7 +241,11 @@
               <ZapIcon class="icon-zap" /> Spring Sale
             </h3>
 
-            <div class="upsell-item" v-for="item in product.upsells" :key="item.id">
+            <div
+              class="upsell-item"
+              v-for="item in product.upsells"
+              :key="item.id"
+            >
               <div class="item-info">
                 <img :src="item.image" :alt="item.name" class="item-img" />
                 <span class="item-name">{{ item.name }}</span>
@@ -204,13 +278,25 @@
           <!-- 折叠信息面板 (Accordions) -->
           <div class="accordion-group">
             <!-- Quick Know 面板 -->
-            <div class="accordion-item" :class="{ 'is-open': activeAccordion === 'quick-know' }">
-              <button class="accordion-header" @click="toggleAccordion('quick-know')">
+            <div
+              class="accordion-item"
+              :class="{ 'is-open': activeAccordion === 'quick-know' }"
+            >
+              <button
+                class="accordion-header"
+                @click="toggleAccordion('quick-know')"
+              >
                 <span>Quick Know</span>
-                <ChevronUpIcon v-if="activeAccordion === 'quick-know'" class="icon" />
+                <ChevronUpIcon
+                  v-if="activeAccordion === 'quick-know'"
+                  class="icon"
+                />
                 <ChevronDownIcon v-else class="icon" />
               </button>
-              <div class="accordion-content" v-show="activeAccordion === 'quick-know'">
+              <div
+                class="accordion-content"
+                v-show="activeAccordion === 'quick-know'"
+              >
                 <ul class="feature-list">
                   <li v-for="(feature, index) in product.features" :key="index">
                     <CheckSquareIcon class="icon-check" />
@@ -221,15 +307,31 @@
             </div>
 
             <!-- Specification 面板 -->
-            <div class="accordion-item" :class="{ 'is-open': activeAccordion === 'specification' }">
-              <button class="accordion-header" @click="toggleAccordion('specification')">
+            <div
+              class="accordion-item"
+              :class="{ 'is-open': activeAccordion === 'specification' }"
+            >
+              <button
+                class="accordion-header"
+                @click="toggleAccordion('specification')"
+              >
                 <span>Specification</span>
-                <ChevronUpIcon v-if="activeAccordion === 'specification'" class="icon" />
+                <ChevronUpIcon
+                  v-if="activeAccordion === 'specification'"
+                  class="icon"
+                />
                 <ChevronDownIcon v-else class="icon" />
               </button>
-              <div class="accordion-content" v-show="activeAccordion === 'specification'">
+              <div
+                class="accordion-content"
+                v-show="activeAccordion === 'specification'"
+              >
                 <div class="specs-table">
-                  <div class="spec-row" v-for="spec in product.specs" :key="spec.label">
+                  <div
+                    class="spec-row"
+                    v-for="spec in product.specs"
+                    :key="spec.label"
+                  >
                     <div class="spec-label">{{ spec.label }}</div>
                     <div class="spec-value">{{ spec.value }}</div>
                   </div>
@@ -238,13 +340,25 @@
             </div>
 
             <!-- What's in the Box 面板 -->
-            <div class="accordion-item" :class="{ 'is-open': activeAccordion === 'in-the-box' }">
-              <button class="accordion-header" @click="toggleAccordion('in-the-box')">
+            <div
+              class="accordion-item"
+              :class="{ 'is-open': activeAccordion === 'in-the-box' }"
+            >
+              <button
+                class="accordion-header"
+                @click="toggleAccordion('in-the-box')"
+              >
                 <span>What's in the Box</span>
-                <ChevronUpIcon v-if="activeAccordion === 'in-the-box'" class="icon" />
+                <ChevronUpIcon
+                  v-if="activeAccordion === 'in-the-box'"
+                  class="icon"
+                />
                 <ChevronDownIcon v-else class="icon" />
               </button>
-              <div class="accordion-content" v-show="activeAccordion === 'in-the-box'">
+              <div
+                class="accordion-content"
+                v-show="activeAccordion === 'in-the-box'"
+              >
                 <ul class="box-list">
                   <li>1 x S Nova Pro Electric Scooter</li>
                   <li>1 x Charger</li>
@@ -255,32 +369,62 @@
             </div>
 
             <!-- User Manual 面板 -->
-            <div class="accordion-item" :class="{ 'is-open': activeAccordion === 'manual' }">
-              <button class="accordion-header" @click="toggleAccordion('manual')">
+            <div
+              class="accordion-item"
+              :class="{ 'is-open': activeAccordion === 'manual' }"
+            >
+              <button
+                class="accordion-header"
+                @click="toggleAccordion('manual')"
+              >
                 <span>User Manual</span>
-                <ChevronUpIcon v-if="activeAccordion === 'manual'" class="icon" />
+                <ChevronUpIcon
+                  v-if="activeAccordion === 'manual'"
+                  class="icon"
+                />
                 <ChevronDownIcon v-else class="icon" />
               </button>
-              <div class="accordion-content" v-show="activeAccordion === 'manual'">
+              <div
+                class="accordion-content"
+                v-show="activeAccordion === 'manual'"
+              >
                 <a href="#" class="download-link">Download PDF Manual</a>
               </div>
             </div>
 
             <!-- Shipping 面板 -->
-            <div class="accordion-item" :class="{ 'is-open': activeAccordion === 'shipping' }">
-              <button class="accordion-header" @click="toggleAccordion('shipping')">
+            <div
+              class="accordion-item"
+              :class="{ 'is-open': activeAccordion === 'shipping' }"
+            >
+              <button
+                class="accordion-header"
+                @click="toggleAccordion('shipping')"
+              >
                 <span>Fast, Trusted Shipping</span>
-                <ChevronUpIcon v-if="activeAccordion === 'shipping'" class="icon" />
+                <ChevronUpIcon
+                  v-if="activeAccordion === 'shipping'"
+                  class="icon"
+                />
                 <ChevronDownIcon v-else class="icon" />
               </button>
-              <div class="accordion-content" v-show="activeAccordion === 'shipping'">
-                <p class="shipping-text">We offer free shipping on all electric scooters. Orders are processed within 24
-                  hours and typically delivered within 3-5 business days via UPS or FedEx.</p>
+              <div
+                class="accordion-content"
+                v-show="activeAccordion === 'shipping'"
+              >
+                <p class="shipping-text">
+                  We offer free shipping on all electric scooters. Orders are
+                  processed within 24 hours and typically delivered within 3-5
+                  business days via UPS or FedEx.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- 评论区组件 -->
+      <ProductReviews :summary="reviewSummary" :reviews="reviewsList" />
     </div>
 
     <!-- 底部悬浮购物车栏 (Sticky Add to Cart) -->
@@ -296,7 +440,9 @@
         <div class="sticky-actions">
           <div class="price-area">
             <span class="current-price">${{ product.price }}</span>
-            <span class="old-price" v-if="product.compareAtPrice">${{ product.compareAtPrice }}</span>
+            <span class="old-price" v-if="product.compareAtPrice"
+              >${{ product.compareAtPrice }}</span
+            >
           </div>
           <button class="btn-add-to-cart mini">Add to cart</button>
         </div>
@@ -306,66 +452,193 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, markRaw } from 'vue'
+import { ref, onMounted, onUnmounted, markRaw, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import {
-  CameraIcon, VideoIcon, StarIcon, MinusIcon, PlusIcon,
-  ZapIcon, InfoIcon, ChevronDownIcon, ChevronUpIcon, CheckSquareIcon,
-  ActivityIcon, BatteryIcon, NavigationIcon, ChevronLeftIcon, ChevronRightIcon
+  CameraIcon,
+  VideoIcon,
+  StarIcon,
+  MinusIcon,
+  PlusIcon,
+  ZapIcon,
+  InfoIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CheckSquareIcon,
+  ActivityIcon,
+  BatteryIcon,
+  NavigationIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from 'lucide-vue-next'
+import ProductReviews from '@/components/ProductReviews.vue'
 
-// Mock 商品数据
+const route = useRoute()
+const productId = route.params.id || 1
+
+// 动态商品数据状态
 const product = ref({
-  id: 's-nova-pro',
-  title: 'S Nova Pro Commuting Electric Scooter',
-  price: '489.99',
-  compareAtPrice: '599.99',
-  tags: ['Spring Sale'],
-  images: [
-    'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=800'
-  ],
-  appImage: 'https://via.placeholder.com/60x120?text=APP',
-  specs: [
-    { label: 'Max Power', value: '1000W', icon: markRaw(ActivityIcon) },
-    { label: 'Max Range', value: '38 Miles', icon: markRaw(NavigationIcon) },
-    { label: 'Top Speed', value: '28 MPH', icon: markRaw(ActivityIcon) },
-    { label: 'Battery Capacity', value: '48V 13Ah', icon: markRaw(BatteryIcon) },
-    { label: 'Charging Time', value: '6-7 Hours', icon: markRaw(BatteryIcon) },
-    { label: 'Max Load', value: '264 Lbs', icon: markRaw(ActivityIcon) }
-  ],
-  styles: ['2026 Upgraded Edition'],
-  bundles: ['S9 Pro*1', 'S9 Pro*2'],
-  colors: [], // 原图里没有颜色选择，暂时清空
-  upsells: [
-    { id: 1, name: 'Cable Lock for Escooter', image: 'https://via.placeholder.com/80x80?text=Lock', value: '35.99' },
-    { id: 2, name: '14-Day Free Trial', image: 'https://via.placeholder.com/80x80?text=Trial', value: '75.99' },
-    { id: 3, name: 'One Year Warranty', image: 'https://via.placeholder.com/80x80?text=Warranty', value: '73.99' }
-  ],
-  features: [
-    '<strong>1000W</strong> Max Power, Max Speed <strong>28 MPH</strong>. <strong>30%</strong> Hill Climbing',
-    '<strong>48V 13Ah</strong> Battery, <strong>38 Miles</strong> Max Range, <strong>6-7H</strong> Charging Time',
-    '<strong>10 inch</strong> Pneumatic Tire, Front and Rear <strong>Dual Suspension</strong>, <strong>Disc Brake</strong>, Easy to <strong>Fold</strong>',
-    '<strong>ALUMINUM</strong> Frame, <strong>264Lbs</strong> Max Load',
-    'Bright <strong>Headlight, Multi-Color Ambient Light</strong> and Smart Turn Signals',
-    'Safety Certified: Brand New <strong>App Supported, 365-day</strong> Quality Assurance'
-  ]
+  id: '',
+  title: '',
+  price: 0,
+  compareAtPrice: 0,
+  tags: [],
+  images: [],
+  appImage: '',
+  specs: [],
+  styles: [],
+  bundles: [],
+  colors: [],
+  upsells: [],
+  features: [],
 })
 
+// 评论数据状态
+const reviewSummary = ref({
+  averageRating: 0,
+  totalReviews: 0,
+  ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+})
+
+const reviewsList = ref([])
+
 const activeImageIndex = ref(0)
-const selectedStyle = ref('2026 Upgraded Edition')
-const selectedBundle = ref('S9 Pro*1')
+const selectedStyle = ref('')
+const selectedBundle = ref('')
 const selectedColor = ref('')
 const quantity = ref(1)
-const activeAccordion = ref('quick-know') // 默认展开第一个面板
+const activeAccordion = ref('quick-know')
+const isAddingToCart = ref(false)
+
+const addToCart = async () => {
+  if (!product.value.id) return
+
+  isAddingToCart.value = true
+  try {
+    const res = await useHttp('/api/cart/add', {
+      method: 'POST',
+      body: {
+        productId: product.value.id,
+        skuId: 1, // 这里假设默认规格，实际应根据 selectedStyle/Bundle 获取真实的 skuId
+        quantity: quantity.value,
+      },
+    })
+
+    if (res && res.code === 200) {
+      alert('Successfully added to cart')
+      // 可选：触发打开购物车侧边栏
+    } else {
+      alert(res?.message || 'Failed to add to cart')
+    }
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+    alert('Failed to add to cart, please login first.')
+  } finally {
+    isAddingToCart.value = false
+  }
+}
 
 const toggleAccordion = (panelName) => {
   if (activeAccordion.value === panelName) {
-    activeAccordion.value = null // 如果点击已展开的，则收起
+    activeAccordion.value = null
   } else {
-    activeAccordion.value = panelName // 展开新的
+    activeAccordion.value = panelName
+  }
+}
+
+// 映射图标字符串到实际组件
+const getIconComponent = (iconName) => {
+  const icons = {
+    ActivityIcon,
+    NavigationIcon,
+    BatteryIcon,
+  }
+  return icons[iconName] ? markRaw(icons[iconName]) : null
+}
+
+const fetchProductData = async () => {
+  try {
+    const res = await useHttp(`/api/product/${productId}?lang=en`)
+    if (res && res.code === 200 && res.data) {
+      const data = res.data
+      product.value = {
+        id: data.id,
+        title: data.title,
+        price: data.price,
+        compareAtPrice: data.compareAtPrice,
+        tags: data.tags || [],
+        images: data.images || [],
+        appImage: data.appImage || '',
+        specs: (data.specs || []).map((s) => ({
+          ...s,
+          icon: getIconComponent(s.icon),
+        })),
+        upsells: data.upsells || [],
+        features: data.quickKnow ? JSON.parse(data.quickKnow) : [],
+        // 从 skuList 解析可选项 (简易处理)
+        styles: data.skuList
+          ? [
+              ...new Set(
+                data.skuList
+                  .map((sku) => JSON.parse(sku.specs || '{}').en?.Style)
+                  .filter(Boolean),
+              ),
+            ]
+          : [],
+        bundles: data.skuList
+          ? [
+              ...new Set(
+                data.skuList
+                  .map((sku) => JSON.parse(sku.specs || '{}').en?.Bundle)
+                  .filter(Boolean),
+              ),
+            ]
+          : [],
+        colors: [],
+      }
+
+      if (product.value.styles.length > 0)
+        selectedStyle.value = product.value.styles[0]
+      if (product.value.bundles.length > 0)
+        selectedBundle.value = product.value.bundles[0]
+    }
+  } catch (error) {
+    console.error('Failed to fetch product data:', error)
+  }
+}
+
+const fetchReviews = async () => {
+  try {
+    const summaryRes = await useHttp(`/api/review/product/${productId}/summary`)
+    if (summaryRes && summaryRes.code === 200 && summaryRes.data) {
+      reviewSummary.value = summaryRes.data
+    }
+
+    const listRes = await useHttp(
+      `/api/review/product/${productId}?pageNum=1&pageSize=10`,
+    )
+    if (
+      listRes &&
+      listRes.code === 200 &&
+      listRes.data &&
+      listRes.data.records
+    ) {
+      reviewsList.value = listRes.data.records
+    }
+  } catch (error) {
+    console.error('Failed to fetch reviews:', error)
+  }
+}
+
+onMounted(() => {
+  fetchProductData()
+  fetchReviews()
+})
+
+const scrollToReviews = () => {
+  const reviewsEl = document.getElementById('customer-reviews')
+  if (reviewsEl) {
+    reviewsEl.scrollIntoView({ behavior: 'smooth' })
   }
 }
 </script>
@@ -741,9 +1014,19 @@ const toggleAccordion = (panelName) => {
   }
 
   .installment-info {
-    font-size: 13px; color: #555; background: #f9f9f9; padding: 12px 16px; border-radius: 8px;
-    .shop-pay { color: #5a31f4; font-weight: bold; }
-    .check-link { color: #666; text-decoration: underline; }
+    font-size: 13px;
+    color: #555;
+    background: #f9f9f9;
+    padding: 12px 16px;
+    border-radius: 8px;
+    .shop-pay {
+      color: #5a31f4;
+      font-weight: bold;
+    }
+    .check-link {
+      color: #666;
+      text-decoration: underline;
+    }
   }
 
   // 规格选择
@@ -754,16 +1037,19 @@ const toggleAccordion = (panelName) => {
     margin-top: 10px;
 
     .selector-group {
-      .selector-label { 
-        font-size: 14px; 
-        margin-bottom: 12px; 
-        color: #333; 
-        strong { font-weight: 600; color: #111; }
+      .selector-label {
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: #333;
+        strong {
+          font-weight: 600;
+          color: #111;
+        }
       }
 
       .options-list {
-        display: flex; 
-        flex-wrap: wrap; 
+        display: flex;
+        flex-wrap: wrap;
         gap: 12px;
 
         .text-btn {
@@ -790,12 +1076,26 @@ const toggleAccordion = (panelName) => {
       }
 
       .color-options {
-        display: flex; gap: 12px;
+        display: flex;
+        gap: 12px;
         .color-btn {
-          width: 60px; height: 60px; border-radius: 8px; border: 2px solid #eee; padding: 2px;
-          background: #fff; cursor: pointer; transition: all 0.2s;
-          img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
-          &.is-active { border-color: #111; }
+          width: 60px;
+          height: 60px;
+          border-radius: 8px;
+          border: 2px solid #eee;
+          padding: 2px;
+          background: #fff;
+          cursor: pointer;
+          transition: all 0.2s;
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+          }
+          &.is-active {
+            border-color: #111;
+          }
         }
       }
     }
@@ -1144,8 +1444,7 @@ const toggleAccordion = (panelName) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-  max-width: 1440px;
-
+    max-width: 1440px;
 
     .product-mini-info {
       display: flex;
@@ -1203,22 +1502,19 @@ const toggleAccordion = (panelName) => {
 
       .btn-add-to-cart.mini {
         padding: 15px;
-           flex: 1;
-      background: #111;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 700;
-      border-radius: 30px;
-      transition: all 0.3s;
+        flex: 1;
+        background: #111;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        border-radius: 30px;
+        transition: all 0.3s;
 
-      &:hover {
-        background: #333;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-    
-
-
+        &:hover {
+          background: #333;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
       }
     }
   }

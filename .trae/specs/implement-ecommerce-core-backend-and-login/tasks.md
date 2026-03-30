@@ -1,0 +1,20 @@
+# Tasks
+- [x] Task 1: 搭建后端 Spring Boot 工程
+  - [x] SubTask 1.1: 初始化 Spring Boot 3.2.4 工程，配置 PostgreSQL 17 数据源。
+  - [x] SubTask 1.2: 集成 MyBatis-Plus 和 Jackson。
+  - [x] SubTask 1.3: 集成 Sa-Token 进行认证鉴权配置。
+- [x] Task 2: 数据库表设计与实体类生成
+  - [x] SubTask 2.1: 设计用户表、商品表、商品规格表、购物车表、订单表。
+  - [x] SubTask 2.2: 使用 MyBatis-Plus 生成对应的 Entity, Mapper, Service 层代码。
+- [x] Task 3: 实现用户鉴权模块
+  - [x] SubTask 3.1: 实现用户登录 API。
+  - [x] SubTask 3.2: 配置 Sa-Token 全局拦截器进行接口鉴权。
+- [x] Task 4: 实现商品模块接口
+  - [x] SubTask 4.1: 实现获取商品列表接口（支持分页）。
+  - [x] SubTask 4.2: 实现获取商品详情及 SKU 规格接口。
+- [x] Task 5: 实现购物车与订单接口
+  - [x] SubTask 5.1: 实现加入购物车、获取购物车列表接口。
+  - [x] SubTask 5.2: 实现立即购买（生成订单）接口。
+- [x] Task 6: 前端登录页面开发
+  - [x] SubTask 6.1: 在前端 Nuxt 项目中创建 `pages/login.vue`。
+  - [x] SubTask 6.2: 按照现有黑绿主题设计登录 UI 并对接登录 API。

@@ -19,21 +19,17 @@
 
         <!-- 购物车商品列表 -->
         <div class="cart-body">
-          <div class="cart-items">
-            <!-- 示例商品 1 -->
-            <div class="cart-item" v-for="item in mockItems" :key="item.id">
+          <div class="cart-items" v-if="cartItems.length > 0">
+            <div class="cart-item" v-for="item in cartItems" :key="item.id">
               <div class="item-image">
-                <img :src="item.image" :alt="item.title" />
+                <!-- Fallback image since OmsCartItem doesn't store pic directly -->
+                <img :src="'https://via.placeholder.com/150'" alt="Product Image" />
               </div>
               <div class="item-details">
-                <h3 class="title">{{ item.title }}</h3>
+                <h3 class="title">Product ID: {{ item.productId }}</h3>
                 <div class="price-row">
-                  <span class="old-price">${{ item.compareAtPrice }}</span>
-                  <span class="current-price">${{ item.price }}</span>
-                </div>
-                <div class="bundle-sale">
-                  <span class="tag">10% Bundle Sale</span>
-                  <span class="discount-amount">-${{ item.discount }}</span>
+                  <!-- Need API to join product details for price and name -->
+                  <span class="current-price">SKU ID: {{ item.skuId }}</span>
                 </div>
               </div>
               <div class="item-actions">
@@ -47,6 +43,9 @@
                 <button class="btn-remove">Remove</button>
               </div>
             </div>
+          </div>
+          <div v-else class="empty-cart">
+            <p>Your cart is currently empty.</p>
           </div>
         </div>
 
@@ -98,7 +97,8 @@
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
+import { useHttp } from '~/composables/useHttp'
 
 const props = defineProps({
   isOpen: {
@@ -113,44 +113,28 @@ const close = () => {
   emit('close')
 }
 
-// 阻止背景滚动
+const cartItems = ref([])
+
+const fetchCartItems = async () => {
+  try {
+    const res = await useHttp('/api/cart/list')
+    if (res && res.code === 200) {
+      cartItems.value = res.data || []
+    }
+  } catch (error) {
+    console.error('Failed to fetch cart items:', error)
+  }
+}
+
+// 阻止背景滚动并获取数据
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     document.body.style.overflow = 'hidden'
+    fetchCartItems()
   } else {
     document.body.style.overflow = ''
   }
 })
-
-const mockItems = [
-  {
-    id: 1,
-    title: 'isinwheel S10Max 1000W High-End Commuting Electric Scooter 2026 Upgraded Version',
-    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=150',
-    price: '558.00',
-    compareAtPrice: '819.99',
-    discount: '61.99',
-    quantity: 1
-  },
-  {
-    id: 2,
-    title: 'isinwheel H7Pro 1200W High-End Commuting Electric Scooter with Seat',
-    image: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=150',
-    price: '785.00',
-    compareAtPrice: '849.99',
-    discount: '189.98',
-    quantity: 2
-  },
-  {
-    id: 3,
-    title: 'GT1 Dual Motor Off-Road Electric Scooter',
-    image: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=150',
-    price: '585.00',
-    compareAtPrice: '649.99',
-    discount: '0.00',
-    quantity: 1
-  }
-]
 </script>
 
 <style lang="scss" scoped>

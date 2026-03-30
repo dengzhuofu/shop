@@ -65,7 +65,23 @@
             <span>🇺🇸 US</span>
           </div>
           <SearchIcon class="icon" />
-          <UserIcon class="icon" />
+          
+          <!-- 用户图标与下拉菜单 -->
+          <div class="user-menu-wrapper" @mouseenter="userMenuOpen = true" @mouseleave="userMenuOpen = false">
+            <UserIcon class="icon" @click="handleUserClick" />
+            <div class="user-dropdown" v-show="userMenuOpen">
+              <template v-if="isLoggedIn">
+                <NuxtLink to="/account/orders" class="dropdown-item">My Orders</NuxtLink>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item text-danger" @click="handleLogout">Logout</button>
+              </template>
+              <template v-else>
+                <NuxtLink to="/login" class="dropdown-item">Login</NuxtLink>
+                <NuxtLink to="/register" class="dropdown-item">Register</NuxtLink>
+              </template>
+            </div>
+          </div>
+
           <div class="cart-icon" @click="openCartSidebar">
             <ShoppingCartIcon class="icon" />
             <span class="cart-count">3</span>
@@ -106,9 +122,37 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, inject } from 'vue'
+import { useRouter, useCookie } from '#app'
 import { SearchIcon, UserIcon, ShoppingCartIcon } from 'lucide-vue-next'
 import NavMegaMenu from '~/components/NavMegaMenu.vue'
 import NavDropdown from '~/components/NavDropdown.vue'
+import { useHttp } from '~/composables/useHttp'
+
+const router = useRouter()
+const tokenCookie = useCookie('token')
+
+const isLoggedIn = computed(() => !!tokenCookie.value)
+const userMenuOpen = ref(false)
+
+const handleUserClick = () => {
+  if (isLoggedIn.value) {
+    router.push('/account/orders')
+  } else {
+    router.push('/login')
+  }
+}
+
+const handleLogout = async () => {
+  try {
+    await useHttp('/api/auth/logout', { method: 'POST' })
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    tokenCookie.value = null
+    userMenuOpen.value = false
+    router.push('/login')
+  }
+}
 
 const openCartSidebar = inject('openCartSidebar', () => {
   console.warn('openCartSidebar not provided')
@@ -505,6 +549,57 @@ const supportLinks = [
         cursor: pointer;
         &:hover {
           color: #58cc02;
+        }
+      }
+
+      .user-menu-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 100%;
+
+        .user-dropdown {
+          position: absolute;
+          top: 30px;
+          right: -10px;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          min-width: 150px;
+          padding: 8px 0;
+          z-index: 100;
+
+          .dropdown-item {
+            display: block;
+            padding: 10px 20px;
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: none;
+
+            &:hover {
+              background-color: #f5f5f5;
+              color: #58cc02;
+            }
+
+            &.text-danger {
+              color: #e62332;
+              &:hover {
+                background-color: #ffebee;
+              }
+            }
+          }
+
+          .dropdown-divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 4px 0;
+          }
         }
       }
 

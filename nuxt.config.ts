@@ -19,7 +19,7 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       failOnError: false,
-    },
+    }
   },
 
   devtools: { enabled: true },
@@ -35,6 +35,15 @@ export default defineNuxtConfig({
         scss: {
           additionalData: '@use "@/assets/styles/_variables.scss" as *;'
         }
+      }
+    },
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
       }
     }
   },

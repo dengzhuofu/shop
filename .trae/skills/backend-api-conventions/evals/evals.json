@@ -1,0 +1,10 @@
+{
+  "skill_name": "backend-api-conventions",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new Spring Boot REST Controller for managing User Addresses. It should have a method to get a paginated list of addresses and a method to add a new address. Make sure to follow the project's backend conventions.",
+      "expected_output": "A Java controller class that uses Result<T> for responses, Page<VO> for pagination, DTOs for input, VO for output, StpUtil for auth, Swagger annotations, and no @CrossOrigin annotations."
+    }
+  ]
+}
