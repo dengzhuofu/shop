@@ -5,7 +5,10 @@ import com.shop.common.LanguageContext;
 import com.shop.entity.PmsProduct;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -22,8 +25,10 @@ public class ProductVO {
   private Object images;
   private String appImage;
   private Object specs;
-  private String quickKnow; // 富文本
+  private Object quickKnow;
   private Object upsells;
+  private Object skuAttributeOptions;
+  private Object skuAttributeDisplayOptions;
 
   private List<SkuVO> skuList;
 
@@ -39,7 +44,7 @@ public class ProductVO {
     String lang = LanguageContext.getLanguage();
     vo.setTitle(extractLang(product.getName(), lang));
     vo.setDescription(extractLang(product.getDescription(), lang));
-    vo.setQuickKnow(extractLang(product.getQuickKnow(), lang));
+    vo.setQuickKnow(extractLangObject(product.getQuickKnow(), lang));
 
     // Multi-language JSON fields handling
     vo.setTags(extractLangObject(product.getTags(), lang));
@@ -49,6 +54,8 @@ public class ProductVO {
 
     if (skus != null) {
       vo.setSkuList(skus.stream().map(SkuVO::from).collect(Collectors.toList()));
+      vo.setSkuAttributeOptions(buildSkuAttributeOptions(vo.getSkuList()));
+      vo.setSkuAttributeDisplayOptions(buildSkuAttributeDisplayOptions(vo.getSkuList()));
     }
     return vo;
   }
@@ -79,5 +86,39 @@ public class ProductVO {
     }
     // If it's a regular array or object without localization at root
     return node;
+  }
+
+  private static Map<String, List<String>> buildSkuAttributeOptions(List<SkuVO> skuList) {
+    Map<String, List<String>> options = new LinkedHashMap<>();
+    for (SkuVO sku : skuList) {
+      if (sku.getAttributes() instanceof Map<?, ?> attributesMap) {
+        for (Map.Entry<?, ?> entry : attributesMap.entrySet()) {
+          String key = String.valueOf(entry.getKey());
+          String value = String.valueOf(entry.getValue());
+          options.putIfAbsent(key, new ArrayList<>());
+          if (!options.get(key).contains(value)) {
+            options.get(key).add(value);
+          }
+        }
+      }
+    }
+    return options;
+  }
+
+  private static Map<String, List<String>> buildSkuAttributeDisplayOptions(List<SkuVO> skuList) {
+    Map<String, List<String>> options = new LinkedHashMap<>();
+    for (SkuVO sku : skuList) {
+      if (sku.getAttributeDisplay() instanceof Map<?, ?> displayMap) {
+        for (Map.Entry<?, ?> entry : displayMap.entrySet()) {
+          String key = String.valueOf(entry.getKey());
+          String value = String.valueOf(entry.getValue());
+          options.putIfAbsent(key, new ArrayList<>());
+          if (!options.get(key).contains(value)) {
+            options.get(key).add(value);
+          }
+        }
+      }
+    }
+    return options;
   }
 }

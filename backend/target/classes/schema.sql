@@ -48,6 +48,25 @@ CREATE TABLE oms_cart_item (
     product_id BIGINT NOT NULL,
     sku_id BIGINT,
     quantity INT NOT NULL DEFAULT 1,
+    selected_attributes_snapshot JSONB,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 用户地址表
+CREATE TABLE ums_user_address (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    country VARCHAR(64) NOT NULL DEFAULT 'United States',
+    first_name VARCHAR(64),
+    last_name VARCHAR(64),
+    phone VARCHAR(32),
+    address_line1 VARCHAR(255) NOT NULL,
+    address_line2 VARCHAR(255),
+    city VARCHAR(64),
+    state VARCHAR(64),
+    zip_code VARCHAR(32),
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -62,7 +81,22 @@ CREATE TABLE oms_order (
     receiver_name VARCHAR(100),
     receiver_phone VARCHAR(32),
     receiver_address VARCHAR(255),
+    receiver_country VARCHAR(64),
+    receiver_first_name VARCHAR(64),
+    receiver_last_name VARCHAR(64),
+    receiver_address_line1 VARCHAR(255),
+    receiver_address_line2 VARCHAR(255),
+    receiver_city VARCHAR(64),
+    receiver_state VARCHAR(64),
+    receiver_zip_code VARCHAR(32),
     pay_type INT, -- 1: Alipay, 2: Wechat, 3: Credit Card, 4: PayPal
+    payment_method VARCHAR(32),
+    pay_status INT NOT NULL DEFAULT 0, -- 0: 未支付, 1: 已支付, 2: 支付失败
+    pay_txn_no VARCHAR(64),
+    checkout_source VARCHAR(16) DEFAULT 'cart',
+    shipping_method VARCHAR(128),
+    discount_amount DECIMAL(10,2) DEFAULT 0,
+    shipping_amount DECIMAL(10,2) DEFAULT 0,
     pay_time TIMESTAMP,
     delivery_company VARCHAR(64),
     delivery_sn VARCHAR(64),
@@ -79,6 +113,7 @@ CREATE TABLE oms_order_item (
     product_name VARCHAR(255),
     product_pic VARCHAR(255),
     sku_code VARCHAR(100),
+    sku_attributes_snapshot JSONB,
     quantity INT NOT NULL DEFAULT 1,
     price DECIMAL(10, 2) NOT NULL,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -175,8 +210,14 @@ INSERT INTO pms_product (
 );
 
 INSERT INTO pms_sku (product_id, sku_code, price, stock, pic, description, specs) VALUES 
-(1, 'IP15P-256G-BLK', 9999.00, 50, 'https://example.com/iphone15pro-black.jpg', '{"zh": "<p>黑色版 256GB</p>", "en": "<p>Black 256GB</p>"}', '{"zh": {"颜色": "黑色", "内存": "256GB"}, "en": {"Color": "Black", "Storage": "256GB"}}'),
-(1, 'IP15P-256G-WHT', 9999.00, 50, 'https://example.com/iphone15pro-white.jpg', '{"zh": "<p>白色版 256GB</p>", "en": "<p>White 256GB</p>"}', '{"zh": {"颜色": "白色", "内存": "256GB"}, "en": {"Color": "White", "Storage": "256GB"}}');
+(1, 'S9PRO-UPGRADE-1', 279.99, 120, 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', '{"zh": "<p>2026升级款 单车</p>", "en": "<p>2026 Upgraded Edition / S9 Pro*1</p>"}', '{"style": "2026 Upgraded Edition", "bundle": "S9 Pro*1", "color": "Black"}'),
+(1, 'S9PRO-UPGRADE-2', 529.99, 80, 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', '{"zh": "<p>2026升级款 双车套装</p>", "en": "<p>2026 Upgraded Edition / S9 Pro*2</p>"}', '{"style": "2026 Upgraded Edition", "bundle": "S9 Pro*2", "color": "Black"}'),
+(1, 'S9PRO-CLASSIC-1', 259.99, 60, 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800', '{"zh": "<p>经典款 单车</p>", "en": "<p>Classic Edition / S9 Pro*1</p>"}', '{"style": "Classic Edition", "bundle": "S9 Pro*1", "color": "Gray"}');
+
+INSERT INTO ums_user_address (
+    user_id, country, first_name, last_name, phone, address_line1, address_line2, city, state, zip_code, is_default
+) VALUES
+(1, 'United States', 'John', 'Doe', '1873363854', '123 Main St', 'Apt 4B', 'New York', 'NY', '10001', TRUE);
 
 -- 插入示例评论数据
 INSERT INTO pms_review (product_id, user_id, user_name, rating, title, content, images, verified_purchase) VALUES
@@ -185,17 +226,26 @@ INSERT INTO pms_review (product_id, user_id, user_name, rating, title, content, 
 (1, NULL, 'John D.', 4, 'Great Value', 'Good product for the price. The battery life is slightly less than advertised but overall very satisfied.', '[]', TRUE);
 
 -- 插入示例订单数据
-INSERT INTO oms_order (id, user_id, order_sn, total_amount, status, receiver_name, receiver_phone, receiver_address, pay_type, create_time) VALUES
-(1, 1, 'ORD202603300001', 9999.00, 0, 'John Doe', '13800138000', '123 Tech Street, Silicon Valley, CA', 3, CURRENT_TIMESTAMP - INTERVAL '1 day'),
-(2, 1, 'ORD202603300002', 19998.00, 2, 'John Doe', '13800138000', '123 Tech Street, Silicon Valley, CA', 4, CURRENT_TIMESTAMP - INTERVAL '3 days');
+INSERT INTO oms_order (
+    id, user_id, order_sn, total_amount, status, receiver_name, receiver_phone, receiver_address,
+    receiver_country, receiver_first_name, receiver_last_name, receiver_address_line1, receiver_address_line2,
+    receiver_city, receiver_state, receiver_zip_code, pay_type, payment_method, pay_status, checkout_source,
+    shipping_method, shipping_amount, discount_amount, create_time
+) VALUES
+(1, 1, 'ORD202603300001', 279.99, 0, 'John Doe', '1873363854', '123 Main St, New York, NY',
+ 'United States', 'John', 'Doe', '123 Main St', 'Apt 4B', 'New York', 'NY', '10001', 3, 'credit_card', 0, 'cart',
+ 'UPS Ground/FedEx Home Delivery(2-5 Business Days)', 0, 0, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+(2, 1, 'ORD202603300002', 529.99, 1, 'John Doe', '1873363854', '123 Main St, New York, NY',
+ 'United States', 'John', 'Doe', '123 Main St', 'Apt 4B', 'New York', 'NY', '10001', 4, 'paypal', 1, 'direct',
+ 'UPS Ground/FedEx Home Delivery(2-5 Business Days)', 0, 0, CURRENT_TIMESTAMP - INTERVAL '3 days');
 
 -- 插入示例订单项数据
-INSERT INTO oms_order_item (order_id, product_id, sku_id, product_name, product_pic, sku_code, quantity, price) VALUES
-(1, 1, 1, 'iPhone 15 Pro', 'https://example.com/iphone15pro-black.jpg', 'IP15P-256G-BLK', 1, 9999.00),
-(2, 1, 1, 'iPhone 15 Pro', 'https://example.com/iphone15pro-black.jpg', 'IP15P-256G-BLK', 1, 9999.00),
-(2, 1, 2, 'iPhone 15 Pro', 'https://example.com/iphone15pro-white.jpg', 'IP15P-256G-WHT', 1, 9999.00);
+INSERT INTO oms_order_item (
+    order_id, product_id, sku_id, product_name, product_pic, sku_code, sku_attributes_snapshot, quantity, price
+) VALUES
+(1, 1, 1, 'isinwheel S9 Pro Pneumatic Tire Electric Scooter', 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', 'S9PRO-UPGRADE-1', '{"style":"2026 Upgraded Edition","bundle":"S9 Pro*1","color":"Black"}', 1, 279.99),
+(2, 1, 2, 'isinwheel S9 Pro Pneumatic Tire Electric Scooter', 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', 'S9PRO-UPGRADE-2', '{"style":"2026 Upgraded Edition","bundle":"S9 Pro*2","color":"Black"}', 1, 529.99);
 
 -- 重置序列 (以防后续插入主键冲突)
 SELECT setval('oms_order_id_seq', (SELECT MAX(id) FROM oms_order));
 SELECT setval('oms_order_item_id_seq', (SELECT MAX(id) FROM oms_order_item));
-

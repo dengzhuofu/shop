@@ -37,6 +37,11 @@ BEGIN
     
     -- 插入对应的SKU数据 (Styles and Bundles combinations)
     INSERT INTO pms_sku (product_id, sku_code, price, stock, pic, description, specs) VALUES 
-    (new_product_id, 'S-NOVA-PRO-1', 489.99, 100, 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', '{"en": "<p>2026 Upgraded Edition - S9 Pro*1</p>"}', '{"en": {"Style": "2026 Upgraded Edition", "Bundle": "S9 Pro*1"}}'),
-    (new_product_id, 'S-NOVA-PRO-2', 950.00, 100, 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', '{"en": "<p>2026 Upgraded Edition - S9 Pro*2</p>"}', '{"en": {"Style": "2026 Upgraded Edition", "Bundle": "S9 Pro*2"}}');
+    (new_product_id, 'S-NOVA-PRO-1', 489.99, 100, 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', '{"en": "<p>2026 Upgraded Edition - S9 Pro*1</p>"}', '{"style": "2026 Upgraded Edition", "bundle": "S9 Pro*1", "color": "Black"}'),
+    (new_product_id, 'S-NOVA-PRO-2', 950.00, 100, 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800', '{"en": "<p>2026 Upgraded Edition - S9 Pro*2</p>"}', '{"style": "2026 Upgraded Edition", "bundle": "S9 Pro*2", "color": "Black"}');
 END $$;
+
+INSERT INTO ums_user_address (
+    user_id, country, first_name, last_name, phone, address_line1, address_line2, city, state, zip_code, is_default
+) VALUES
+(1, 'United States', 'John', 'Doe', '1873363854', '123 Main St', 'Apt 4B', 'New York', 'NY', '10001', TRUE);

@@ -1,8 +1,11 @@
 package com.shop.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,6 +22,8 @@ public class OmsOrderItem {
   private String productName;
   private String productPic;
   private String skuCode;
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode skuAttributesSnapshot;
 
   private Integer quantity;
   private BigDecimal price;

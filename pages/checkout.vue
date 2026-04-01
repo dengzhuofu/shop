@@ -12,7 +12,7 @@
         <div class="checkout-section user-section">
           <div class="user-info">
             <span class="step-number">1</span>
-            <span class="user-email">1873363854@qq.com</span>
+            <span class="user-email">{{ userEmail }}</span>
             <button class="more-btn"><MoreVerticalIcon class="icon" /></button>
           </div>
         </div>
@@ -31,22 +31,38 @@
 
             <div class="form-row">
               <div class="form-group">
-                <input type="text" v-model="form.firstName" placeholder="First name" />
+                <input
+                  type="text"
+                  v-model="form.firstName"
+                  placeholder="First name"
+                />
               </div>
               <div class="form-group">
-                <input type="text" v-model="form.lastName" placeholder="Last name" />
+                <input
+                  type="text"
+                  v-model="form.lastName"
+                  placeholder="Last name"
+                />
               </div>
             </div>
 
             <div class="form-group">
               <div class="input-with-icon">
-                <input type="text" v-model="form.address" placeholder="Address" />
+                <input
+                  type="text"
+                  v-model="form.address"
+                  placeholder="Address"
+                />
                 <SearchIcon class="search-icon" />
               </div>
             </div>
 
             <div class="form-group">
-              <input type="text" v-model="form.apartment" placeholder="Apartment, suite, etc. (optional)" />
+              <input
+                type="text"
+                v-model="form.apartment"
+                placeholder="Apartment, suite, etc. (optional)"
+              />
             </div>
 
             <div class="form-row three-cols">
@@ -65,7 +81,11 @@
                 </div>
               </div>
               <div class="form-group">
-                <input type="text" v-model="form.zipCode" placeholder="ZIP code" />
+                <input
+                  type="text"
+                  v-model="form.zipCode"
+                  placeholder="ZIP code"
+                />
               </div>
             </div>
 
@@ -118,7 +138,10 @@
                   </div>
                   <div class="form-row">
                     <div class="form-group">
-                      <input type="text" placeholder="Expiration date (MM / YY)" />
+                      <input
+                        type="text"
+                        placeholder="Expiration date (MM / YY)"
+                      />
                     </div>
                     <div class="form-group">
                       <div class="input-with-icon">
@@ -132,7 +155,9 @@
                   </div>
                   <div class="checkbox-group">
                     <input type="checkbox" id="billing" checked />
-                    <label for="billing">Use shipping address as billing address</label>
+                    <label for="billing"
+                      >Use shipping address as billing address</label
+                    >
                   </div>
                 </div>
               </div>
@@ -141,7 +166,12 @@
             <div class="payment-option">
               <div class="option-header">
                 <div class="radio-wrap"></div>
-                <span class="option-name">Shop Pay <span class="sub-text">· Pay in full or in installments</span></span>
+                <span class="option-name"
+                  >Shop Pay
+                  <span class="sub-text"
+                    >· Pay in full or in installments</span
+                  ></span
+                >
                 <span class="brand-text shop">shop</span>
               </div>
             </div>
@@ -176,17 +206,24 @@
             <div class="form-group">
               <div class="phone-input">
                 <SmartphoneIcon class="phone-icon" />
-                <div class="prefix">Mobile phone (optional)<br/>+1</div>
+                <div class="prefix">Mobile phone (optional)<br />+1</div>
                 <input type="tel" />
               </div>
             </div>
             <p class="terms-text">
-              By providing your phone number, you agree to create a Shop account subject to Shop's 
+              By providing your phone number, you agree to create a Shop account
+              subject to Shop's
               <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
             </p>
           </div>
 
-          <button class="pay-now-btn">Pay now</button>
+          <button
+            class="pay-now-btn"
+            @click="handlePay"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? 'Processing...' : 'Pay now' }}
+          </button>
         </div>
       </main>
 
@@ -194,16 +231,28 @@
       <aside class="checkout-sidebar">
         <div class="sidebar-inner">
           <div class="cart-items">
-            <div class="cart-item">
+            <div
+              class="cart-item"
+              v-for="item in summaryItems"
+              :key="item.cartItemId || item.skuId"
+            >
               <div class="item-img-wrapper">
-                <img src="https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=100" alt="Scooter" class="item-img" />
-                <span class="item-qty">1</span>
+                <img
+                  :src="item.productPic || 'https://via.placeholder.com/100'"
+                  alt="Scooter"
+                  class="item-img"
+                />
+                <span class="item-qty">{{ item.quantity }}</span>
               </div>
               <div class="item-info">
-                <h4 class="item-title">isinwheel S9 Pro Pneumatic Tire Electric Scooter</h4>
-                <p class="item-variant">2026 Upgraded Edition / S9 Pro*1</p>
+                <h4 class="item-title">{{ item.title }}</h4>
+                <p class="item-variant">
+                  {{ formatAttributes(item.attributes) }}
+                </p>
               </div>
-              <div class="item-price">$279.99</div>
+              <div class="item-price">
+                ${{ Number(item.lineAmount || 0).toFixed(2) }}
+              </div>
             </div>
           </div>
 
@@ -225,14 +274,20 @@
           <div class="summary-lines">
             <div class="line">
               <span class="label">Subtotal</span>
-              <span class="value">$279.99</span>
+              <span class="value"
+                >${{ Number(preview.subtotal || 0).toFixed(2) }}</span
+              >
             </div>
             <div class="line shipping-line">
               <span class="label">
                 UPS Ground/FedEx Home Delivery(2-5 Business Days)
                 <HelpCircleIcon class="help-icon" />
               </span>
-              <span class="value placeholder">Enter shipping address</span>
+              <span class="value placeholder">{{
+                form.address
+                  ? `${form.address}, ${form.city}`
+                  : 'Enter shipping address'
+              }}</span>
             </div>
           </div>
 
@@ -240,7 +295,9 @@
             <span class="label">Total</span>
             <div class="value">
               <span class="currency">USD</span>
-              <span class="amount">$279.99</span>
+              <span class="amount"
+                >${{ Number(preview.totalAmount || 0).toFixed(2) }}</span
+              >
             </div>
           </div>
         </div>
@@ -250,32 +307,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { 
-  MoreVerticalIcon, ChevronDownIcon, SearchIcon, 
-  HelpCircleIcon, LockIcon, SmartphoneIcon, GiftIcon 
+import { computed, ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import {
+  MoreVerticalIcon,
+  ChevronDownIcon,
+  SearchIcon,
+  HelpCircleIcon,
+  LockIcon,
+  SmartphoneIcon,
+  GiftIcon,
 } from 'lucide-vue-next'
 
 definePageMeta({
-  layout: 'blank'
+  layout: 'blank',
 })
 
-// Mock address data
-const mockSavedAddress = {
-  country: 'US',
-  firstName: 'John',
-  lastName: 'Doe',
-  address: '123 Main St',
-  apartment: 'Apt 4B',
-  city: 'New York',
-  state: 'NY',
-  zipCode: '10001',
-  phone: '1234567890',
-  subscribe: true
-}
-
 const form = ref({
-  country: 'US',
+  country: 'United States',
   firstName: '',
   lastName: '',
   address: '',
@@ -284,15 +333,182 @@ const form = ref({
   state: '',
   zipCode: '',
   phone: '',
-  subscribe: false
+  subscribe: false,
 })
 
-// Simulate fetching user data and auto-filling
-onMounted(() => {
-  const hasSavedAddress = true // Change to false to test empty state
-  if (hasSavedAddress) {
-    form.value = { ...mockSavedAddress }
+const userEmail = ref('user@example.com')
+const addresses = ref([])
+const summaryItems = ref([])
+const preview = ref({
+  subtotal: 0,
+  totalAmount: 0,
+  shippingAmount: 0,
+  discountAmount: 0,
+})
+const isSubmitting = ref(false)
+const route = useRoute()
+const isDirectCheckout = computed(() => route.query.source === 'direct')
+const directCheckoutItem = computed(() => {
+  const productId = Number(route.query.productId)
+  const skuId = Number(route.query.skuId)
+  const quantity = Number(route.query.quantity || 1)
+  if (!productId || !skuId || !quantity) {
+    return null
   }
+  return {
+    productId,
+    skuId,
+    quantity,
+  }
+})
+
+const defaultAddress = computed(
+  () => addresses.value.find((item) => item.isDefault) || addresses.value[0],
+)
+
+const applyAddress = (address) => {
+  if (!address) return
+  form.value = {
+    ...form.value,
+    country: address.country || 'United States',
+    firstName: address.firstName || '',
+    lastName: address.lastName || '',
+    address: address.addressLine1 || '',
+    apartment: address.addressLine2 || '',
+    city: address.city || '',
+    state: address.state || '',
+    zipCode: address.zipCode || '',
+    phone: address.phone || '',
+  }
+}
+
+const fetchAddress = async () => {
+  try {
+    const res = await useHttp('/api/address/list')
+    if (res?.code === 200) {
+      addresses.value = res.data || []
+      applyAddress(defaultAddress.value)
+    }
+  } catch (error) {
+    console.error('Failed to fetch address', error)
+  }
+}
+
+const fetchCartSummary = async () => {
+  try {
+    if (isDirectCheckout.value && directCheckoutItem.value) {
+      const previewRes = await useHttp('/api/order/preview', {
+        method: 'POST',
+        body: {
+          source: 'direct',
+          items: [directCheckoutItem.value],
+        },
+      })
+      if (previewRes?.code === 200) {
+        preview.value = previewRes.data
+        summaryItems.value = previewRes.data.items || []
+      }
+      return
+    }
+    const cartRes = await useHttp('/api/cart/list')
+    if (cartRes?.code === 200) {
+      summaryItems.value = cartRes.data || []
+      const cartItemIds = summaryItems.value.map((item) => item.cartItemId)
+      if (cartItemIds.length > 0) {
+        const previewRes = await useHttp('/api/order/preview', {
+          method: 'POST',
+          body: {
+            source: 'cart',
+            cartItemIds,
+          },
+        })
+        if (previewRes?.code === 200) {
+          preview.value = previewRes.data
+          summaryItems.value = previewRes.data.items || summaryItems.value
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch cart summary', error)
+  }
+}
+
+const handlePay = async () => {
+  if (summaryItems.value.length === 0 || isSubmitting.value) return
+  isSubmitting.value = true
+  try {
+    const createBody = {
+      source: isDirectCheckout.value ? 'direct' : 'cart',
+      cartItemIds: isDirectCheckout.value
+        ? []
+        : summaryItems.value.map((item) => item.cartItemId),
+      items:
+        isDirectCheckout.value && directCheckoutItem.value
+          ? [directCheckoutItem.value]
+          : [],
+      paymentMethod: 'credit_card',
+      shippingMethod: 'UPS Ground/FedEx Home Delivery(2-5 Business Days)',
+      addressId: defaultAddress.value?.id,
+      addressSnapshot: {
+        country: form.value.country,
+        firstName: form.value.firstName,
+        lastName: form.value.lastName,
+        phone: form.value.phone,
+        addressLine1: form.value.address,
+        addressLine2: form.value.apartment,
+        city: form.value.city,
+        state: form.value.state,
+        zipCode: form.value.zipCode,
+      },
+    }
+    const createRes = await useHttp('/api/order/create', {
+      method: 'POST',
+      body: createBody,
+    })
+    if (createRes?.code !== 200) {
+      alert(createRes?.message || 'Create order failed')
+      return
+    }
+    const order = createRes.data
+    const payRes = await useHttp('/api/order/pay', {
+      method: 'POST',
+      body: {
+        orderId: order.id,
+        paymentMethod: 'credit_card',
+        mockResult: 'success',
+      },
+    })
+    if (payRes?.code === 200) {
+      alert('Payment success')
+      navigateTo('/account/orders')
+    } else {
+      alert(payRes?.message || 'Payment failed')
+    }
+  } catch (error) {
+    console.error('Pay order failed', error)
+    alert('Pay order failed')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const formatAttributes = (attributes) => {
+  if (!attributes || typeof attributes !== 'object') return ''
+  const source =
+    attributes.attributeDisplay || attributes.attributes || attributes
+  if (!source || typeof source !== 'object') return ''
+  return Object.values(source)
+    .map((value) =>
+      typeof value === 'object' && value !== null
+        ? Object.values(value).join('/')
+        : String(value),
+    )
+    .join(' / ')
+}
+
+onMounted(() => {
+  fetchAddress()
+  fetchCartSummary()
 })
 </script>
 
@@ -339,7 +555,7 @@ onMounted(() => {
       margin-bottom: 8px;
       color: #111;
     }
-    
+
     .section-desc {
       font-size: 14px;
       color: #666;
@@ -353,7 +569,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   position: relative;
-  
+
   &::before {
     content: 'OR';
     position: absolute;
@@ -411,12 +627,16 @@ onMounted(() => {
       cursor: pointer;
       color: #666;
       padding: 4px;
-      .icon { width: 20px; height: 20px; }
+      .icon {
+        width: 20px;
+        height: 20px;
+      }
     }
   }
 }
 
-.address-form, .card-form {
+.address-form,
+.card-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -433,8 +653,8 @@ onMounted(() => {
       z-index: 1;
     }
 
-    input[type="text"],
-    input[type="tel"],
+    input[type='text'],
+    input[type='tel'],
     select {
       width: 100%;
       padding: 12px;
@@ -449,7 +669,7 @@ onMounted(() => {
         border-color: #58cc02;
         box-shadow: 0 0 0 1px #58cc02;
       }
-      
+
       &::placeholder {
         color: #999;
       }
@@ -477,7 +697,9 @@ onMounted(() => {
 
     .input-with-icon {
       position: relative;
-      .search-icon, .help-icon, .lock-icon {
+      .search-icon,
+      .help-icon,
+      .lock-icon {
         position: absolute;
         right: 12px;
         top: 50%;
@@ -492,10 +714,14 @@ onMounted(() => {
   .form-row {
     display: flex;
     gap: 16px;
-    .form-group { flex: 1; }
+    .form-group {
+      flex: 1;
+    }
 
     &.three-cols {
-      .form-group { flex: 1; }
+      .form-group {
+        flex: 1;
+      }
     }
   }
 
@@ -505,7 +731,7 @@ onMounted(() => {
     gap: 8px;
     margin-top: 8px;
 
-    input[type="checkbox"] {
+    input[type='checkbox'] {
       width: 18px;
       height: 18px;
       border: 1px solid #d9d9d9;
@@ -543,7 +769,7 @@ onMounted(() => {
 
     .payment-option {
       border-bottom: 1px solid #d9d9d9;
-      
+
       &:last-child {
         border-bottom: none;
       }
@@ -574,7 +800,7 @@ onMounted(() => {
           font-size: 14px;
           font-weight: 500;
           flex: 1;
-          
+
           .sub-text {
             font-size: 12px;
             color: #666;
@@ -585,7 +811,7 @@ onMounted(() => {
         .card-icons {
           display: flex;
           gap: 4px;
-          
+
           .card-icon {
             font-size: 10px;
             font-weight: bold;
@@ -593,22 +819,38 @@ onMounted(() => {
             border-radius: 2px;
             border: 1px solid #eee;
             background: #fff;
-            
-            &.visa { color: #1a1f71; }
-            &.master { color: #ff5f00; }
-            &.amex { color: #002663; }
-            &.more { color: #666; }
+
+            &.visa {
+              color: #1a1f71;
+            }
+            &.master {
+              color: #ff5f00;
+            }
+            &.amex {
+              color: #002663;
+            }
+            &.more {
+              color: #666;
+            }
           }
         }
 
         .brand-text {
           font-weight: 800;
           font-size: 16px;
-          
-          &.shop { color: #5a31f4; }
-          &.paypal { color: #003087; }
-          &.affirm { color: #000; }
-          &.klarna { color: #ffb3c7; }
+
+          &.shop {
+            color: #5a31f4;
+          }
+          &.paypal {
+            color: #003087;
+          }
+          &.affirm {
+            color: #000;
+          }
+          &.klarna {
+            color: #ffb3c7;
+          }
         }
       }
 
@@ -625,7 +867,7 @@ onMounted(() => {
       .option-body {
         padding: 0 16px 16px 16px;
         background: #fafafa;
-        
+
         .card-form {
           margin-top: 8px;
         }
@@ -635,7 +877,7 @@ onMounted(() => {
 
   .save-info-section {
     margin-bottom: 24px;
-    
+
     .sub-title {
       font-size: 16px;
       font-weight: 600;
@@ -707,7 +949,7 @@ onMounted(() => {
   background: #fafafa;
   border-left: 1px solid #e6e6e6;
   padding: 40px 5%;
-  
+
   .sidebar-inner {
     position: sticky;
     top: 40px;
@@ -715,7 +957,7 @@ onMounted(() => {
 
   .cart-items {
     margin-bottom: 24px;
-    
+
     .cart-item {
       display: flex;
       align-items: center;
@@ -796,12 +1038,12 @@ onMounted(() => {
     .points-text {
       font-size: 13px;
       color: #333;
-      
+
       strong {
         display: block;
         margin-bottom: 4px;
       }
-      
+
       p {
         margin: 0;
         color: #666;
@@ -874,7 +1116,7 @@ onMounted(() => {
 
       .value {
         font-weight: 500;
-        
+
         &.placeholder {
           font-size: 12px;
           color: #666;
@@ -934,7 +1176,8 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .form-row, .form-row.three-cols {
+  .form-row,
+  .form-row.three-cols {
     flex-direction: column;
     gap: 16px;
   }
