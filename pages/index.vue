@@ -348,7 +348,7 @@
 </template>
 
 <script setup>
-import { ref, computed, markRaw, onMounted, onUnmounted } from 'vue'
+import { ref, computed, markRaw, onMounted, onUnmounted } from "vue";
 import {
   ArrowRightIcon,
   ZapIcon,
@@ -363,119 +363,119 @@ import {
   CalendarIcon,
   MessageCircleIcon,
   FileTextIcon,
-} from 'lucide-vue-next'
-import Button from '~/components/Button.vue'
-import ProductCard from '~/components/ProductCard.vue'
+} from "lucide-vue-next";
+import Button from "~/components/Button.vue";
+import ProductCard from "~/components/ProductCard.vue";
 
 // 视频播放状态控制
-const isPlaying = ref(false)
-const videoRef = ref(null)
+const isPlaying = ref(false);
+const videoRef = ref(null);
 
 // 英雄区轮播数据
 const heroSlides = ref([
   {
     image:
-      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1920',
-    title: '探索无界',
-    subtitle: '智能骑行',
+      "https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1920",
+    title: "探索无界",
+    subtitle: "智能骑行",
   },
   {
     image:
-      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920',
-    title: '极致性能',
-    subtitle: '绿色出行',
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920",
+    title: "极致性能",
+    subtitle: "绿色出行",
   },
   {
     image:
-      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=1920',
-    title: '城市通勤',
-    subtitle: '最佳伴侣',
+      "https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=1920",
+    title: "城市通勤",
+    subtitle: "最佳伴侣",
   },
-])
+]);
 
-const currentHeroIndex = ref(0)
+const currentHeroIndex = ref(0);
 
 // 英雄区自动轮播
-let heroTimer = null
+let heroTimer = null;
 const startHeroTimer = () => {
   heroTimer = setInterval(() => {
     currentHeroIndex.value =
-      (currentHeroIndex.value + 1) % heroSlides.value.length
-  }, 5000)
-}
+      (currentHeroIndex.value + 1) % heroSlides.value.length;
+  }, 5000);
+};
 const stopHeroTimer = () => {
-  if (heroTimer) clearInterval(heroTimer)
-}
+  if (heroTimer) clearInterval(heroTimer);
+};
 
 // 页面加载时启动轮播和获取数据
 onMounted(() => {
-  startHeroTimer()
-  fetchProducts()
-})
+  startHeroTimer();
+  fetchProducts();
+});
 
 onUnmounted(() => {
-  stopHeroTimer()
-})
+  stopHeroTimer();
+});
 
 const toggleVideo = () => {
-  if (!videoRef.value) return
+  if (!videoRef.value) return;
   if (isPlaying.value) {
-    videoRef.value.pause()
-    isPlaying.value = false
+    videoRef.value.pause();
+    isPlaying.value = false;
   } else {
-    videoRef.value.play()
-    isPlaying.value = true
+    videoRef.value.play();
+    isPlaying.value = true;
   }
-}
+};
 
 // 分类 Mock 数据
 const categories = [
   {
-    title: 'Electric Scooter',
+    title: "Electric Scooter",
     count: 15,
-    desc: 'Foldable freedom for your daily commute',
+    desc: "Foldable freedom for your daily commute",
   },
   {
-    title: 'Electric Bike',
+    title: "Electric Bike",
     count: 18,
-    desc: 'Conquer hills and long distances with ease',
+    desc: "Conquer hills and long distances with ease",
   },
   {
-    title: 'Electric Skateboard',
+    title: "Electric Skateboard",
     count: 5,
-    desc: 'Electrify your ride with smooth carving and high-speed fun',
+    desc: "Electrify your ride with smooth carving and high-speed fun",
   },
   {
-    title: 'Accessories',
+    title: "Accessories",
     count: 333,
-    desc: 'Everything you need to upgrade, protect, and personalize your ride',
+    desc: "Everything you need to upgrade, protect, and personalize your ride",
   },
-]
+];
 
 // Best Sellers 选项卡
-const tabs = ['Electric Scooter', 'Electric Bike', 'E Skateboard']
-const currentTab = ref(tabs[0])
+const tabs = ["Electric Scooter", "Electric Bike", "E Skateboard"];
+const currentTab = ref(tabs[0]);
 
 // 产品 Mock 数据
-const products = ref([])
+const products = ref([]);
 
 // 获取产品数据
 const fetchProducts = async () => {
   try {
     const res = await useHttp(
-      '/api/product/list?pageNum=1&pageSize=10&lang=en',
-    )
+      "/api/product/list?pageNum=1&pageSize=10&lang=en",
+    );
     if (res && res.code === 200 && res.data && res.data.records) {
       // 映射后端返回的数据到前端格式
       products.value = res.data.records.map((p) => ({
         id: p.id,
         // 这里为了演示前端的分类切换功能，如果后端没有category字段，可以模拟分配
         category:
-          p.title && p.title.includes('Bike')
-            ? 'Electric Bike'
-            : p.title && p.title.includes('Skateboard')
-              ? 'E Skateboard'
-              : 'Electric Scooter',
+          p.title && p.title.includes("Bike")
+            ? "Electric Bike"
+            : p.title && p.title.includes("Skateboard")
+              ? "E Skateboard"
+              : "Electric Scooter",
         title: p.title,
         price: p.price,
         compareAtPrice: p.compareAtPrice,
@@ -486,130 +486,130 @@ const fetchProducts = async () => {
           ...s,
           // 简易映射图标
           icon:
-            s.icon === 'ZapIcon'
+            s.icon === "ZapIcon"
               ? markRaw(ZapIcon)
-              : s.icon === 'NavigationIcon'
+              : s.icon === "NavigationIcon"
                 ? markRaw(NavigationIcon)
                 : markRaw(ActivityIcon),
         })),
-      }))
+      }));
     }
   } catch (error) {
-    console.error('Failed to fetch products:', error)
+    console.error("Failed to fetch products:", error);
   }
-}
+};
 
 // 过滤后的产品列表
 const filteredProducts = computed(() => {
-  return products.value.filter((p) => p.category === currentTab.value)
-})
+  return products.value.filter((p) => p.category === currentTab.value);
+});
 
 // 达人视频 Mock 数据
 const influencerVideos = ref([
   {
     id: 1,
     bgImage:
-      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=400&h=700',
-    avatar: 'https://i.pravatar.cc/150?u=1',
-    username: '@ride_master',
-    quote: 'Best scooter I have ever ridden! Smooth and fast.',
-    tags: ['#escooter', '#cityride'],
+      "https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=400&h=700",
+    avatar: "https://i.pravatar.cc/150?u=1",
+    username: "@ride_master",
+    quote: "Best scooter I have ever ridden! Smooth and fast.",
+    tags: ["#escooter", "#cityride"],
   },
   {
     id: 2,
     bgImage:
-      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
-    avatar: 'https://i.pravatar.cc/150?u=2',
-    username: '@urban_explorer',
-    quote: 'Perfect for my daily commute. Highly recommend!',
-    tags: ['#ebike', '#commute'],
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700",
+    avatar: "https://i.pravatar.cc/150?u=2",
+    username: "@urban_explorer",
+    quote: "Perfect for my daily commute. Highly recommend!",
+    tags: ["#ebike", "#commute"],
   },
   {
     id: 3,
     bgImage:
-      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400&h=700',
-    avatar: 'https://i.pravatar.cc/150?u=3',
-    username: '@skate_pro',
-    quote: 'Incredible speed and stability on this electric skateboard.',
-    tags: ['#eskate', '#fun'],
+      "https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400&h=700",
+    avatar: "https://i.pravatar.cc/150?u=3",
+    username: "@skate_pro",
+    quote: "Incredible speed and stability on this electric skateboard.",
+    tags: ["#eskate", "#fun"],
   },
   {
     id: 4,
     bgImage:
-      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
-    avatar: 'https://i.pravatar.cc/150?u=4',
-    username: '@eco_traveler',
-    quote: 'A green way to travel around the city.',
-    tags: ['#ecofriendly', '#travel'],
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700",
+    avatar: "https://i.pravatar.cc/150?u=4",
+    username: "@eco_traveler",
+    quote: "A green way to travel around the city.",
+    tags: ["#ecofriendly", "#travel"],
   },
-])
+]);
 
 // 用户评价 Mock 数据
 const customerReviews = ref([
   {
     id: 1,
     image:
-      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
-    name: 'Andrew',
+      "https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400",
+    name: "Andrew",
     verified: false,
-    text: 'I have this a 4 before because the shocks were tight. After playing around a bit I now understand why they are so tight. It is easier to loosen the tension...',
+    text: "I have this a 4 before because the shocks were tight. After playing around a bit I now understand why they are so tight. It is easier to loosen the tension...",
   },
   {
     id: 2,
     image:
-      'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=400',
-    name: 'Joseph P.',
+      "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=400",
+    name: "Joseph P.",
     verified: true,
-    text: 'This board is amazing!! I could go on & on about how the specs really live up to the description. Just a monster of a board & the power is perfect &...',
+    text: "This board is amazing!! I could go on & on about how the specs really live up to the description. Just a monster of a board & the power is perfect &...",
   },
   {
     id: 3,
     image:
-      'https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=400',
-    name: 'Pamela',
+      "https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=400",
+    name: "Pamela",
     verified: false,
-    text: 'I purchased a gt4 electric scooter. The assembly was extremely easy and it was completely put together in less than 30 minutes. I love the way...',
+    text: "I purchased a gt4 electric scooter. The assembly was extremely easy and it was completely put together in less than 30 minutes. I love the way...",
   },
   {
     id: 4,
     image:
-      'https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=400',
-    name: 'Chad S.',
+      "https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=400",
+    name: "Chad S.",
     verified: false,
     text: "It's everything you need to piss off people in town. If you keep it slow you can get 40-45 miles on a single charge which is boring. Top speed is...",
   },
-])
+]);
 
 // 博客文章 Mock 数据
 const blogs = ref([
   {
     id: 1,
     image:
-      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
+      "https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800",
     title:
-      'Best Suspension for Value Off-Road Scooters: What Matters on Rough Paths',
-    date: 'Mar 26, 2026',
+      "Best Suspension for Value Off-Road Scooters: What Matters on Rough Paths",
+    date: "Mar 26, 2026",
     comments: 0,
   },
   {
     id: 2,
     image:
-      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400',
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400",
     title:
-      '3 Best Value-for-Money Electric Scooters with the Best Off-Road Suspension',
-    date: 'Mar 17, 2026',
+      "3 Best Value-for-Money Electric Scooters with the Best Off-Road Suspension",
+    date: "Mar 17, 2026",
     comments: 0,
   },
   {
     id: 3,
     image:
-      'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
+      "https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400",
     title:
-      'Neighborhood Errands Under $500: 4 Best Scooters for Families Who Want an Easy-to-Ride Vehicle',
-    date: 'Mar 11, 2026',
+      "Neighborhood Errands Under $500: 4 Best Scooters for Families Who Want an Easy-to-Ride Vehicle",
+    date: "Mar 11, 2026",
     comments: 0,
   },
-])
+]);
 </script>
 
 <style lang="scss" scoped>
@@ -832,7 +832,7 @@ const blogs = ref([
       display: inline-block;
 
       &::after {
-        content: '';
+        content: "";
         position: absolute;
         bottom: -8px;
         left: 0;
@@ -873,19 +873,19 @@ const blogs = ref([
 
       // 为不同的卡片配置不同的背景图，增加区分度
       &:nth-child(1) .bg-placeholder {
-        background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600')
+        background: url("https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600")
           center/cover;
       }
       &:nth-child(2) .bg-placeholder {
-        background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=600')
+        background: url("https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=600")
           center/cover;
       }
       &:nth-child(3) .bg-placeholder {
-        background: url('https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=600')
+        background: url("https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=600")
           center/cover;
       }
       &:nth-child(4) .bg-placeholder {
-        background: url('https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=600')
+        background: url("https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=600")
           center/cover;
       }
 
@@ -1438,7 +1438,7 @@ const blogs = ref([
     left: 0;
     width: 100%;
     height: 100%;
-    background: url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920')
+    background: url("https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920")
       center/cover fixed; // 视差效果
     z-index: 1;
 
@@ -1553,7 +1553,7 @@ const blogs = ref([
       width: 65%;
       height: 80%;
       border-radius: 16px;
-      background: url('https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800')
+      background: url("https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=800")
         center/cover;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
       transform: rotate(6deg);
@@ -1572,7 +1572,7 @@ const blogs = ref([
       width: 50%;
       height: 55%;
       border-radius: 12px;
-      background: url('https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600')
+      background: url("https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=600")
         center/cover;
       border: 6px solid $white;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);

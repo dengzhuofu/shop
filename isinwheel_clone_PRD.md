@@ -148,7 +148,6 @@
 
 **附注**: 页面涉及的图片素材若无法直接获取，请在开发时使用占位图 (Placeholder) 或从原网站审查元素截取高清素材，确保复刻的视觉高保真度。
 
-
 ## 7. 当前执行状态与任务清单（更新于 2026-03-29）
 
 ### 7.1 Nuxt 4 升级任务（已完成）
@@ -195,3 +194,64 @@
 1. 第 1-2 天：完成 P0（列表页、slug 路由、统一数据层、购物车闭环）。
 2. 第 3-4 天：完成 P1（首页与详情页高保真复刻、全局交互统一）。
 3. 第 5 天：完成 P2 核心项（性能、测试、SEO）并进行验收修正。
+
+## 8. 支付方式调研与接入规划（更新于 2026-04-01）
+
+### 8.1 官网当前支付方式（以官网公开信息为准）
+
+#### A. Payment Methods 页面明确写明
+
+- PayPal
+- Credit / Debit Card（文案中包含 Visa、MasterCard、Amex，并提到 Shop Pay、Apple Pay、G Pay）
+- Klarna（Buy Now, Pay Later）
+- Affirm（Buy Now, Pay Later）
+
+#### B. 官网 Footer 支付图标显示
+
+- American Express
+- Apple Pay
+- Diners Club
+- Discover
+- Google Pay
+- Mastercard
+- PayPal
+- Shop Pay
+- Venmo
+- Visa
+
+#### C. 页面文案中的限制信息（需产品侧确认）
+
+- PayPal Credit 文案标注“仅限美国客户（For USA customers only at the moment）”
+- Klarna 文案标注“当前仅支持价格低于 $1500 的商品”
+
+> 注：实际可用支付方式最终以 **Checkout 结算页可选网关** 与店铺后台配置为准；前端展示与后端可用网关必须保持一致。
+
+### 8.2 复刻站支付接入目标（后期全部接入）
+
+- 一期（主链路）：
+  - 信用卡/借记卡（Visa / Mastercard / American Express / Discover）
+  - PayPal
+  - Shop Pay
+  - Apple Pay
+  - Google Pay
+- 二期（分期与地区化）：
+  - Klarna
+  - Affirm
+  - Venmo（如与 PayPal/地区配置联动）
+  - Diners Club（按支付服务商能力开启）
+    44
+
+### 8.3 PRD 级实施要求（新增）
+
+- [ ] 支付方式展示组件：在 Footer 与 Checkout 页面统一读取支付配置，不硬编码固定图标。
+- [ ] 支付配置中心：新增 `payment-config`（建议放在 `server/api` 或 `data/`），按国家/币种/端类型返回可用方式。
+- [ ] 结算页支付区块：支持卡支付、钱包支付、分期支付分组展示，并显示可用条件（如金额门槛、地区限制）。
+- [ ] 风险与降级：若某网关不可用，前端自动隐藏该入口并给出可理解提示，不影响主结算流程。
+- [ ] 埋点与监控：支付方式曝光、选择、跳转、成功/失败全链路埋点（用于后续转化分析）。
+
+### 8.4 验收标准（支付）
+
+- [ ] 同一国家/币种下，Footer 支付图标与 Checkout 可选支付方式一致。
+- [ ] 移动端与 PC 端支付入口一致可达，Apple Pay / Google Pay 按设备条件正确显隐。
+- [ ] 分期方式（Klarna / Affirm）在不满足条件时不展示或明确禁用原因。
+- [ ] 支付失败回流路径完整（返回购物车/结算页，保留用户已填信息）。

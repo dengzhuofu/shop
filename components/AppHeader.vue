@@ -88,8 +88,27 @@
 
         <!-- 右侧操作区 -->
         <div class="actions">
-          <div class="country-pill">
-            <span>🇺🇸 US</span>
+          <div
+            class="language-switch"
+            role="group"
+            aria-label="Language switch"
+          >
+            <button
+              type="button"
+              class="lang-btn"
+              :class="{ active: currentLanguage === 'zh' }"
+              @click="setLanguage('zh')"
+            >
+              中
+            </button>
+            <button
+              type="button"
+              class="lang-btn"
+              :class="{ active: currentLanguage === 'en' }"
+              @click="setLanguage('en')"
+            >
+              EN
+            </button>
           </div>
           <SearchIcon class="icon" />
 
@@ -174,6 +193,11 @@ const tokenCookie = useCookie("token");
 
 const isLoggedIn = computed(() => !!tokenCookie.value);
 const userMenuOpen = ref(false);
+const currentLanguage = ref("en");
+
+const setLanguage = (lang) => {
+  currentLanguage.value = lang;
+};
 
 const handleUserClick = () => {
   if (isLoggedIn.value) {
@@ -742,6 +766,10 @@ const supportLinks = [
     }
 
     .logo {
+      margin-right: 16px;
+      position: relative;
+      z-index: 2;
+
       h2 {
         font-size: 24px;
         font-weight: 800;
@@ -754,6 +782,7 @@ const supportLinks = [
       .nav-list {
         position: static;
         display: flex;
+        flex-wrap: nowrap;
         gap: 32px;
         align-items: center;
 
@@ -764,6 +793,7 @@ const supportLinks = [
           cursor: pointer;
           padding: 20px 0; // 扩大 hover 热区
           margin: -20px 0; // 抵消 padding 影响布局
+          white-space: nowrap;
 
           a {
             padding: 8px 16px;
@@ -772,6 +802,7 @@ const supportLinks = [
             color: $text-color;
             text-decoration: none;
             display: inline-block;
+            white-space: nowrap;
           }
 
           &:hover,
@@ -806,13 +837,30 @@ const supportLinks = [
       align-items: center;
       gap: 20px;
 
-      .country-pill {
+      .language-switch {
+        display: inline-flex;
+        align-items: center;
         border: 1px solid $border-color;
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
+        border-radius: 999px;
+        overflow: hidden;
+
+        .lang-btn {
+          border: none;
+          background: transparent;
+          color: $text-color;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 1;
+          padding: 8px 10px;
+          min-width: 40px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &.active {
+            background: #111;
+            color: $white;
+          }
+        }
       }
 
       .icon {
