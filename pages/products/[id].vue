@@ -233,6 +233,7 @@
             >
               {{ isAddingToCart ? 'Adding...' : 'Add to cart' }}
             </button>
+            <button class="btn-buy-now" @click="buyNow">Buy now</button>
           </div>
 
           <!-- 促销配件 (Upsell) -->
@@ -491,6 +492,7 @@ const product = ref({
   colors: [],
   upsells: [],
   features: [],
+  skuList: [],
 })
 
 // 评论数据状态
@@ -509,9 +511,63 @@ const selectedColor = ref('')
 const quantity = ref(1)
 const activeAccordion = ref('quick-know')
 const isAddingToCart = ref(false)
+const normalizeAttributes = (attrs) => {
+  if (!attrs || typeof attrs !== 'object') return {}
+  const source = attrs.en && typeof attrs.en === 'object' ? attrs.en : attrs
+  const normalized = {}
+  Object.entries(source).forEach(([rawKey, value]) => {
+    const key = String(rawKey).toLowerCase()
+    if (key === 'style' || rawKey === '款式') normalized.style = value
+    else if (key === 'bundle' || rawKey === '套餐' || rawKey === '组合')
+      normalized.bundle = value
+    else if (key === 'color' || rawKey === '颜色') normalized.color = value
+    else normalized[key] = value
+  })
+  return normalized
+}
+
+const deriveSkuOptions = (skuList = [], skuAttributeOptions = {}) => {
+  const styles = [
+    ...(skuAttributeOptions.style || skuAttributeOptions.Style || []),
+  ]
+  const bundles = [
+    ...(skuAttributeOptions.bundle || skuAttributeOptions.Bundle || []),
+  ]
+  const colors = [
+    ...(skuAttributeOptions.color || skuAttributeOptions.Color || []),
+  ]
+
+  skuList.forEach((sku) => {
+    const attrs = normalizeAttributes(sku.attributes || sku.specs)
+    if (attrs.style && !styles.includes(attrs.style)) styles.push(attrs.style)
+    if (attrs.bundle && !bundles.includes(attrs.bundle))
+      bundles.push(attrs.bundle)
+    if (attrs.color && !colors.includes(attrs.color)) colors.push(attrs.color)
+  })
+
+  return { styles, bundles, colors }
+}
+
+const selectedSku = computed(() => {
+  if (!product.value.skuList || product.value.skuList.length === 0) {
+    return null
+  }
+  return (
+    product.value.skuList.find((sku) => {
+      const attrs = normalizeAttributes(sku.attributes || sku.specs)
+      const styleMatch =
+        !selectedStyle.value || attrs.style === selectedStyle.value
+      const bundleMatch =
+        !selectedBundle.value || attrs.bundle === selectedBundle.value
+      const colorMatch =
+        !selectedColor.value || attrs.color === selectedColor.value
+      return styleMatch && bundleMatch && colorMatch
+    }) || product.value.skuList[0]
+  )
+})
 
 const addToCart = async () => {
-  if (!product.value.id) return
+  if (!product.value.id || !selectedSku.value) return false
 
   isAddingToCart.value = true
   try {
@@ -519,23 +575,38 @@ const addToCart = async () => {
       method: 'POST',
       body: {
         productId: product.value.id,
-        skuId: 1, // 这里假设默认规格，实际应根据 selectedStyle/Bundle 获取真实的 skuId
+        skuId: selectedSku.value.id,
         quantity: quantity.value,
       },
     })
 
     if (res && res.code === 200) {
       alert('Successfully added to cart')
-      // 可选：触发打开购物车侧边栏
+      return true
     } else {
       alert(res?.message || 'Failed to add to cart')
+      return false
     }
   } catch (error) {
     console.error('Failed to add to cart:', error)
     alert('Failed to add to cart, please login first.')
+    return false
   } finally {
     isAddingToCart.value = false
   }
+}
+
+const buyNow = async () => {
+  if (!product.value.id || !selectedSku.value) return
+  navigateTo({
+    path: '/checkout',
+    query: {
+      source: 'direct',
+      productId: String(product.value.id),
+      skuId: String(selectedSku.value.id),
+      quantity: String(quantity.value),
+    },
+  })
 }
 
 const toggleAccordion = (panelName) => {
@@ -558,7 +629,7 @@ const getIconComponent = (iconName) => {
 
 const fetchProductData = async () => {
   try {
-    const res = await useHttp(`/api/product/${productId}?lang=en`)
+    const res = await useHttp(`/api/product/${productId}`)
     if (res && res.code === 200 && res.data) {
       const data = res.data
       product.value = {
@@ -574,28 +645,27 @@ const fetchProductData = async () => {
           icon: getIconComponent(s.icon),
         })),
         upsells: data.upsells || [],
-        features: data.quickKnow ? JSON.parse(data.quickKnow) : [],
-        // 从 skuList 解析可选项 (简易处理)
-        styles: data.skuList
-          ? [
-              ...new Set(
-                data.skuList
-                  .map((sku) => JSON.parse(sku.specs || '{}').en?.Style)
-                  .filter(Boolean),
-              ),
-            ]
-          : [],
-        bundles: data.skuList
-          ? [
-              ...new Set(
-                data.skuList
-                  .map((sku) => JSON.parse(sku.specs || '{}').en?.Bundle)
-                  .filter(Boolean),
-              ),
-            ]
-          : [],
+        features: Array.isArray(data.quickKnow)
+          ? data.quickKnow
+          : data.quickKnow
+            ? [data.quickKnow]
+            : [],
+        skuList: data.skuList || [],
+        styles: [],
+        bundles: [],
         colors: [],
       }
+
+      const skuOptions = deriveSkuOptions(
+        product.value.skuList,
+        data.skuAttributeOptions || {},
+      )
+      product.value.styles = skuOptions.styles
+      product.value.bundles = skuOptions.bundles
+      product.value.colors = skuOptions.colors.map((name) => ({
+        name,
+        thumbnail: data.images?.[0] || '',
+      }))
 
       if (product.value.styles.length > 0)
         selectedStyle.value = product.value.styles[0]
@@ -1154,6 +1224,20 @@ const scrollToReviews = () => {
         background: #333;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
+
+    .btn-buy-now {
+      flex: 1;
+      background: #58cc02;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 30px;
+      transition: all 0.3s;
+
+      &:hover {
+        background: #46a302;
       }
     }
   }

@@ -20,7 +20,22 @@ public class OmsOrder {
   private String receiverName;
   private String receiverPhone;
   private String receiverAddress;
+  private String receiverCountry;
+  private String receiverFirstName;
+  private String receiverLastName;
+  private String receiverAddressLine1;
+  private String receiverAddressLine2;
+  private String receiverCity;
+  private String receiverState;
+  private String receiverZipCode;
   private Integer payType; // 1: Alipay, 2: Wechat, 3: Credit Card, 4: PayPal
+  private String paymentMethod;
+  private Integer payStatus;
+  private String payTxnNo;
+  private String checkoutSource;
+  private String shippingMethod;
+  private BigDecimal shippingAmount;
+  private BigDecimal discountAmount;
   private LocalDateTime payTime;
   private String deliveryCompany;
   private String deliverySn;

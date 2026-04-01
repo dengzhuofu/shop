@@ -121,9 +121,8 @@
             <UserIcon class="icon" @click="handleUserClick" />
             <div class="user-dropdown" v-show="userMenuOpen">
               <template v-if="isLoggedIn">
-                <NuxtLink to="/account/orders" class="dropdown-item"
-                  >My Orders</NuxtLink
-                >
+                <NuxtLink to="/account/profile" class="dropdown-item">Profile</NuxtLink>
+                <NuxtLink to="/account/orders" class="dropdown-item">My Orders</NuxtLink>
                 <div class="dropdown-divider"></div>
                 <button class="dropdown-item text-danger" @click="handleLogout">
                   Logout
@@ -201,7 +200,7 @@ const setLanguage = (lang) => {
 
 const handleUserClick = () => {
   if (isLoggedIn.value) {
-    router.push("/account/orders");
+    router.push('/account/profile')
   } else {
     router.push("/login");
   }

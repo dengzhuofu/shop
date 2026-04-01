@@ -462,9 +462,7 @@ const products = ref([]);
 // 获取产品数据
 const fetchProducts = async () => {
   try {
-    const res = await useHttp(
-      "/api/product/list?pageNum=1&pageSize=10&lang=en",
-    );
+    const res = await useHttp("/api/product/list?pageNum=1&pageSize=10");
     if (res && res.code === 200 && res.data && res.data.records) {
       // 映射后端返回的数据到前端格式
       products.value = res.data.records.map((p) => ({

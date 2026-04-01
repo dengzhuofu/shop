@@ -2,8 +2,6 @@ package com.shop.vo;
 
 import lombok.Data;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class OrderItemVO {
@@ -13,6 +11,7 @@ public class OrderItemVO {
     private String productName;
     private String productPic;
     private String skuCode;
+    private Object skuAttributesSnapshot;
     private Integer quantity;
     private BigDecimal price;
 }

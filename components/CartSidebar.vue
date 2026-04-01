@@ -10,7 +10,7 @@
       <div class="cart-sidebar" v-if="isOpen">
         <!-- 头部 -->
         <div class="cart-header">
-          <h2>Cart <span class="count">10</span></h2>
+          <h2>Cart <span class="count">{{ cartItems.length }}</span></h2>
           <button class="btn-recently-viewed">Recently viewed</button>
           <button class="btn-close" @click="close">
             <span class="icon">✕</span>
@@ -22,25 +22,23 @@
           <div class="cart-items" v-if="cartItems.length > 0">
             <div class="cart-item" v-for="item in cartItems" :key="item.id">
               <div class="item-image">
-                <!-- Fallback image since OmsCartItem doesn't store pic directly -->
-                <img :src="'https://via.placeholder.com/150'" alt="Product Image" />
+                <img :src="item.productPic || 'https://via.placeholder.com/150'" alt="Product Image" />
               </div>
               <div class="item-details">
-                <h3 class="title">Product ID: {{ item.productId }}</h3>
+                <h3 class="title">{{ item.title }}</h3>
                 <div class="price-row">
-                  <!-- Need API to join product details for price and name -->
-                  <span class="current-price">SKU ID: {{ item.skuId }}</span>
+                  <span class="current-price">${{ Number(item.unitPrice || 0).toFixed(2) }}</span>
                 </div>
               </div>
               <div class="item-actions">
                 <div class="quantity-selector">
                   <span class="qty">{{ item.quantity }}</span>
                   <div class="controls">
-                    <button class="btn-up">^</button>
-                    <button class="btn-down">v</button>
+                    <button class="btn-up" @click="changeQty(item, item.quantity + 1)">^</button>
+                    <button class="btn-down" @click="changeQty(item, Math.max(1, item.quantity - 1))">v</button>
                   </div>
                 </div>
-                <button class="btn-remove">Remove</button>
+                <button class="btn-remove" @click="removeItem(item)">Remove</button>
               </div>
             </div>
           </div>
@@ -64,7 +62,7 @@
             <div class="taxes-note">Taxes and shipping calculated<br>at checkout</div>
             <div class="subtotal">
               <span class="label">Subtotal</span>
-              <span class="amount">$3,402.00 USD</span>
+              <span class="amount">${{ subtotal.toFixed(2) }} USD</span>
             </div>
           </div>
 
@@ -85,10 +83,10 @@
 
           <!-- 按钮 -->
           <div class="checkout-actions">
-            <button class="btn-checkout">
+            <button class="btn-checkout" @click="goCheckout">
               <span class="icon">🔒</span> Check out
             </button>
-            <button class="btn-view-cart">View cart</button>
+            <button class="btn-view-cart" @click="goCheckout">View cart</button>
           </div>
         </div>
       </div>
@@ -97,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useHttp } from '~/composables/useHttp'
 
 const props = defineProps({
@@ -114,6 +112,9 @@ const close = () => {
 }
 
 const cartItems = ref([])
+const subtotal = computed(() => {
+  return cartItems.value.reduce((sum, item) => sum + Number(item.lineAmount || 0), 0)
+})
 
 const fetchCartItems = async () => {
   try {
@@ -124,6 +125,25 @@ const fetchCartItems = async () => {
   } catch (error) {
     console.error('Failed to fetch cart items:', error)
   }
+}
+
+const changeQty = async (item, quantity) => {
+  await useHttp(`/api/cart/${item.cartItemId}`, {
+    method: 'PUT',
+    body: { quantity }
+  })
+  fetchCartItems()
+}
+
+const removeItem = async (item) => {
+  await useHttp(`/api/cart/${item.cartItemId}`, {
+    method: 'DELETE'
+  })
+  fetchCartItems()
+}
+
+const goCheckout = () => {
+  navigateTo('/checkout')
 }
 
 // 阻止背景滚动并获取数据
