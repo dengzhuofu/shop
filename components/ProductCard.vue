@@ -8,15 +8,15 @@
     @click="navigateToDetail"
     @keyup.enter="navigateToDetail"
   >
-    <div class="image-wrapper">
+    <div class="image-wrapper" @mousemove="handleImageHover">
       <div v-if="leftTags.length" class="tags-left">
         <span
           v-for="tag in leftTags"
           :key="tag"
           class="tag-label"
-          :class="tag.toLowerCase()"
+          :class="resolveTagClass(tag)"
         >
-          {{ tag }}
+          {{ resolveTagLabel(tag) }}
         </span>
       </div>
 
@@ -37,7 +37,10 @@
         />
       </div>
 
-      <div v-if="displayImages.length > 1 && isHovered" class="carousel-indicators">
+      <div
+        v-if="displayImages.length > 1 && isHovered"
+        class="carousel-indicators"
+      >
         <span
           v-for="(_, index) in displayImages"
           :key="index"
@@ -54,7 +57,10 @@
         class="app-preview-img"
       />
 
-      <div class="hover-actions" :class="{ 'is-visible': isHovered || isSoldOut }">
+      <div
+        class="hover-actions"
+        :class="{ 'is-visible': isHovered || isSoldOut }"
+      >
         <button
           v-if="!isSoldOut"
           type="button"
@@ -64,7 +70,7 @@
           {{ actionText }}
         </button>
         <button v-else type="button" class="btn-action btn-sold-out" disabled>
-          {{ t('soldOut') }}
+          {{ t("soldOut") }}
         </button>
       </div>
     </div>
@@ -77,7 +83,9 @@
           <template v-if="isFrom">{{ fromText }} </template>
           {{ money(product.price) }}
         </span>
-        <span v-if="product.compareAtPrice" class="old-price">{{ money(product.compareAtPrice) }}</span>
+        <span v-if="product.compareAtPrice" class="old-price">{{
+          money(product.compareAtPrice)
+        }}</span>
         <span v-if="savedAmount > 0" class="save-badge">
           {{ saveText }} {{ money(savedAmount) }}
         </span>
@@ -97,145 +105,221 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { ActivityIcon, BatteryIcon, NavigationIcon, ZapIcon } from 'lucide-vue-next'
+import { computed, ref } from "vue";
+import {
+  ActivityIcon,
+  BatteryIcon,
+  NavigationIcon,
+  ZapIcon,
+} from "lucide-vue-next";
 
 const props = defineProps<{
-  product: Record<string, any>
-}>()
+  product: Record<string, any>;
+}>();
 
-const { lang, t } = useShopLocale()
-const { money } = useShopFormat()
+const { lang, t } = useShopLocale();
+const { money } = useShopFormat();
 
-const isHovered = ref(false)
-const currentImageIndex = ref(0)
+const isHovered = ref(false);
+const currentImageIndex = ref(0);
 
 const iconMap = {
   ZapIcon,
   NavigationIcon,
   ActivityIcon,
   BatteryIcon,
-} as const
+} as const;
 
 const displayImages = computed(() => {
   if (Array.isArray(props.product.images) && props.product.images.length) {
-    return props.product.images
+    return props.product.images;
   }
   if (props.product.image) {
-    return [props.product.image]
+    return [props.product.image];
   }
   if (props.product.pic) {
-    return [props.product.pic]
+    return [props.product.pic];
   }
-  return ['https://via.placeholder.com/600x600?text=isinwheel']
-})
+  return ["https://via.placeholder.com/600x600?text=isinwheel"];
+});
 
 const leftTags = computed(() => {
-  const tags = Array.isArray(props.product.tags) ? props.product.tags : []
-  return tags.filter((tag) => ['NEW', 'HOT'].includes(String(tag).toUpperCase()))
-})
+  const rawTags = Array.isArray(props.product.tags) ? props.product.tags : [];
+  const tags = [...rawTags];
+  if (
+    props.product.isNew &&
+    !rawTags.some((tag) => String(tag).toUpperCase() === "NEW")
+  ) {
+    tags.unshift("NEW");
+  }
+  return tags.filter((tag) =>
+    ["NEW", "HOT"].includes(String(tag).toUpperCase()),
+  );
+});
 
 const hasSpringSale = computed(() => {
-  const tags = Array.isArray(props.product.tags) ? props.product.tags : []
-  return tags.some((tag) => String(tag).toLowerCase().includes('spring sale'))
-})
+  const tags = Array.isArray(props.product.tags) ? props.product.tags : [];
+  return tags.some((tag) => String(tag).toLowerCase().includes("spring sale"));
+});
 
 const isSoldOut = computed(() => {
-  const skuList = Array.isArray(props.product.skuList) ? props.product.skuList : []
+  const skuList = Array.isArray(props.product.skuList)
+    ? props.product.skuList
+    : [];
   if (skuList.length) {
     return !skuList.some(
-      (sku) => (sku.status || 'ACTIVE') === 'ACTIVE' && Number(sku.stock || 0) > 0,
-    )
+      (sku) =>
+        (sku.status || "ACTIVE") === "ACTIVE" && Number(sku.stock || 0) > 0,
+    );
   }
-  return Number(props.product.stock || 0) <= 0
-})
+  return Number(props.product.stock || 0) <= 0;
+});
 
 const hasOptions = computed(() => {
-  const skuList = Array.isArray(props.product.skuList) ? props.product.skuList : []
-  return skuList.length > 1 || props.product.hasOptions !== false
-})
+  const skuList = Array.isArray(props.product.skuList)
+    ? props.product.skuList
+    : [];
+  return skuList.length > 1 || props.product.hasOptions !== false;
+});
 
-const actionText = computed(() => (hasOptions.value ? t('chooseOptions') : t('addToCart')))
+const actionText = computed(() =>
+  hasOptions.value ? t("chooseOptions") : t("addToCart"),
+);
 
 const isFrom = computed(() => {
-  const skuList = Array.isArray(props.product.skuList) ? props.product.skuList : []
-  const uniquePrices = new Set(skuList.map((sku) => Number(sku.price || 0)).filter(Boolean))
-  return uniquePrices.size > 1
-})
+  const skuList = Array.isArray(props.product.skuList)
+    ? props.product.skuList
+    : [];
+  const uniquePrices = new Set(
+    skuList.map((sku) => Number(sku.price || 0)).filter(Boolean),
+  );
+  return uniquePrices.size > 1;
+});
 
 const savedAmount = computed(() => {
-  const compareAtPrice = Number(props.product.compareAtPrice || 0)
-  const price = Number(props.product.price || 0)
-  return compareAtPrice > price ? compareAtPrice - price : 0
-})
+  const compareAtPrice = Number(props.product.compareAtPrice || 0);
+  const price = Number(props.product.price || 0);
+  return compareAtPrice > price ? compareAtPrice - price : 0;
+});
 
 const resolvedSpecs = computed(() =>
   (Array.isArray(props.product.specs) ? props.product.specs : [])
     .slice(0, 4)
     .map((spec: any) => ({
       ...spec,
-      icon: iconMap[(spec.icon || 'ActivityIcon') as keyof typeof iconMap] || ActivityIcon,
+      icon:
+        iconMap[(spec.icon || "ActivityIcon") as keyof typeof iconMap] ||
+        ActivityIcon,
     })),
-)
+);
 
-const productLink = computed(() => `/products/${props.product.slug || props.product.id}`)
-const fromText = computed(() => (lang.value === 'zh' ? '起' : 'From'))
-const saveText = computed(() => (lang.value === 'zh' ? '立省' : 'Save'))
+const productLink = computed(
+  () => `/products/${props.product.slug || props.product.id}`,
+);
+const fromText = computed(() => (lang.value === "zh" ? "起" : "From"));
+const saveText = computed(() => (lang.value === "zh" ? "立省" : "Save"));
+
+const resolveTagClass = (tag: string) =>
+  String(tag).toLowerCase().replace(/\s+/g, "-");
+
+const resolveTagLabel = (tag: string) => {
+  const normalized = String(tag).toUpperCase();
+  if (normalized === "NEW") {
+    return lang.value === "zh" ? "新的" : "NEW";
+  }
+  if (normalized === "HOT") {
+    return lang.value === "zh" ? "热卖" : "HOT";
+  }
+  return tag;
+};
 
 const navigateToDetail = async () => {
-  await navigateTo(productLink.value)
-}
+  await navigateTo(productLink.value);
+};
+
+const handleImageHover = (event: MouseEvent) => {
+  if (displayImages.value.length <= 1) {
+    currentImageIndex.value = 0;
+    return;
+  }
+
+  const target = event.currentTarget as HTMLElement | null;
+  if (!target) {
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  if (rect.width <= 0) {
+    return;
+  }
+
+  const relativeX = Math.min(
+    Math.max(event.clientX - rect.left, 0),
+    rect.width,
+  );
+  const sectionCount = Math.min(displayImages.value.length, 3);
+  const sectionWidth = rect.width / sectionCount;
+  const hoveredSection = Math.min(
+    Math.floor(relativeX / sectionWidth),
+    sectionCount - 1,
+  );
+  currentImageIndex.value = hoveredSection;
+};
 
 const handleMouseLeave = () => {
-  isHovered.value = false
-  currentImageIndex.value = 0
-}
+  isHovered.value = false;
+  currentImageIndex.value = 0;
+};
 </script>
 
 <style scoped lang="scss">
 .product-card {
-  border: 1px solid #eceff3;
-  border-radius: 12px;
+  border: 1px solid #f0f1f6;
+  border-radius: 18px;
   background: #fff;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
   cursor: pointer;
-  transition: box-shadow 0.3s ease;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 
   &:hover {
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    transform: translateY(-3px);
   }
 }
 
 .image-wrapper {
   position: relative;
-  padding-top: 100%;
+  height: 470px;
   background: #fff;
   overflow: hidden;
 
   .tags-left {
     position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 2;
+    top: 18px;
+    left: 18px;
+    z-index: 6;
 
     .tag-label {
       display: inline-block;
       color: #fff;
-      font-size: 12px;
-      padding: 4px 10px;
+      font-size: 14px;
+      line-height: 1;
+      padding: 10px 14px;
       font-weight: 700;
-      text-transform: uppercase;
-      border-radius: 0 0 8px 0;
+      border-radius: 12px;
+      letter-spacing: 0.02em;
 
       &.new {
-        background: #e62332;
+        background: linear-gradient(135deg, #ff334f 0%, #ff4b87 100%);
       }
 
       &.hot {
-        background: #ff5722;
+        background: linear-gradient(135deg, #ff7a18 0%, #ff5722 100%);
       }
     }
   }
@@ -277,21 +361,24 @@ const handleMouseLeave = () => {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      padding: 30px;
+      padding: 0;
       opacity: 0;
       transition:
         opacity 0.4s ease,
         transform 0.4s ease;
+      transform: scale(1.03);
+      object-position: center center;
 
       &.is-active {
         opacity: 1;
+        transform: scale(1.06);
       }
     }
   }
 
   .carousel-indicators {
     position: absolute;
-    bottom: 70px;
+    bottom: 86px;
     left: 0;
     width: 100%;
     display: flex;
@@ -318,12 +405,13 @@ const handleMouseLeave = () => {
 
   .app-preview-img {
     position: absolute;
-    top: 40px;
-    right: 20px;
-    width: 60px;
+    top: 54px;
+    right: 26px;
+    width: 84px;
     height: auto;
     object-fit: contain;
-    z-index: 1;
+    z-index: 3;
+    filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.12));
   }
 
   .hover-actions {
@@ -372,15 +460,15 @@ const handleMouseLeave = () => {
 }
 
 .info {
-  padding: 20px;
+  padding: 8px 24px 26px;
   display: flex;
   flex-direction: column;
   flex: 1;
 
   .title {
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 500;
-    margin: 0 0 16px;
+    margin: 0 0 14px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -393,22 +481,22 @@ const handleMouseLeave = () => {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 18px;
 
     .current-price {
-      color: #e62332;
+      color: #ff3b7c;
       font-size: 22px;
       font-weight: 600;
     }
 
     .old-price {
-      color: #98a2b3;
-      font-size: 14px;
+      color: #c8c8cf;
+      font-size: 13px;
       position: relative;
 
       &::after {
-        content: '';
+        content: "";
         position: absolute;
         left: -2px;
         right: -2px;
@@ -420,11 +508,11 @@ const handleMouseLeave = () => {
     }
 
     .save-badge {
-      background: #e62332;
+      background: linear-gradient(135deg, #ff3370 0%, #ff4b87 100%);
       color: #fff;
       font-size: 13px;
-      padding: 4px 12px;
-      border-radius: 16px;
+      padding: 7px 14px;
+      border-radius: 999px;
       font-weight: 600;
     }
   }
@@ -434,17 +522,17 @@ const handleMouseLeave = () => {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     margin-top: auto;
-    border-top: 1px solid #eceff3;
-    padding-top: 16px;
+    border-top: 1px solid #f0f1f6;
+    padding-top: 14px;
 
     .spec-item {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding: 12px 0;
 
       &:nth-child(odd) {
-        border-right: 1px solid #eceff3;
+        border-right: 1px solid #f0f1f6;
         padding-right: 12px;
       }
 
@@ -454,13 +542,13 @@ const handleMouseLeave = () => {
 
       &:nth-child(1),
       &:nth-child(2) {
-        border-bottom: 1px solid #eceff3;
+        border-bottom: 1px solid #f0f1f6;
       }
 
       .spec-icon {
-        width: 24px;
-        height: 24px;
-        color: #58cc02;
+        width: 22px;
+        height: 22px;
+        color: #111827;
         stroke-width: 1.5;
       }
 
@@ -469,7 +557,7 @@ const handleMouseLeave = () => {
         flex-direction: column;
 
         .value {
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 600;
           color: #101828;
           margin-bottom: 2px;
@@ -477,9 +565,25 @@ const handleMouseLeave = () => {
 
         .label {
           font-size: 11px;
-          color: #667085;
+          color: #98a2b3;
         }
       }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .image-wrapper {
+    height: 420px;
+
+    .carousel-indicators {
+      bottom: 76px;
+    }
+
+    .app-preview-img {
+      width: 72px;
+      top: 44px;
+      right: 18px;
     }
   }
 }

@@ -31,6 +31,7 @@ public class PmsProduct {
   private BigDecimal compareAtPrice;
   private Integer stock;
   private String pic;
+  private Boolean isNew;
 
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode tags;

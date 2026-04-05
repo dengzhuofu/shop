@@ -61,4 +61,76 @@ describe('ProductCard', () => {
 
     expect(wrapper.text()).toContain('Sold out')
   })
+
+  it('shows the new badge when product data carries isNew', async () => {
+    const wrapper = await mountSuspended(ProductCard, {
+      props: {
+        product: {
+          id: 22,
+          slug: 'u1-folding-electric-scooter',
+          title: 'U1 Folding Electric Scooter',
+          price: 459.99,
+          compareAtPrice: 559.99,
+          pic: 'https://example.com/new-1.png',
+          images: [
+            'https://example.com/new-1.png',
+            'https://example.com/new-2.png',
+            'https://example.com/new-3.png',
+          ],
+          isNew: true,
+          specs: [],
+        },
+      },
+    })
+
+    expect(wrapper.find('.tag-label.new').exists()).toBe(true)
+    expect(wrapper.find('.tag-label.new').text()).toBe('NEW')
+  })
+
+  it('switches images by left, middle, and right hover zones', async () => {
+    const wrapper = await mountSuspended(ProductCard, {
+      props: {
+        product: {
+          id: 3,
+          slug: 'u8-electric-bike',
+          title: 'isinwheel U8 Electric Bike',
+          price: 609.99,
+          pic: 'https://example.com/1.jpg',
+          images: [
+            'https://example.com/1.jpg',
+            'https://example.com/2.jpg',
+            'https://example.com/3.jpg',
+          ],
+          skuList: [{ price: 609.99, stock: 6, status: 'ACTIVE' }],
+          specs: [],
+        },
+      },
+    })
+
+    const imageWrapper = wrapper.get('.image-wrapper')
+    Object.defineProperty(imageWrapper.element, 'getBoundingClientRect', {
+      value: () => ({
+        left: 0,
+        top: 0,
+        right: 300,
+        bottom: 300,
+        width: 300,
+        height: 300,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+    })
+
+    expect(wrapper.findAll('.main-img.is-active')[0]?.attributes('src')).toContain('/1.jpg')
+
+    await imageWrapper.trigger('mousemove', { clientX: 40 })
+    expect(wrapper.findAll('.main-img.is-active')[0]?.attributes('src')).toContain('/1.jpg')
+
+    await imageWrapper.trigger('mousemove', { clientX: 150 })
+    expect(wrapper.findAll('.main-img.is-active')[0]?.attributes('src')).toContain('/2.jpg')
+
+    await imageWrapper.trigger('mousemove', { clientX: 270 })
+    expect(wrapper.findAll('.main-img.is-active')[0]?.attributes('src')).toContain('/3.jpg')
+  })
 })
