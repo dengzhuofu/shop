@@ -1,13 +1,25 @@
 <template>
-  <div class="product-card" @mouseenter="isHovered = true" @mouseleave="handleMouseLeave">
-    <NuxtLink :to="productLink" class="link-mask" :aria-label="product.title" />
-
+  <article
+    class="product-card"
+    role="link"
+    tabindex="0"
+    @mouseenter="isHovered = true"
+    @mouseleave="handleMouseLeave"
+    @click="navigateToDetail"
+    @keyup.enter="navigateToDetail"
+  >
     <div class="image-wrapper">
       <div v-if="leftTags.length" class="tags-left">
-        <span v-for="tag in leftTags" :key="tag" class="tag-label" :class="tag.toLowerCase()">
+        <span
+          v-for="tag in leftTags"
+          :key="tag"
+          class="tag-label"
+          :class="tag.toLowerCase()"
+        >
           {{ tag }}
         </span>
       </div>
+
       <div v-if="hasSpringSale" class="tags-right">
         <div class="spring-sale-badge">
           <span class="text">Spring<br />Sale</span>
@@ -17,7 +29,7 @@
       <div class="image-carousel">
         <img
           v-for="(img, index) in displayImages"
-          :key="img"
+          :key="`${img}-${index}`"
           :src="img"
           :alt="`${product.title} - ${index + 1}`"
           class="main-img"
@@ -35,6 +47,13 @@
         />
       </div>
 
+      <img
+        v-if="product.appImage"
+        :src="product.appImage"
+        :alt="`${product.title} app preview`"
+        class="app-preview-img"
+      />
+
       <div class="hover-actions" :class="{ 'is-visible': isHovered || isSoldOut }">
         <button
           v-if="!isSoldOut"
@@ -42,7 +61,7 @@
           class="btn-action"
           @click.stop="navigateToDetail"
         >
-          {{ t('chooseOptions') }}
+          {{ actionText }}
         </button>
         <button v-else type="button" class="btn-action btn-sold-out" disabled>
           {{ t('soldOut') }}
@@ -54,13 +73,13 @@
       <h3 class="title">{{ product.title }}</h3>
 
       <div class="price-area">
-        <span class="current-price">
-          <template v-if="isFrom">From </template>
+        <span v-if="product.price" class="current-price">
+          <template v-if="isFrom">{{ fromText }} </template>
           {{ money(product.price) }}
         </span>
         <span v-if="product.compareAtPrice" class="old-price">{{ money(product.compareAtPrice) }}</span>
-        <span v-if="product.compareAtPrice" class="save-badge">
-          Save {{ money(Number(product.compareAtPrice) - Number(product.price)) }}
+        <span v-if="savedAmount > 0" class="save-badge">
+          {{ saveText }} {{ money(savedAmount) }}
         </span>
       </div>
 
@@ -74,7 +93,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -85,7 +104,7 @@ const props = defineProps<{
   product: Record<string, any>
 }>()
 
-const { t } = useShopLocale()
+const { lang, t } = useShopLocale()
 const { money } = useShopFormat()
 
 const isHovered = ref(false)
@@ -101,6 +120,9 @@ const iconMap = {
 const displayImages = computed(() => {
   if (Array.isArray(props.product.images) && props.product.images.length) {
     return props.product.images
+  }
+  if (props.product.image) {
+    return [props.product.image]
   }
   if (props.product.pic) {
     return [props.product.pic]
@@ -128,10 +150,23 @@ const isSoldOut = computed(() => {
   return Number(props.product.stock || 0) <= 0
 })
 
+const hasOptions = computed(() => {
+  const skuList = Array.isArray(props.product.skuList) ? props.product.skuList : []
+  return skuList.length > 1 || props.product.hasOptions !== false
+})
+
+const actionText = computed(() => (hasOptions.value ? t('chooseOptions') : t('addToCart')))
+
 const isFrom = computed(() => {
   const skuList = Array.isArray(props.product.skuList) ? props.product.skuList : []
   const uniquePrices = new Set(skuList.map((sku) => Number(sku.price || 0)).filter(Boolean))
   return uniquePrices.size > 1
+})
+
+const savedAmount = computed(() => {
+  const compareAtPrice = Number(props.product.compareAtPrice || 0)
+  const price = Number(props.product.price || 0)
+  return compareAtPrice > price ? compareAtPrice - price : 0
 })
 
 const resolvedSpecs = computed(() =>
@@ -144,6 +179,8 @@ const resolvedSpecs = computed(() =>
 )
 
 const productLink = computed(() => `/products/${props.product.slug || props.product.id}`)
+const fromText = computed(() => (lang.value === 'zh' ? '起' : 'From'))
+const saveText = computed(() => (lang.value === 'zh' ? '立省' : 'Save'))
 
 const navigateToDetail = async () => {
   await navigateTo(productLink.value)
@@ -157,25 +194,19 @@ const handleMouseLeave = () => {
 
 <style scoped lang="scss">
 .product-card {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  transition: box-shadow 0.3s ease;
   border: 1px solid #eceff3;
+  border-radius: 12px;
+  background: #fff;
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
 
   &:hover {
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
   }
-}
-
-.link-mask {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
 }
 
 .image-wrapper {
@@ -245,7 +276,8 @@ const handleMouseLeave = () => {
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      padding: 30px;
       opacity: 0;
       transition:
         opacity 0.4s ease,
@@ -253,7 +285,6 @@ const handleMouseLeave = () => {
 
       &.is-active {
         opacity: 1;
-        z-index: 1;
       }
     }
   }
@@ -266,27 +297,33 @@ const handleMouseLeave = () => {
     display: flex;
     justify-content: center;
     gap: 6px;
-    z-index: 15;
+    z-index: 5;
     padding: 10px 0;
 
     .indicator-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.3);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.2);
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+      transition: all 0.2s ease;
 
+      &:hover,
       &.is-active {
-        width: 16px;
         background: #111;
-      }
-
-      &:hover:not(.is-active) {
-        background: rgba(0, 0, 0, 0.6);
+        transform: scale(1.2);
       }
     }
+  }
+
+  .app-preview-img {
+    position: absolute;
+    top: 40px;
+    right: 20px;
+    width: 60px;
+    height: auto;
+    object-fit: contain;
+    z-index: 1;
   }
 
   .hover-actions {
@@ -307,8 +344,6 @@ const handleMouseLeave = () => {
     }
 
     .btn-action {
-      position: relative;
-      z-index: 2;
       background: #111;
       color: #fff;
       padding: 12px 32px;
@@ -337,8 +372,6 @@ const handleMouseLeave = () => {
 }
 
 .info {
-  position: relative;
-  z-index: 2;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -399,6 +432,7 @@ const handleMouseLeave = () => {
   .specs-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
     margin-top: auto;
     border-top: 1px solid #eceff3;
     padding-top: 16px;
