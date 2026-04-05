@@ -1,10 +1,15 @@
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <div class="top-bar">
+    <NuxtLink
+      v-if="resolvedActivity"
+      :to="resolvedActivity.linkUrl || '/'"
+      class="top-bar"
+      :style="activityStyle"
+    >
       <div class="container top-bar-content">
         <div class="offer-copy">
-          <p class="offer-kicker">{{ copy.offerKicker }}</p>
-          <p class="offer-title">{{ copy.offerTitle }}</p>
+          <p class="offer-kicker">{{ resolvedActivity.title }}</p>
+          <p class="offer-title">{{ resolvedActivity.subtitle }}</p>
         </div>
 
         <div class="countdown-panel">
@@ -15,13 +20,11 @@
             </template>
           </div>
           <div class="countdown-labels">
-            <span v-for="item in countdownItems" :key="`${item.label}-label`">
-              {{ item.label }}
-            </span>
+            <span v-for="item in countdownItems" :key="`${item.label}-label`">{{ item.label }}</span>
           </div>
         </div>
       </div>
-    </div>
+    </NuxtLink>
 
     <div class="main-nav">
       <div class="container nav-content">
@@ -29,50 +32,41 @@
           <h2><i>isinwheel</i></h2>
         </NuxtLink>
 
-        <nav class="desktop-nav" aria-label="Main navigation">
+        <div class="desktop-nav" @mouseleave="closeMenu">
           <ul class="nav-list">
-            <li v-for="item in navItems" :key="item.slug" class="nav-item">
+            <li
+              v-for="item in navItems"
+              :key="item.slug"
+              class="nav-item"
+              @mouseenter="openMenu(item.slug)"
+            >
               <NuxtLink :to="`/collections/${item.slug}`">{{ item.name }}</NuxtLink>
             </li>
-            <li class="nav-item support-item">
+
+            <li class="nav-item support-item" @mouseenter="closeMenu">
               <button type="button" class="support-trigger">{{ copy.support }}</button>
               <NavDropdown :links="supportLinks" />
             </li>
           </ul>
-        </nav>
+
+          <Transition name="fade">
+            <NavMegaMenu v-if="activeMenu" :menu-data="activeMenu" />
+          </Transition>
+        </div>
 
         <div class="actions">
           <button type="button" class="country-pill" @click="toggleLang">
-            <span>{{ lang === 'en' ? '🇺🇸 EN' : '🇨🇳 中文' }}</span>
+            <span>{{ lang.value === 'en' ? '🇺🇸 EN' : '🇨🇳 中文' }}</span>
           </button>
 
           <button type="button" class="icon-button" :aria-label="copy.search">
             <SearchIcon class="icon muted" />
           </button>
 
-          <div
-            class="user-menu-wrapper"
-            @mouseenter="userMenuOpen = true"
-            @mouseleave="userMenuOpen = false"
-          >
+          <div class="user-menu-wrapper">
             <button type="button" class="icon-button" :aria-label="t('account')" @click="handleUserClick">
               <UserIcon class="icon" />
             </button>
-
-            <div v-show="userMenuOpen" class="user-dropdown">
-              <template v-if="session.isLoggedIn.value">
-                <NuxtLink to="/account/profile" class="dropdown-item">{{ t('profile') }}</NuxtLink>
-                <NuxtLink to="/account/orders" class="dropdown-item">{{ t('orders') }}</NuxtLink>
-                <div class="dropdown-divider" />
-                <button type="button" class="dropdown-item text-danger" @click="handleLogout">
-                  {{ t('logout') }}
-                </button>
-              </template>
-              <template v-else>
-                <NuxtLink to="/login" class="dropdown-item">{{ t('login') }}</NuxtLink>
-                <NuxtLink to="/register" class="dropdown-item">{{ t('register') }}</NuxtLink>
-              </template>
-            </div>
           </div>
 
           <button type="button" class="cart-icon" :aria-label="t('cart')" @click="handleCartClick">
@@ -85,11 +79,7 @@
 
     <div class="mobile-strip">
       <div class="container mobile-links">
-        <NuxtLink
-          v-for="item in navItems"
-          :key="`mobile-${item.slug}`"
-          :to="`/collections/${item.slug}`"
-        >
+        <NuxtLink v-for="item in navItems" :key="`mobile-${item.slug}`" :to="`/collections/${item.slug}`">
           {{ item.name }}
         </NuxtLink>
       </div>
@@ -106,11 +96,12 @@ const session = useShopSession()
 const cart = useShopCart()
 const router = useRouter()
 
-const categories = ref<any[]>([])
+const categoryMenu = ref<any[]>([])
+const activity = ref<Record<string, any> | null>(null)
 const isScrolled = ref(false)
-const userMenuOpen = ref(false)
+const activeMenuSlug = ref<string | null>(null)
 const countdownTarget = ref(0)
-const countdownMs = ref(24 * 60 * 60 * 1000)
+const countdownMs = ref(0)
 let countdownTimer: ReturnType<typeof window.setInterval> | null = null
 
 const fallbackCategories = computed(() => [
@@ -120,13 +111,27 @@ const fallbackCategories = computed(() => [
   { slug: 'accessories', name: t('accessories') },
 ])
 
-const navItems = computed(() => (categories.value.length ? categories.value : fallbackCategories.value))
+const fallbackActivity = computed(() => ({
+  title: lang.value === 'zh' ? '复活节促销' : 'Easter Sale',
+  subtitle: lang.value === 'zh' ? '本周热卖车型限时优惠' : "Save on this week's hottest rides",
+  countdownEndAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  desktopBg: 'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
+  mobileBg: 'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
+  linkUrl: '/collections/electric-bike',
+}))
+
+const resolvedActivity = computed(() => activity.value || fallbackActivity.value)
+const navItems = computed(() => (categoryMenu.value.length ? categoryMenu.value : fallbackCategories.value))
+const activeMenu = computed(() => categoryMenu.value.find((item) => item.slug === activeMenuSlug.value) || null)
+
+const activityStyle = computed(() => ({
+  '--activity-desktop-bg': `url("${resolvedActivity.value.desktopBg}")`,
+  '--activity-mobile-bg': `url("${resolvedActivity.value.mobileBg || resolvedActivity.value.desktopBg}")`,
+}))
 
 const copy = computed(() =>
   lang.value === 'zh'
     ? {
-        offerKicker: '限时优惠！',
-        offerTitle: '别错过本周热卖',
         support: '支持',
         search: '搜索',
         about: '关于我们',
@@ -136,8 +141,6 @@ const copy = computed(() =>
         dealers: '成为经销商',
       }
     : {
-        offerKicker: 'Limited Time Offer!',
-        offerTitle: "Don't miss this week's ride deals",
         support: 'Support',
         search: 'Search',
         about: 'About Us',
@@ -156,15 +159,6 @@ const supportLinks = computed(() => [
   { title: copy.value.dealers, url: '/account/profile' },
 ])
 
-const fetchCategories = async () => {
-  try {
-    const res = await useHttp('/api/category/tree')
-    categories.value = res?.code === 200 ? res.data || [] : fallbackCategories.value
-  } catch (error) {
-    categories.value = fallbackCategories.value
-  }
-}
-
 const formatCountdownValue = (value: number) => String(value).padStart(2, '0')
 
 const countdownParts = computed(() => {
@@ -173,7 +167,6 @@ const countdownParts = computed(() => {
   const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
-
   return { days, hours, minutes, seconds }
 })
 
@@ -192,10 +185,37 @@ const handleScroll = () => {
   isScrolled.value = window.scrollY > 0
 }
 
+const fetchCategoryMenu = async () => {
+  try {
+    const res = await useHttp('/api/category/menu')
+    categoryMenu.value = res?.code === 200 ? res.data || [] : []
+  } catch {
+    categoryMenu.value = []
+  }
+}
+
+const fetchActivity = async () => {
+  try {
+    const res = await useHttp('/api/marketing/activities/current')
+    activity.value = res?.code === 200 && res.data ? res.data : null
+  } catch {
+    activity.value = null
+  }
+  countdownTarget.value = new Date(resolvedActivity.value.countdownEndAt).getTime()
+  updateCountdown()
+}
+
+const openMenu = (slug: string) => {
+  activeMenuSlug.value = slug
+}
+
+const closeMenu = () => {
+  activeMenuSlug.value = null
+}
+
 const handleUserClick = async () => {
-  userMenuOpen.value = false
   if (session.isLoggedIn.value) {
-    await router.push('/account/orders')
+    await router.push('/account/profile')
   } else {
     await router.push('/login')
   }
@@ -203,13 +223,11 @@ const handleUserClick = async () => {
 
 const handleLogout = async () => {
   await session.logout()
-  userMenuOpen.value = false
   await cart.refreshCart()
   await router.push('/login')
 }
 
 const handleCartClick = async () => {
-  userMenuOpen.value = false
   cart.openCart()
   await cart.refreshCart()
 }
@@ -222,12 +240,10 @@ const toggleLang = () => {
 }
 
 onMounted(async () => {
-  countdownTarget.value = Date.now() + 24 * 60 * 60 * 1000
-  updateCountdown()
-  countdownTimer = window.setInterval(updateCountdown, 1000)
   handleScroll()
   window.addEventListener('scroll', handleScroll)
-  await Promise.allSettled([fetchCategories(), session.fetchMe(), cart.refreshCart()])
+  await Promise.allSettled([fetchCategoryMenu(), fetchActivity(), session.fetchMe(), cart.refreshCart()])
+  countdownTimer = window.setInterval(updateCountdown, 1000)
 })
 
 onUnmounted(() => {
@@ -246,19 +262,20 @@ onUnmounted(() => {
   width: 100%;
   background: #fff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease;
 }
 
 .top-bar {
+  display: block;
   max-height: 116px;
   overflow: hidden;
   padding: 4px 0;
   color: #111;
   font-size: 12px;
-  background-image: url('https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994');
+  text-decoration: none;
+  background-image: var(--activity-desktop-bg);
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 100% 100%;
+  background-size: cover;
   transition:
     max-height 0.3s ease,
     padding 0.3s ease,
@@ -271,13 +288,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 24px;
   min-height: 86px;
-  width: 100%;
 }
 
 .offer-copy {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   min-width: 0;
 }
 
@@ -304,7 +319,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 12px;
 }
 
@@ -331,7 +345,6 @@ onUnmounted(() => {
   color: #37760a;
   font-size: 22px;
   font-weight: 700;
-  line-height: 1;
 }
 
 .countdown-labels {
@@ -344,7 +357,6 @@ onUnmounted(() => {
 .countdown-labels span {
   color: #4f7e0b;
   font-size: 11px;
-  line-height: 1.2;
   text-align: center;
 }
 
@@ -362,7 +374,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 28px;
-  width: 100%;
 }
 
 .logo {
@@ -381,6 +392,7 @@ onUnmounted(() => {
 }
 
 .desktop-nav {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   justify-content: center;
@@ -389,7 +401,6 @@ onUnmounted(() => {
 
 .nav-list {
   display: flex;
-  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 24px;
@@ -411,6 +422,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 56px;
   padding: 8px 16px;
   border: none;
   border-radius: 20px;
@@ -422,8 +434,9 @@ onUnmounted(() => {
   transition: all 0.25s ease;
 }
 
-.nav-item:hover a,
-.nav-item:hover .support-trigger {
+.nav-item:hover > a,
+.nav-item:hover > .support-trigger,
+.nav-item > a.router-link-active {
   background: #111;
   color: #fff;
 }
@@ -481,54 +494,8 @@ onUnmounted(() => {
 }
 
 .user-menu-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
-}
-
-.user-dropdown {
-  position: absolute;
-  top: 30px;
-  right: -10px;
-  min-width: 150px;
-  padding: 8px 0;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  z-index: 120;
-}
-
-.dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 10px 20px;
-  border: none;
-  background: none;
-  color: #333;
-  text-align: left;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.dropdown-item:hover {
-  background: #f5f5f5;
-  color: #58cc02;
-}
-
-.dropdown-item.text-danger {
-  color: #e62332;
-}
-
-.dropdown-item.text-danger:hover {
-  background: #ffebee;
-}
-
-.dropdown-divider {
-  height: 1px;
-  margin: 4px 0;
-  background: #eee;
 }
 
 .cart-icon {
@@ -570,10 +537,21 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 @media (max-width: 1100px) {
   .top-bar {
     max-height: 176px;
     padding: 8px 0;
+    background-image: var(--activity-mobile-bg);
   }
 
   .top-bar-content {
@@ -607,20 +585,11 @@ onUnmounted(() => {
 @media (max-width: 640px) {
   .top-bar {
     max-height: 220px;
-    padding: 8px 0;
   }
 
   .offer-title {
     margin-top: 6px;
     font-size: 20px;
-  }
-
-  .countdown-panel {
-    gap: 10px;
-  }
-
-  .countdown {
-    gap: 10px;
   }
 
   .time-block {

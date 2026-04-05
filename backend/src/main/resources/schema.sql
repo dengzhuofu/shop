@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS cms_promotion_activity CASCADE;
 DROP TABLE IF EXISTS pay_payment_intent CASCADE;
 DROP TABLE IF EXISTS oms_order_item CASCADE;
 DROP TABLE IF EXISTS oms_order CASCADE;
@@ -21,6 +22,23 @@ CREATE TABLE sys_user (
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
     last_login_time TIMESTAMP,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cms_promotion_activity (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    subtitle TEXT,
+    tag TEXT,
+    countdown_end_at TIMESTAMP,
+    desktop_bg VARCHAR(255),
+    mobile_bg VARCHAR(255),
+    link_url VARCHAR(255),
+    lang VARCHAR(16) NOT NULL DEFAULT 'all',
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INT NOT NULL DEFAULT 0,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -226,6 +244,28 @@ VALUES
 (1, 'admin@isinwheel.local', '123456', 'Admin', 'User', 'Admin User', FALSE, 'ACTIVE'),
 (2, 'sarah@isinwheel.local', '123456', 'Sarah', 'Miller', 'Sarah Miller', FALSE, 'ACTIVE');
 
+INSERT INTO cms_promotion_activity (
+    id, code, title, subtitle, tag, countdown_end_at, desktop_bg, mobile_bg, link_url, lang, enabled, sort_order
+) VALUES
+(1, 'spring-ride-festival',
+ '{"en":"Easter Sale","zh":"复活节促销"}',
+ '{"en":"Save on this week''s hottest rides","zh":"本周热卖车型限时优惠"}',
+ '{"en":"Save $20","zh":"立减 20 美元"}',
+ CURRENT_TIMESTAMP + INTERVAL '7 day',
+ 'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
+ 'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
+ '/collections/electric-bike',
+ 'all', TRUE, 1),
+(2, 'commuter-weekend-drop',
+ '{"en":"Weekend Ride Deals","zh":"周末骑行优惠"}',
+ '{"en":"Featured gear and commuter bundles refreshed weekly","zh":"每周更新精选通勤与骑行组合优惠"}',
+ '{"en":"Hot","zh":"热卖"}',
+ CURRENT_TIMESTAMP + INTERVAL '14 day',
+ 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=900',
+ '/collections/electric-scooters',
+ 'all', FALSE, 2);
+
 INSERT INTO pms_category (id, slug, name, description, hero_image, menu_image, sort_order, published) VALUES
 (1, 'electric-scooters',
  '{"en":"Electric Scooter","zh":"电动滑板车"}',
@@ -251,6 +291,56 @@ INSERT INTO pms_category (id, slug, name, description, hero_image, menu_image, s
  'https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&q=80&w=1600',
  'https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&q=80&w=600',
  4, TRUE);
+
+INSERT INTO pms_category (id, parent_id, slug, name, description, hero_image, menu_image, sort_order, published) VALUES
+(11, 1, 'commuter-city-ride',
+ '{"en":"Commuter & City Ride","zh":"城市通勤"}',
+ '{"en":"Foldable scooters tuned for everyday city miles.","zh":"适合城市日常通勤的可折叠滑板车。"}',
+ 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=600',
+ 1, TRUE),
+(12, 1, 'performance-all-terrain-scooters',
+ '{"en":"Performance & All Terrain","zh":"性能越野"}',
+ '{"en":"Long-range scooters with more power and larger setups.","zh":"更强动力与更长续航的性能滑板车。"}',
+ 'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=600',
+ 2, TRUE),
+(13, 2, 'commuter-city-road',
+ '{"en":"Commuter & City Road","zh":"城市通勤"}',
+ '{"en":"Step-through ebikes built for practical city riding.","zh":"适合城市通勤的低跨点电助力车型。"}',
+ 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=600',
+ 1, TRUE),
+(14, 2, 'off-road-all-terrain',
+ '{"en":"Off Road & All Terrain","zh":"越野全地形"}',
+ '{"en":"Fat-tire builds ready for rougher paths and weekend adventures.","zh":"适合复杂路况与周末出游的全地形电助力车型。"}',
+ 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=600',
+ 2, TRUE),
+(15, 3, 'street-carving',
+ '{"en":"Street & Carving","zh":"街道 carving"}',
+ '{"en":"Stable boards for smooth carving and neighborhood rides.","zh":"适合平路 carving 与日常滑行的稳定板型。"}',
+ 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600',
+ 1, TRUE),
+(16, 3, 'off-road-terrain-boards',
+ '{"en":"Off Road & Terrain","zh":"越野地形"}',
+ '{"en":"All-terrain boards built for rougher surfaces.","zh":"适合更复杂地形的全地形电动滑板。"}',
+ 'https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=600',
+ 2, TRUE),
+(17, 4, 'safety-gear',
+ '{"en":"Safety Gear","zh":"安全装备"}',
+ '{"en":"Helmets and everyday rider protection essentials.","zh":"头盔与日常骑行安全防护装备。"}',
+ 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600',
+ 1, TRUE),
+(18, 4, 'locks-storage',
+ '{"en":"Locks & Storage","zh":"锁具收纳"}',
+ '{"en":"Secure your ride and carry more gear.","zh":"保护你的车辆并扩展日常收纳能力。"}',
+ 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1600',
+ 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=600',
+ 2, TRUE);
 
 INSERT INTO pms_product (
     id, category_id, slug, name, subtitle, description, price, compare_at_price, stock, pic, tags, images, app_image,
@@ -390,6 +480,15 @@ INSERT INTO pms_product (
  '{"en":[{"question":"Is it suitable for scooters and skateboards?","answer":"Yes, it is designed for everyday personal mobility use."}],"zh":[{"question":"适用于滑板车和滑板吗？","answer":"适用，面向日常个人出行防护场景设计。"}]}',
  TRUE, 8);
 
+UPDATE pms_product SET category_id = 11 WHERE id = 1;
+UPDATE pms_product SET category_id = 12 WHERE id = 2;
+UPDATE pms_product SET category_id = 13 WHERE id = 3;
+UPDATE pms_product SET category_id = 14 WHERE id = 4;
+UPDATE pms_product SET category_id = 15 WHERE id = 5;
+UPDATE pms_product SET category_id = 16 WHERE id = 6;
+UPDATE pms_product SET category_id = 18 WHERE id = 7;
+UPDATE pms_product SET category_id = 17 WHERE id = 8;
+
 INSERT INTO pms_sku (
     id, product_id, sku_code, price, compare_at_price, stock, pic, images, description, specs, status
 ) VALUES
@@ -464,6 +563,102 @@ INSERT INTO pms_sku (
  '["https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200"]',
  '{"en":"Medium black helmet","zh":"中码黑色头盔"}',
  '{"en":{"color":"Black","bundle":"Single","style":"M"},"zh":{"颜色":"黑色","套餐":"单只装","款式":"M 码"}}',
+ 'ACTIVE'),
+(13, 1, 'S9PRO-BLK-CITY-LITE', 279.99, 409.99, 38,
+ 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Black city kit lite package","zh":"黑色城市轻装版"}',
+ '{"en":{"color":"Midnight Black","bundle":"City Kit","style":"Lite"},"zh":{"颜色":"午夜黑","套餐":"城市礼包","款式":"轻装版"}}',
+ 'ACTIVE'),
+(14, 1, 'S9PRO-BLK-TRAVEL-PRO', 319.99, 449.99, 12,
+ 'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Black travel pro setup","zh":"黑色旅行 Pro 套装"}',
+ '{"en":{"color":"Midnight Black","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"午夜黑","套餐":"旅行套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(15, 1, 'S9PRO-WHT-STD-LITE', 289.99, 419.99, 8,
+ 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"White standard lite setup","zh":"白色标准轻装版"}',
+ '{"en":{"color":"Pearl White","bundle":"Standard","style":"Lite"},"zh":{"颜色":"珍珠白","套餐":"标准版","款式":"轻装版"}}',
+ 'ACTIVE'),
+(16, 1, 'S9PRO-WHT-TRAVEL-PRO', 329.99, 459.99, 0,
+ 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"White travel pro bundle","zh":"白色旅行 Pro 套装"}',
+ '{"en":{"color":"Pearl White","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"珍珠白","套餐":"旅行套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(17, 2, 'SNOVA-BLK-TRAVEL-PRO', 519.99, 629.99, 26,
+ 'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Black travel pro setup","zh":"黑色旅行 Pro 版本"}',
+ '{"en":{"color":"Graphite Black","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"石墨黑","套餐":"旅行套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(18, 2, 'SNOVA-BLK-COM-LITE', 499.99, 609.99, 14,
+ 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Black commuter lite setup","zh":"黑色通勤轻装版"}',
+ '{"en":{"color":"Graphite Black","bundle":"Commuter Plus","style":"Lite"},"zh":{"颜色":"石墨黑","套餐":"通勤增强版","款式":"轻装版"}}',
+ 'ACTIVE'),
+(19, 2, 'SNOVA-GRY-STD-LITE', 509.99, 619.99, 11,
+ 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Grey standard lite setup","zh":"灰色标准轻装版"}',
+ '{"en":{"color":"Storm Grey","bundle":"Standard","style":"Lite"},"zh":{"颜色":"风暴灰","套餐":"标准版","款式":"轻装版"}}',
+ 'ACTIVE'),
+(20, 2, 'SNOVA-GRY-TRAVEL-PRO', 549.99, 669.99, 0,
+ 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Grey travel pro bundle","zh":"灰色旅行 Pro 套装"}',
+ '{"en":{"color":"Storm Grey","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"风暴灰","套餐":"旅行套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(21, 3, 'U8-BLK-CITY-LITE', 789.99, 979.99, 18,
+ 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Black city lite commuter bike","zh":"黑色城市轻装通勤版"}',
+ '{"en":{"color":"Matte Black","bundle":"City Kit","style":"Lite"},"zh":{"颜色":"磨砂黑","套餐":"城市礼包","款式":"轻装版"}}',
+ 'ACTIVE'),
+(22, 3, 'U8-BLK-TRAVEL-PRO', 869.99, 1079.99, 7,
+ 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Black travel pro commuter bike","zh":"黑色旅行 Pro 通勤版"}',
+ '{"en":{"color":"Matte Black","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"磨砂黑","套餐":"旅行套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(23, 3, 'U8-BLU-STD-LITE', 829.99, 1019.99, 9,
+ 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Blue standard lite commuter bike","zh":"蓝色标准轻装通勤版"}',
+ '{"en":{"color":"Ocean Blue","bundle":"Standard","style":"Lite"},"zh":{"颜色":"海洋蓝","套餐":"标准版","款式":"轻装版"}}',
+ 'ACTIVE'),
+(24, 3, 'U8-BLU-TRAVEL-PRO', 889.99, 1099.99, 0,
+ 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Blue travel pro commuter bike","zh":"蓝色旅行 Pro 通勤版"}',
+ '{"en":{"color":"Ocean Blue","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"海洋蓝","套餐":"旅行套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(25, 4, 'M50-GRN-EXP-LITE', 1219.99, 1429.99, 10,
+ 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Green explorer lite build","zh":"绿色探索轻装版"}',
+ '{"en":{"color":"Forest Green","bundle":"Explorer Kit","style":"Lite"},"zh":{"颜色":"森林绿","套餐":"探索套装","款式":"轻装版"}}',
+ 'ACTIVE'),
+(26, 4, 'M50-GRN-ADV-PRO', 1329.99, 1529.99, 6,
+ 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Green adventure pro build","zh":"绿色越野 Pro 版"}',
+ '{"en":{"color":"Forest Green","bundle":"Adventure Kit","style":"Pro"},"zh":{"颜色":"森林绿","套餐":"越野套装","款式":"Pro 版"}}',
+ 'ACTIVE'),
+(27, 4, 'M50-SND-STD-LITE', 1239.99, 1449.99, 5,
+ 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Sand standard lite build","zh":"沙岩色标准轻装版"}',
+ '{"en":{"color":"Sand","bundle":"Standard","style":"Lite"},"zh":{"颜色":"沙岩色","套餐":"标准版","款式":"轻装版"}}',
+ 'ACTIVE'),
+(28, 4, 'M50-SND-EXP-PRO', 1349.99, 1549.99, 0,
+ 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200',
+ '["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]',
+ '{"en":"Sand explorer pro build","zh":"沙岩色探索 Pro 版"}',
+ '{"en":{"color":"Sand","bundle":"Explorer Kit","style":"Pro"},"zh":{"颜色":"沙岩色","套餐":"探索套装","款式":"Pro 版"}}',
  'ACTIVE');
 
 INSERT INTO pms_review (id, product_id, user_id, user_name, rating, title, content, images, verified_purchase) VALUES
@@ -518,6 +713,7 @@ INSERT INTO pay_payment_intent (
 (1, 'PI_SEED_0001', 1, 1, 519.59, 'USD', 'credit_card', 'mock', 'SUCCEEDED', 'mock_secret_seed_0001', 'success', CURRENT_TIMESTAMP);
 
 SELECT setval('sys_user_id_seq', COALESCE((SELECT MAX(id) FROM sys_user), 1), TRUE);
+SELECT setval('cms_promotion_activity_id_seq', COALESCE((SELECT MAX(id) FROM cms_promotion_activity), 1), TRUE);
 SELECT setval('pms_category_id_seq', COALESCE((SELECT MAX(id) FROM pms_category), 1), TRUE);
 SELECT setval('pms_product_id_seq', COALESCE((SELECT MAX(id) FROM pms_product), 1), TRUE);
 SELECT setval('pms_sku_id_seq', COALESCE((SELECT MAX(id) FROM pms_sku), 1), TRUE);

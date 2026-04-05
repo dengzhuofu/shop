@@ -1,17 +1,17 @@
 <template>
   <div class="orders-page">
-    <section class="card">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-head">
         <div>
           <p class="eyebrow">{{ t('orderHistory') }}</p>
           <h2>{{ t('orders') }}</h2>
         </div>
-        <button type="button" class="minor-btn" @click="fetchOrders">{{ t('refreshData') }}</button>
+        <button type="button" class="refresh-btn" @click="fetchOrders">{{ t('refreshData') }}</button>
       </div>
 
       <div v-if="orders.length" class="order-list">
         <article v-for="order in orders" :key="order.id" class="order-card">
-          <div class="top-row">
+          <div class="order-top">
             <div>
               <strong>{{ order.orderSn }}</strong>
               <p>{{ order.createTime }}</p>
@@ -26,14 +26,16 @@
             </div>
           </div>
 
-          <div class="totals">
+          <div class="order-total">
             <span>{{ t('total') }}</span>
             <strong>{{ money(order.totalAmount) }}</strong>
           </div>
         </article>
       </div>
 
-      <p v-else class="helper-text">{{ t('noOrders') }}</p>
+      <div v-else class="empty-state">
+        <p>{{ t('noOrders') }}</p>
+      </div>
     </section>
   </div>
 </template>
@@ -59,16 +61,16 @@ onMounted(fetchOrders)
 </script>
 
 <style scoped lang="scss">
-.card {
-  border-radius: 28px;
-  background: white;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 24px;
+.panel {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 24px;
+  padding: 30px 32px;
 }
 
-.section-head,
-.top-row,
-.totals,
+.panel-head,
+.order-top,
+.order-total,
 .line-item {
   display: flex;
   align-items: center;
@@ -76,24 +78,32 @@ onMounted(fetchOrders)
   gap: 16px;
 }
 
-.section-head {
-  margin-bottom: 18px;
+.panel-head {
+  margin-bottom: 22px;
+
+  h2 {
+    margin: 6px 0 0;
+    font-size: 22px;
+    color: #111;
+  }
 }
 
 .eyebrow {
-  margin: 0 0 8px;
+  margin: 0;
+  color: #777;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 12px;
-  color: #0f766e;
 }
 
-.minor-btn {
-  border: 1px solid rgba(15, 23, 42, 0.1);
+.refresh-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #dcdcdc;
   border-radius: 999px;
-  background: #f8fafc;
-  padding: 10px 14px;
+  background: #fff;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .order-list {
@@ -104,50 +114,72 @@ onMounted(fetchOrders)
 
 .order-card {
   border-radius: 22px;
-  background: #f8fafc;
-  padding: 18px;
+  border: 1px solid #ececec;
+  background: #fafafa;
+  padding: 18px 20px;
 }
 
-.top-row p,
-.helper-text,
-.line-item a {
-  color: #64748b;
-}
-
-.top-row p {
+.order-top p {
   margin: 6px 0 0;
+  color: #767676;
 }
 
 .status-chip {
-  border-radius: 999px;
-  background: #e0f2fe;
-  color: #0f172a;
   padding: 8px 12px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .line-items {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 16px 0;
+  gap: 8px;
+  margin: 18px 0;
 }
 
 .line-item {
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e7e7e7;
 
   &:last-child {
     border-bottom: none;
+    padding-bottom: 0;
   }
 
   a {
+    color: #111;
     text-decoration: none;
   }
 }
 
-.totals {
-  padding-top: 12px;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+.order-total {
+  padding-top: 14px;
+  border-top: 1px solid #e7e7e7;
+}
+
+.empty-state {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #fafafa;
+  color: #767676;
+}
+
+@media (max-width: 720px) {
+  .panel {
+    padding: 22px;
+  }
+
+  .panel-head,
+  .order-top,
+  .order-total,
+  .line-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>

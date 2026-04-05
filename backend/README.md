@@ -366,8 +366,14 @@ src/main/java/com/shop
   - 商品、分类、优惠券、支付方式、订单详情都支持 `lang / Accept-Language`
   - 默认语言 `en`，缺失翻译回退 `en`
 
+- [x] 营销活动接口
+  - `GET /marketing/activities`
+  - `GET /marketing/activities/current`
+  - 顶部活动支持 `title / subtitle / countdownEndAt / desktopBg / mobileBg / linkUrl / tag / enabled`
+
 - [x] 真实商品与分类接口
   - `GET /category/tree`
+  - `GET /category/menu`
   - `GET /category/{slug}`
   - `GET /category/{slug}/products`
   - `GET /product/list`
@@ -416,6 +422,14 @@ src/main/java/com/shop
 - [x] `schema.sql` 已重建为真实双语种子数据
 - [x] 覆盖品类：`Electric Scooters / Electric Bike / Electric Skateboard / Accessories`
 - [x] 覆盖种子：用户、分类、商品、SKU、评论、地址、优惠券、订单、支付意图
+- [x] 已新增营销活动表 `cms_promotion_activity`
+- [x] 已补齐菜单层级：一级分类 -> 二级分类 -> 商品
+- [x] 已为 4 个主商品补充复杂 SKU 测试数据
+  - 独立价格
+  - 独立划线价
+  - 独立库存
+  - 独立图片
+  - 部分无库存组合
 
 ### 已通过的后端测试
 
@@ -426,7 +440,16 @@ src/main/java/com/shop
 - [x] 商品详情多语言返回
 - [x] 邮箱注册 + 登录 + `/auth/me`
 - [x] 分类树与商品 slug 详情
+- [x] 顶部活动当前启用项接口
+- [x] 分类 hover 菜单接口
 - [x] 购物车 -> 订单预览 -> 创建订单 -> 支付意图 -> mock 完成支付
+
+### 2026-04-05 本轮后端补充说明
+
+- [x] 已将 `/marketing/**` 加入公开白名单，前端顶部活动无需登录即可读取
+- [x] 分类树与分类商品查询已支持从根分类递归汇总子分类商品
+- [x] `GET /category/menu` 专门为前端 Mega Menu 提供真实菜单结构
+- [x] 结算链路继续保持“先 preview，再 create order，再 payment intent”的边界
 
 ### 当前保留项
 

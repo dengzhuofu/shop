@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,12 +38,22 @@ public class ProductController {
     Page<PmsProduct> page = new Page<>(pageNum, pageSize);
     QueryWrapper<PmsProduct> wrapper = new QueryWrapper<>();
     wrapper.eq("published", true);
+    List<PmsCategory> categories = categoryService.list(new QueryWrapper<PmsCategory>()
+        .eq("published", true)
+        .orderByAsc("sort_order")
+        .orderByAsc("id"));
+    Map<Long, PmsCategory> categoryById = categories.stream()
+        .collect(Collectors.toMap(PmsCategory::getId, category -> category));
+
     if (categorySlug != null && !categorySlug.isBlank() && !"all".equalsIgnoreCase(categorySlug)) {
-      PmsCategory category = categoryService.getOne(new QueryWrapper<PmsCategory>().eq("slug", categorySlug));
+      PmsCategory category = categories.stream()
+          .filter(item -> categorySlug.equals(item.getSlug()))
+          .findFirst()
+          .orElse(null);
       if (category == null) {
         return Result.success(new Page<>(pageNum, pageSize));
       }
-      wrapper.eq("category_id", category.getId());
+      wrapper.in("category_id", collectDescendantIds(category.getId(), categories));
     }
 
     if ("price-ascending".equalsIgnoreCase(sort)) {
@@ -62,7 +73,7 @@ public class ProductController {
     voPage.setSize(productPage.getSize());
 
     List<ProductVO> voList = productPage.getRecords().stream()
-        .map(this::toListItem)
+        .map(product -> toListItem(product, categoryById))
         .collect(Collectors.toList());
     voPage.setRecords(voList);
 
@@ -77,7 +88,7 @@ public class ProductController {
     }
 
     List<PmsSku> skuList = skuService.list(new QueryWrapper<PmsSku>().eq("product_id", id));
-    ProductVO vo = buildProductVO(product, skuList);
+    ProductVO vo = buildProductVO(product, skuList, publishedCategoryMap());
     return Result.success(vo);
   }
 
@@ -91,25 +102,55 @@ public class ProductController {
     }
 
     List<PmsSku> skuList = skuService.list(new QueryWrapper<PmsSku>().eq("product_id", product.getId()));
-    ProductVO vo = buildProductVO(product, skuList);
+    ProductVO vo = buildProductVO(product, skuList, publishedCategoryMap());
     return Result.success(vo);
   }
 
-  private ProductVO toListItem(PmsProduct product) {
+  private ProductVO toListItem(PmsProduct product, Map<Long, PmsCategory> categoryById) {
     ProductVO vo = ProductVO.from(product, null);
-    PmsCategory category = categoryService.getById(product.getCategoryId());
-    if (category != null) {
-      vo.setCategorySlug(category.getSlug());
-    }
+    vo.setCategorySlug(resolveRootSlug(product.getCategoryId(), categoryById));
     return vo;
   }
 
-  private ProductVO buildProductVO(PmsProduct product, List<PmsSku> skuList) {
+  private ProductVO buildProductVO(PmsProduct product, List<PmsSku> skuList, Map<Long, PmsCategory> categoryById) {
     ProductVO vo = ProductVO.from(product, skuList);
-    PmsCategory category = categoryService.getById(product.getCategoryId());
-    if (category != null) {
-      vo.setCategorySlug(category.getSlug());
-    }
+    vo.setCategorySlug(resolveRootSlug(product.getCategoryId(), categoryById));
     return vo;
+  }
+
+  private Map<Long, PmsCategory> publishedCategoryMap() {
+    return categoryService.list(new QueryWrapper<PmsCategory>()
+            .eq("published", true)
+            .orderByAsc("sort_order")
+            .orderByAsc("id"))
+        .stream()
+        .collect(Collectors.toMap(PmsCategory::getId, category -> category));
+  }
+
+  private List<Long> collectDescendantIds(Long categoryId, List<PmsCategory> categories) {
+    List<Long> ids = List.of(categoryId);
+    List<Long> childIds = categories.stream()
+        .filter(category -> categoryId.equals(category.getParentId()))
+        .map(PmsCategory::getId)
+        .toList();
+    if (childIds.isEmpty()) {
+      return ids;
+    }
+    return childIds.stream()
+        .flatMap(childId -> collectDescendantIds(childId, categories).stream())
+        .collect(Collectors.collectingAndThen(Collectors.toList(), collected -> {
+          List<Long> result = new java.util.ArrayList<>();
+          result.add(categoryId);
+          result.addAll(collected);
+          return result;
+        }));
+  }
+
+  private String resolveRootSlug(Long categoryId, Map<Long, PmsCategory> categoryById) {
+    PmsCategory current = categoryById.get(categoryId);
+    while (current != null && current.getParentId() != null) {
+      current = categoryById.get(current.getParentId());
+    }
+    return current == null ? null : current.getSlug();
   }
 }

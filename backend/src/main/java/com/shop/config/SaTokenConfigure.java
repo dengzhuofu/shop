@@ -19,6 +19,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
               "/auth/register/email",
               "/product/**",
               "/category/**",
+              "/marketing/**",
               "/review/**",
               "/swagger-ui.html",
               "/swagger-ui/**",

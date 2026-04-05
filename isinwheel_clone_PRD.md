@@ -366,6 +366,15 @@
   - 已落到 Header、Footer、首页、分类页、商品详情页、登录注册页、购物车、结算页、账户页、订单页
   - 默认语言 `en`，切换后写入 `lang` Cookie 并刷新页面，后端接口同步按 `lang` 返回真实双语数据
 
+- [x] 首页顶部活动改为真实接口
+  - Header 顶部活动条已读取 `/api/marketing/activities/current`
+  - 倒计时、标题、副标题、跳转链接、桌面/移动端背景图都由后端活动数据驱动
+
+- [x] 首页顶部 hover 菜单改为真实接口
+  - 顶部一级导航已读取 `/api/category/menu`
+  - Hover 内容按 `一级分类 -> 二级分类 -> 商品` 的真实结构渲染
+  - Hover 菜单商品卡片使用真实商品标题、价格、标签、图片、slug
+
 - [x] 前端商品使用后端真实数据
   - 首页：读取 `/api/category/tree`、`/api/product/list`
   - 分类页：读取 `/api/category/{slug}`、`/api/category/{slug}/products`
@@ -380,7 +389,9 @@
 
 - [x] 创建订单功能
   - 前端只支持 `Add to cart`
-  - Checkout 按 `cart -> preview -> create` 顺序调用真实接口
+  - Checkout 进入页面后会自动做 `preview`
+  - 地址、优惠券、购物车变化后会重新自动 `preview`
+  - 点击支付按钮时才会执行 `create order -> payment intent`
   - 支持已保存地址与手动地址表单
 
 - [x] 保留支付层（暂不接真实支付）
@@ -393,6 +404,11 @@
   - 新增邮箱注册页
   - 登录态通过 Cookie + `/auth/me` 恢复
   - 未登录用户加购后进入结算会被引导登录
+
+- [x] 账户页与结算页独立布局
+  - `/account/*` 与 `/checkout` 已移出首页 Header 体系
+  - 账户相关页面改为独立账户壳层，保留独立顶部导航与底部链接
+  - `/account/profile` 已调整为更贴近官网账户中心的结构
 
 - [x] 优惠券功能
   - 账户页与结算页可查看已领优惠券
@@ -426,6 +442,7 @@
 - [x] `npm run test:unit`
 - [x] `npm run test:integration`
 - [x] `npm test`
+- [x] `npm run build`
 
 当前前端测试覆盖：
 
@@ -433,6 +450,28 @@
 - [x] SKU 规格选择工具函数
 - [x] 登录页 SSR 输出
 - [x] 注册页 SSR 输出
+- [x] 账户页独立布局 SSR 输出
+- [x] 结算页独立布局 SSR 输出
+- [x] 顶部 hover 菜单组件渲染真实菜单结构
+
+### 10.5 2026-04-05 本轮新增实现说明
+
+- [x] 账户页范围
+  - 所有 `/account/*` 与 `/checkout` 统一切到独立账户布局
+
+- [x] 活动数据模型
+  - 前端按“活动列表里取当前启用条目”的后端输出消费当前活动
+
+- [x] 顶部菜单真实结构
+  - 使用 `一级分类 -> 二级分类 -> 商品` 渲染 hover 菜单
+
+- [x] SKU 测试数据联调
+  - 前端已适配 4 个主商品的复杂 SKU 组合与禁用态
+
+- [x] 结算流程调整
+  - 页面进入自动 `preview`
+  - 点击 `Pay now` 才创建订单并创建支付意图
+  - `mock complete` 保留为测试支付占位层的最后一步
 
 - 使用后端真实商品数据驱动首页、详情页、购物车、结算页，不再保留页面内硬编码商品数据。
 - 保留语言 Cookie，并统一通过 `useHttp` 发送 `Accept-Language` 与 `lang` 参数。
