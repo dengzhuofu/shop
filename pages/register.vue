@@ -1,57 +1,72 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
-      <div class="copy-block">
-        <p class="eyebrow">isinwheel</p>
-        <h1>{{ t('registerTitle') }}</h1>
+  <div class="login-page">
+    <div class="login-container">
+      <div class="login-banner">
+        <h2>{{ copy.welcome }}</h2>
         <p>{{ t('registerHint') }}</p>
       </div>
 
-      <form class="form-block" @submit.prevent="handleRegister">
-        <div class="name-grid">
-          <label>
-            <span>{{ t('firstName') }}</span>
-            <input v-model="form.firstName" type="text" autocomplete="given-name" required />
-          </label>
-          <label>
-            <span>{{ t('lastName') }}</span>
-            <input v-model="form.lastName" type="text" autocomplete="family-name" required />
-          </label>
-        </div>
+      <div class="login-form-wrapper">
+        <h1 class="login-title">{{ t('registerTitle') }}</h1>
+        <p class="login-subtitle">{{ copy.subtitle }}</p>
 
-        <label>
-          <span>{{ t('email') }}</span>
-          <input v-model="form.email" type="email" autocomplete="email" required />
-        </label>
+        <form class="login-form" @submit.prevent="handleRegister">
+          <div class="name-grid">
+            <div class="form-group">
+              <label for="first-name">{{ t('firstName') }}</label>
+              <input id="first-name" v-model="form.firstName" type="text" autocomplete="given-name" required />
+            </div>
 
-        <label>
-          <span>{{ t('password') }}</span>
-          <input v-model="form.password" type="password" autocomplete="new-password" minlength="6" required />
-        </label>
+            <div class="form-group">
+              <label for="last-name">{{ t('lastName') }}</label>
+              <input id="last-name" v-model="form.lastName" type="text" autocomplete="family-name" required />
+            </div>
+          </div>
 
-        <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+          <div class="form-group">
+            <label for="email">{{ t('email') }}</label>
+            <input id="email" v-model="form.email" type="email" autocomplete="email" required />
+          </div>
 
-        <button type="submit" class="submit-btn" :disabled="loading">
-          {{ loading ? t('adding') : t('registerAction') }}
-        </button>
+          <div class="form-group">
+            <label for="password">{{ t('password') }}</label>
+            <input
+              id="password"
+              v-model="form.password"
+              type="password"
+              autocomplete="new-password"
+              minlength="6"
+              required
+            />
+          </div>
 
-        <p class="helper">
-          {{ t('alreadyHaveAccount') }}
-          <NuxtLink to="/login">{{ t('login') }}</NuxtLink>
-        </p>
-      </form>
+          <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+          <button type="submit" class="submit-btn" :disabled="loading">
+            {{ loading ? copy.loading : t('registerAction') }}
+          </button>
+
+          <div class="form-footer">
+            <span class="forgot-pwd">{{ copy.hint }}</span>
+            <span>
+              {{ t('alreadyHaveAccount') }}
+              <NuxtLink to="/login" class="register-link">{{ t('login') }}</NuxtLink>
+            </span>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 definePageMeta({
   layout: 'blank',
 })
 
-const { t } = useShopLocale()
+const { lang, t } = useShopLocale()
 const session = useShopSession()
 
 const form = reactive({
@@ -64,20 +79,38 @@ const form = reactive({
 const loading = ref(false)
 const errorMessage = ref('')
 
+const copy = computed(() =>
+  lang.value === 'zh'
+    ? {
+        welcome: '创建你的骑行账户',
+        subtitle: '使用邮箱完成注册',
+        loading: '注册中...',
+        hint: '后续可继续补充邮箱验证和找回密码流程',
+      }
+    : {
+        welcome: 'Create your rider account',
+        subtitle: 'Use your email to register',
+        loading: 'Creating account...',
+        hint: 'Email verification and password reset can be added later',
+      },
+)
+
 const handleRegister = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
-    const res = await useHttp('/api/auth/register/email', {
+    const response = await useHttp('/api/auth/register/email', {
       method: 'POST',
       body: form,
     })
-    if (res?.code === 200) {
-      session.applyAuthPayload(res.data)
+
+    if (response?.code === 200) {
+      session.applyAuthPayload(response.data)
       await navigateTo('/')
       return
     }
-    errorMessage.value = res?.message || 'Registration failed'
+
+    errorMessage.value = response?.message || 'Registration failed'
   } catch (error: any) {
     errorMessage.value = error?.data?.message || error?.message || 'Registration failed'
   } finally {
@@ -87,110 +120,184 @@ const handleRegister = async () => {
 </script>
 
 <style scoped lang="scss">
-.auth-page {
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+.login-page {
+  background-color: #000;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 28%),
-    linear-gradient(135deg, #f8f7f1, #eef2ff);
+  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
-.auth-card {
-  width: min(960px, 100%);
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
-  border-radius: 32px;
+.login-container {
+  display: flex;
+  width: 100%;
+  max-width: 960px;
+  background-color: #111;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(76, 175, 80, 0.15);
   overflow: hidden;
-  background: white;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+  border: 1px solid #222;
 }
 
-.copy-block,
-.form-block {
-  padding: 36px;
-}
+.login-banner {
+  flex: 1;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 
-.copy-block {
-  background: linear-gradient(135deg, #0f172a, #134e4a);
-  color: white;
-
-  h1 {
-    margin: 0 0 14px;
-    font-size: clamp(34px, 5vw, 52px);
-    line-height: 1.05;
+  h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #fff;
   }
 
   p {
-    max-width: 36ch;
-    line-height: 1.8;
-    color: rgba(255, 255, 255, 0.82);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 }
 
-.eyebrow {
-  margin: 0 0 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 12px;
-  color: #99f6e4 !important;
-}
-
-.form-block {
+.login-form-wrapper {
+  flex: 1;
+  padding: 48px 40px;
+  background-color: #111;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  justify-content: center;
+}
 
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    color: #0f172a;
-    font-weight: 700;
-  }
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #4caf50;
+}
 
-  input {
-    min-height: 52px;
-    border-radius: 16px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    padding: 0 16px;
-    font-size: 15px;
-  }
+.login-subtitle {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 32px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .name-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ccc;
+  }
+
+  input {
+    background-color: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    width: 100%;
+
+    &:focus {
+      outline: none;
+      border-color: #4caf50;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+  }
+}
+
+.error-message {
+  color: #ff5252;
+  font-size: 13px;
+  margin-top: -5px;
+  margin-bottom: 5px;
 }
 
 .submit-btn {
-  min-height: 54px;
-  border-radius: 999px;
+  background-color: #4caf50;
+  color: #fff;
   border: none;
-  background: #0f766e;
-  color: white;
-  font-weight: 800;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    transform 0.1s ease;
+  margin-top: 10px;
+  width: 100%;
+
+  &:hover:not(:disabled) {
+    background-color: #45a049;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    background-color: #2e5c31;
+    color: #888;
+    cursor: not-allowed;
+  }
 }
 
-.helper,
-.error-text {
-  margin: 0;
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #888;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  a,
+  .forgot-pwd {
+    color: #4caf50;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  a:hover {
+    color: #66bb6a;
+    text-decoration: underline;
+  }
 }
 
-.helper a {
-  color: #0f766e;
-  font-weight: 700;
-}
-
-.error-text {
-  color: #dc2626;
-}
-
-@media (max-width: 760px) {
-  .auth-card,
+@media (max-width: 768px) {
   .name-grid {
     grid-template-columns: 1fr;
   }

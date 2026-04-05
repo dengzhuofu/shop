@@ -1,7 +1,8 @@
 <template>
   <div class="layout-default">
+    <div class="global-discount-tag">$20 OFF</div>
     <AppHeader />
-    <main class="page-shell">
+    <main class="main-content">
       <slot />
     </main>
     <AppFooter />
@@ -13,14 +14,45 @@
 
 <style scoped lang="scss">
 .layout-default {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 28%),
-    radial-gradient(circle at right 20%, rgba(249, 115, 22, 0.08), transparent 30%),
-    #f8f7f1;
+  position: relative;
+  background: #fff;
+
+  .global-discount-tag {
+    position: fixed;
+    left: 0;
+    top: 60%;
+    transform-origin: top left;
+    transform: rotate(-90deg) translateX(-50%);
+    background-color: #58cc02;
+    color: #fff;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 8px 24px;
+    border-radius: 0 0 8px 8px;
+    z-index: 999;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      padding-top: 12px;
+    }
+  }
+
+  .main-content {
+    flex: 1;
+  }
 }
 
-.page-shell {
-  min-height: calc(100vh - 160px);
+@media (max-width: 900px) {
+  .layout-default {
+    .global-discount-tag {
+      display: none;
+    }
+  }
 }
 </style>

@@ -1,41 +1,82 @@
 <template>
-  <header class="app-header">
-    <div class="promo-bar">
-      <div class="container promo-inner">
-        <span>{{ t('brandTagline') }}</span>
-        <button type="button" class="lang-switch" @click="toggleLang">
-          {{ lang === 'en' ? '中文' : 'EN' }}
-        </button>
+  <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
+    <div class="top-bar">
+      <div class="container top-bar-content">
+        <div class="offer-copy">
+          <p class="offer-kicker">{{ copy.offerKicker }}</p>
+          <p class="offer-title">{{ copy.offerTitle }}</p>
+        </div>
+
+        <div class="countdown-panel">
+          <div class="countdown">
+            <template v-for="(item, index) in countdownItems" :key="item.label">
+              <span class="time-block">{{ item.value }}</span>
+              <span v-if="index < countdownItems.length - 1" class="time-separator">:</span>
+            </template>
+          </div>
+          <div class="countdown-labels">
+            <span v-for="item in countdownItems" :key="`${item.label}-label`">
+              {{ item.label }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="main-bar">
-      <div class="container main-inner">
-        <NuxtLink to="/" class="logo">isinwheel</NuxtLink>
+    <div class="main-nav">
+      <div class="container nav-content">
+        <NuxtLink to="/" class="logo">
+          <h2><i>isinwheel</i></h2>
+        </NuxtLink>
 
-        <nav class="desktop-nav">
-          <NuxtLink
-            v-for="item in navItems"
-            :key="item.slug"
-            :to="`/collections/${item.slug}`"
-            class="nav-link"
-          >
-            {{ item.name }}
-          </NuxtLink>
+        <nav class="desktop-nav" aria-label="Main navigation">
+          <ul class="nav-list">
+            <li v-for="item in navItems" :key="item.slug" class="nav-item">
+              <NuxtLink :to="`/collections/${item.slug}`">{{ item.name }}</NuxtLink>
+            </li>
+            <li class="nav-item support-item">
+              <button type="button" class="support-trigger">{{ copy.support }}</button>
+              <NavDropdown :links="supportLinks" />
+            </li>
+          </ul>
         </nav>
 
         <div class="actions">
-          <NuxtLink v-if="session.isLoggedIn.value" to="/account/profile" class="action-link">
-            {{ t('account') }}
-          </NuxtLink>
-          <NuxtLink v-else to="/login" class="action-link">
-            {{ t('login') }}
-          </NuxtLink>
-          <button v-if="session.isLoggedIn.value" type="button" class="action-link ghost" @click="handleLogout">
-            {{ t('logout') }}
+          <button type="button" class="country-pill" @click="toggleLang">
+            <span>{{ lang === 'en' ? '🇺🇸 EN' : '🇨🇳 中文' }}</span>
           </button>
-          <button type="button" class="cart-button" @click="cart.openCart()">
-            {{ t('cart') }}
+
+          <button type="button" class="icon-button" :aria-label="copy.search">
+            <SearchIcon class="icon muted" />
+          </button>
+
+          <div
+            class="user-menu-wrapper"
+            @mouseenter="userMenuOpen = true"
+            @mouseleave="userMenuOpen = false"
+          >
+            <button type="button" class="icon-button" :aria-label="t('account')" @click="handleUserClick">
+              <UserIcon class="icon" />
+            </button>
+
+            <div v-show="userMenuOpen" class="user-dropdown">
+              <template v-if="session.isLoggedIn.value">
+                <NuxtLink to="/account/profile" class="dropdown-item">{{ t('profile') }}</NuxtLink>
+                <NuxtLink to="/account/orders" class="dropdown-item">{{ t('orders') }}</NuxtLink>
+                <div class="dropdown-divider" />
+                <button type="button" class="dropdown-item text-danger" @click="handleLogout">
+                  {{ t('logout') }}
+                </button>
+              </template>
+              <template v-else>
+                <NuxtLink to="/login" class="dropdown-item">{{ t('login') }}</NuxtLink>
+                <NuxtLink to="/register" class="dropdown-item">{{ t('register') }}</NuxtLink>
+              </template>
+            </div>
+          </div>
+
+          <button type="button" class="cart-icon" :aria-label="t('cart')" @click="handleCartClick">
+            <ShoppingCartIcon class="icon" />
             <span class="cart-count">{{ cart.count.value }}</span>
           </button>
         </div>
@@ -48,7 +89,6 @@
           v-for="item in navItems"
           :key="`mobile-${item.slug}`"
           :to="`/collections/${item.slug}`"
-          class="mobile-link"
         >
           {{ item.name }}
         </NuxtLink>
@@ -58,13 +98,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { SearchIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
 
-const { lang, setLang, t } = useShopLocale()
+const { lang, t, setLang } = useShopLocale()
 const session = useShopSession()
 const cart = useShopCart()
+const router = useRouter()
 
 const categories = ref<any[]>([])
+const isScrolled = ref(false)
+const userMenuOpen = ref(false)
+const countdownTarget = ref(0)
+const countdownMs = ref(24 * 60 * 60 * 1000)
+let countdownTimer: ReturnType<typeof window.setInterval> | null = null
 
 const fallbackCategories = computed(() => [
   { slug: 'electric-scooters', name: t('electricScooters') },
@@ -75,15 +122,96 @@ const fallbackCategories = computed(() => [
 
 const navItems = computed(() => (categories.value.length ? categories.value : fallbackCategories.value))
 
+const copy = computed(() =>
+  lang.value === 'zh'
+    ? {
+        offerKicker: '限时优惠！',
+        offerTitle: '别错过本周热卖',
+        support: '支持',
+        search: '搜索',
+        about: '关于我们',
+        contact: '联系我们',
+        faq: '常见问题',
+        orders: '订单追踪',
+        dealers: '成为经销商',
+      }
+    : {
+        offerKicker: 'Limited Time Offer!',
+        offerTitle: "Don't miss this week's ride deals",
+        support: 'Support',
+        search: 'Search',
+        about: 'About Us',
+        contact: 'Contact Us',
+        faq: 'FAQ',
+        orders: 'Track Your Order',
+        dealers: 'Become A Dealer',
+      },
+)
+
+const supportLinks = computed(() => [
+  { title: copy.value.about, url: '/account/profile' },
+  { title: copy.value.contact, url: '/account/profile' },
+  { title: copy.value.faq, url: '/account/profile' },
+  { title: copy.value.orders, url: '/account/orders' },
+  { title: copy.value.dealers, url: '/account/profile' },
+])
+
 const fetchCategories = async () => {
   try {
     const res = await useHttp('/api/category/tree')
-    if (res?.code === 200) {
-      categories.value = res.data || []
-    }
+    categories.value = res?.code === 200 ? res.data || [] : fallbackCategories.value
   } catch (error) {
     categories.value = fallbackCategories.value
   }
+}
+
+const formatCountdownValue = (value: number) => String(value).padStart(2, '0')
+
+const countdownParts = computed(() => {
+  const totalSeconds = Math.floor(Math.max(countdownMs.value, 0) / 1000)
+  const days = Math.floor(totalSeconds / (24 * 60 * 60))
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return { days, hours, minutes, seconds }
+})
+
+const countdownItems = computed(() => [
+  { label: lang.value === 'zh' ? '天' : 'Days', value: formatCountdownValue(countdownParts.value.days) },
+  { label: lang.value === 'zh' ? '时' : 'Hours', value: formatCountdownValue(countdownParts.value.hours) },
+  { label: lang.value === 'zh' ? '分' : 'Mins', value: formatCountdownValue(countdownParts.value.minutes) },
+  { label: lang.value === 'zh' ? '秒' : 'Secs', value: formatCountdownValue(countdownParts.value.seconds) },
+])
+
+const updateCountdown = () => {
+  countdownMs.value = Math.max(countdownTarget.value - Date.now(), 0)
+}
+
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 0
+}
+
+const handleUserClick = async () => {
+  userMenuOpen.value = false
+  if (session.isLoggedIn.value) {
+    await router.push('/account/orders')
+  } else {
+    await router.push('/login')
+  }
+}
+
+const handleLogout = async () => {
+  await session.logout()
+  userMenuOpen.value = false
+  await cart.refreshCart()
+  await router.push('/login')
+}
+
+const handleCartClick = async () => {
+  userMenuOpen.value = false
+  cart.openCart()
+  await cart.refreshCart()
 }
 
 const toggleLang = () => {
@@ -93,14 +221,20 @@ const toggleLang = () => {
   }
 }
 
-const handleLogout = async () => {
-  await session.logout()
-  await cart.refreshCart()
-  await navigateTo('/login')
-}
-
 onMounted(async () => {
+  countdownTarget.value = Date.now() + 24 * 60 * 60 * 1000
+  updateCountdown()
+  countdownTimer = window.setInterval(updateCountdown, 1000)
+  handleScroll()
+  window.addEventListener('scroll', handleScroll)
   await Promise.allSettled([fetchCategories(), session.fetchMe(), cart.refreshCart()])
+})
+
+onUnmounted(() => {
+  if (countdownTimer) {
+    window.clearInterval(countdownTimer)
+  }
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
@@ -108,126 +242,359 @@ onMounted(async () => {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 40;
-  background: rgba(248, 247, 241, 0.95);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  z-index: 100;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
 }
 
-.promo-bar {
-  background: linear-gradient(90deg, #0f172a, #1f2937);
-  color: #f8fafc;
-
-  .promo-inner {
-    min-height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    letter-spacing: 0.02em;
-  }
-}
-
-.lang-switch {
-  border: 1px solid rgba(248, 250, 252, 0.18);
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  padding: 6px 12px;
+.top-bar {
+  max-height: 116px;
+  overflow: hidden;
+  padding: 4px 0;
+  color: #111;
   font-size: 12px;
+  background-image: url('https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  transition:
+    max-height 0.3s ease,
+    padding 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.top-bar-content {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  min-height: 86px;
+  width: 100%;
+}
+
+.offer-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.offer-kicker {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.offer-title {
+  margin: 2px 0 0;
+  color: #090f1f;
+  font-size: 30px;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
   font-weight: 700;
 }
 
-.main-bar {
-  .main-inner {
-    min-height: 76px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-  }
+.countdown-panel {
+  justify-self: end;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-block {
+  min-width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #8ad5d0;
+  color: #39750a;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.time-separator {
+  color: #37760a;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.countdown-labels {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.countdown-labels span {
+  color: #4f7e0b;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.app-header.is-scrolled .top-bar {
+  max-height: 0;
+  padding: 0;
+  opacity: 0;
+}
+
+.main-nav {
+  padding: 16px 0;
+}
+
+.nav-content {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
 }
 
 .logo {
-  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
   text-decoration: none;
-  font-family: 'Poppins', sans-serif;
-  font-size: 28px;
+}
+
+.logo h2 {
+  margin: 0;
+  color: #111;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -1px;
 }
 
 .desktop-nav {
   display: flex;
-  align-items: center;
-  gap: 22px;
-  flex: 1;
+  flex: 1 1 auto;
   justify-content: center;
+  min-width: 0;
 }
 
-.nav-link,
-.action-link,
-.mobile-link {
-  color: #1f2937;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  transition: color 0.2s ease;
+.nav-list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-  &:hover {
-    color: #0f766e;
-  }
+.nav-item {
+  position: relative;
+  flex: 0 0 auto;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.nav-item a,
+.support-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #111;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.nav-item:hover a,
+.nav-item:hover .support-trigger {
+  background: #111;
+  color: #fff;
+}
+
+.support-item:hover :deep(.nav-dropdown) {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
 }
 
 .actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  flex: 0 0 auto;
 }
 
-.ghost {
-  border: none;
-  background: none;
-  padding: 0;
+.country-pill {
+  border: 1px solid #d6dae2;
+  border-radius: 20px;
+  padding: 4px 12px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.cart-button {
-  border: none;
-  border-radius: 999px;
-  background: #0f766e;
-  color: white;
-  padding: 10px 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-}
-
-.cart-count {
-  min-width: 22px;
-  height: 22px;
+.icon-button,
+.cart-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  font-size: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  color: #111;
+  transition: color 0.2s ease;
+}
+
+.icon:hover,
+.icon.muted:hover {
+  color: #58cc02;
+}
+
+.icon.muted {
+  color: #444;
+}
+
+.user-menu-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 30px;
+  right: -10px;
+  min-width: 150px;
+  padding: 8px 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 120;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  color: #333;
+  text-align: left;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: #f5f5f5;
+  color: #58cc02;
+}
+
+.dropdown-item.text-danger {
+  color: #e62332;
+}
+
+.dropdown-item.text-danger:hover {
+  background: #ffebee;
+}
+
+.dropdown-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: #eee;
+}
+
+.cart-icon {
+  position: relative;
+}
+
+.cart-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e62332;
+  color: #fff;
+  font-size: 10px;
 }
 
 .mobile-strip {
   display: none;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  background: white;
+  border-top: 1px solid #eef0f4;
 }
 
 .mobile-links {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
   padding: 12px 0;
 }
 
-@media (max-width: 960px) {
+.mobile-links a {
+  white-space: nowrap;
+  color: #111;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .top-bar {
+    max-height: 176px;
+    padding: 8px 0;
+  }
+
+  .top-bar-content {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 18px;
+    min-height: auto;
+  }
+
+  .offer-copy {
+    width: 100%;
+    text-align: center;
+  }
+
+  .countdown-panel {
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    max-width: 540px;
+  }
+
   .desktop-nav {
     display: none;
   }
@@ -235,26 +602,50 @@ onMounted(async () => {
   .mobile-strip {
     display: block;
   }
-
-  .main-bar .main-inner {
-    min-height: 68px;
-  }
-
-  .actions {
-    gap: 10px;
-  }
 }
 
 @media (max-width: 640px) {
-  .promo-inner {
+  .top-bar {
+    max-height: 220px;
+    padding: 8px 0;
+  }
+
+  .offer-title {
+    margin-top: 6px;
+    font-size: 20px;
+  }
+
+  .countdown-panel {
+    gap: 10px;
+  }
+
+  .countdown {
+    gap: 10px;
+  }
+
+  .time-block {
+    min-width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+
+  .time-separator {
+    font-size: 14px;
+  }
+
+  .countdown-labels {
+    gap: 10px;
+  }
+
+  .countdown-labels span {
+    font-size: 10px;
+  }
+
+  .actions {
     gap: 12px;
   }
 
-  .logo {
-    font-size: 24px;
-  }
-
-  .actions .action-link {
+  .country-pill {
     display: none;
   }
 }

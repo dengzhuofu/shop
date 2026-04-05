@@ -1,9 +1,9 @@
 <template>
   <article class="collection-product-card">
-    <NuxtLink class="card-link" :to="product.url">
+    <NuxtLink class="card-link" :to="productUrl">
       <div class="media">
-        <img :src="product.image" :alt="product.title" loading="lazy" />
-        <span v-if="product.badge" class="badge">{{ product.badge }}</span>
+        <img :src="coverImage" :alt="product.title" loading="lazy" />
+        <span v-if="badgeText" class="badge">{{ badgeText }}</span>
       </div>
     </NuxtLink>
 
@@ -12,26 +12,28 @@
         <div class="stars">
           <StarIcon v-for="idx in 5" :key="idx" class="star" />
         </div>
-        <span class="score">{{ product.rating.toFixed(1) }}</span>
-        <span class="reviews">{{ product.reviews }} reviews</span>
+        <span class="score">{{ scoreText }}</span>
+        <span class="reviews">{{ reviewsText }}</span>
       </div>
 
-      <NuxtLink class="title-link" :to="product.url">
+      <NuxtLink class="title-link" :to="productUrl">
         <h3 class="title">{{ product.title }}</h3>
       </NuxtLink>
 
       <div class="price-row">
-        <span class="price">${{ product.price.toFixed(2) }}</span>
-        <span class="compare-price">${{ product.compareAtPrice.toFixed(2) }}</span>
-        <span class="save">Save ${{ (product.compareAtPrice - product.price).toFixed(2) }}</span>
+        <span class="price">{{ money(product.price) }}</span>
+        <span v-if="product.compareAtPrice" class="compare-price">{{ money(product.compareAtPrice) }}</span>
+        <span v-if="product.compareAtPrice" class="save">
+          Save {{ money(Number(product.compareAtPrice) - Number(product.price)) }}
+        </span>
       </div>
 
-      <button class="action-btn" type="button">
-        {{ product.cta || 'Choose options' }}
-      </button>
+      <NuxtLink class="action-btn" :to="productUrl">
+        {{ t('chooseOptions') }}
+      </NuxtLink>
 
       <ul class="spec-grid">
-        <li v-for="spec in product.specs" :key="spec.label" class="spec-item">
+        <li v-for="spec in displaySpecs" :key="spec.label" class="spec-item">
           <span class="spec-value">{{ spec.value }}</span>
           <span class="spec-label">{{ spec.label }}</span>
         </li>
@@ -40,15 +42,41 @@
   </article>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from 'vue'
 import { StarIcon } from 'lucide-vue-next'
 
-defineProps({
-  product: {
-    type: Object,
-    required: true
+const props = defineProps<{
+  product: Record<string, any>
+}>()
+
+const { t } = useShopLocale()
+const { money } = useShopFormat()
+
+const productUrl = computed(() => props.product.url || `/products/${props.product.slug || props.product.id}`)
+
+const coverImage = computed(() => {
+  if (props.product.image) {
+    return props.product.image
   }
+  if (Array.isArray(props.product.images) && props.product.images.length) {
+    return props.product.images[0]
+  }
+  return props.product.pic || 'https://via.placeholder.com/600x600?text=isinwheel'
 })
+
+const badgeText = computed(() => {
+  if (props.product.badge) {
+    return props.product.badge
+  }
+  const tags = Array.isArray(props.product.tags) ? props.product.tags : []
+  return tags[0] || ''
+})
+
+const displaySpecs = computed(() => (Array.isArray(props.product.specs) ? props.product.specs : []).slice(0, 4))
+
+const scoreText = computed(() => `${Number(props.product.rating || 5).toFixed(1)}`)
+const reviewsText = computed(() => `${Number(props.product.reviews || 61)} reviews`)
 </script>
 
 <style scoped lang="scss">
@@ -140,6 +168,8 @@ defineProps({
   .title-link {
     display: block;
     margin-bottom: 8px;
+    color: inherit;
+    text-decoration: none;
   }
 
   .title {
@@ -147,6 +177,7 @@ defineProps({
     line-height: 1.35;
     color: #101828;
     min-height: 42px;
+    margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -192,6 +223,8 @@ defineProps({
     font-weight: 600;
     margin-bottom: 12px;
     transition: background-color 0.2s ease;
+    text-align: center;
+    text-decoration: none;
 
     &:hover {
       background: #1f2937;
@@ -205,6 +238,7 @@ defineProps({
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px 8px;
+    list-style: none;
   }
 
   .spec-item {
