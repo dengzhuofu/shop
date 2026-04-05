@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { ArrowRightIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon, FileTextIcon, MessageCircleIcon, PauseIcon, PlayIcon, StarIcon } from 'lucide-vue-next'
 
 const { lang, t } = useShopLocale()
@@ -261,17 +261,37 @@ const blogCards = computed(() => lang.value === 'zh'
       { id: 3, image: 'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400', title: 'Best Under-$500 Options for Easy Family Neighborhood Errands', date: 'Mar 11, 2026', comments: '0 comments' },
     ])
 
-const fetchHomeData = async () => {
-  try {
-    const [categoryRes, productRes] = await Promise.all([useHttp('/api/category/tree'), useHttp(`/api/product/list?pageNum=1&pageSize=24&lang=${lang.value}`)])
-    categories.value = categoryRes?.code === 200 ? categoryRes.data || [] : []
-    products.value = productRes?.code === 200 ? productRes.data?.records || [] : []
-    if (displayCategories.value.length && !displayCategories.value.some((item: any) => item.slug === currentTab.value)) currentTab.value = displayCategories.value[0].slug
-  } catch (error) {
-    categories.value = []
-    products.value = []
+const { data: homeData } = await useAsyncData(
+  'home-page-data',
+  async () => {
+    try {
+      const [categoryRes, productRes] = await Promise.all([
+        useHttp('/api/category/tree'),
+        useHttp(`/api/product/list?pageNum=1&pageSize=24&lang=${lang.value}`),
+      ])
+      return {
+        categories: categoryRes?.code === 200 ? categoryRes.data || [] : [],
+        products: productRes?.code === 200 ? productRes.data?.records || [] : [],
+      }
+    } catch (error) {
+      return {
+        categories: [],
+        products: [],
+      }
+    }
+  },
+  {
+    watch: [lang],
+  },
+)
+
+watchEffect(() => {
+  categories.value = homeData.value?.categories || []
+  products.value = homeData.value?.products || []
+  if (displayCategories.value.length && !displayCategories.value.some((item: any) => item.slug === currentTab.value)) {
+    currentTab.value = displayCategories.value[0].slug
   }
-}
+})
 
 const startHeroTimer = () => {
   if (heroTimer) window.clearInterval(heroTimer)
@@ -302,8 +322,7 @@ const toggleVideo = async () => {
   }
 }
 
-onMounted(async () => {
-  await fetchHomeData()
+onMounted(() => {
   startHeroTimer()
 })
 
