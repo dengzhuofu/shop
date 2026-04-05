@@ -5,6 +5,11 @@ PROJECT_DIR="${1:-/opt/shop}"
 DEPLOY_MODE="${2:-build}"
 COMPOSE_CMD=""
 DOCKER_MIRROR="${DOCKER_MIRROR:-https://docker.m.daocloud.io}"
+IS_ROOT="false"
+
+if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+  IS_ROOT="true"
+fi
 
 if [ ! -d "$PROJECT_DIR" ]; then
   echo "Project directory not found: $PROJECT_DIR" >&2
@@ -13,7 +18,7 @@ fi
 
 cd "$PROJECT_DIR"
 
-if ! command -v curl >/dev/null 2>&1; then
+if ! command -v curl >/dev/null 2>&1 && [ "$IS_ROOT" = "true" ]; then
   if command -v apt-get >/dev/null 2>&1; then
     apt-get update
     apt-get install -y curl ca-certificates
@@ -41,6 +46,10 @@ EOF
 }
 
 if ! command -v docker >/dev/null 2>&1; then
+  if [ "$IS_ROOT" != "true" ]; then
+    echo "Docker is not installed and bootstrap is running without root privileges." >&2
+    exit 1
+  fi
   if command -v apt-get >/dev/null 2>&1; then
     install_docker_from_apt || curl -fsSL https://get.docker.com | sh
   else
@@ -48,15 +57,21 @@ if ! command -v docker >/dev/null 2>&1; then
   fi
 fi
 
-configure_docker_mirror
-systemctl enable --now docker
-systemctl restart docker
+if [ "$IS_ROOT" = "true" ]; then
+  configure_docker_mirror
+  systemctl enable --now docker
+  systemctl restart docker
+fi
 
 if docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD="docker compose"
 elif command -v docker-compose >/dev/null 2>&1; then
   COMPOSE_CMD="docker-compose"
 else
+  if [ "$IS_ROOT" != "true" ]; then
+    echo "Docker Compose is not available and bootstrap is running without root privileges." >&2
+    exit 1
+  fi
   if command -v apt-get >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose
   fi
@@ -83,12 +98,12 @@ fi
 
 chmod 600 .env
 
-if systemctl is-active --quiet firewalld; then
+if [ "$IS_ROOT" = "true" ] && systemctl is-active --quiet firewalld; then
   firewall-cmd --permanent --add-service=http
   firewall-cmd --reload
 fi
 
-if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
+if [ "$IS_ROOT" = "true" ] && command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
   ufw allow 80/tcp
 fi
 
