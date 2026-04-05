@@ -16,11 +16,17 @@
           <div class="countdown">
             <template v-for="(item, index) in countdownItems" :key="item.label">
               <span class="time-block">{{ item.value }}</span>
-              <span v-if="index < countdownItems.length - 1" class="time-separator">:</span>
+              <span
+                v-if="index < countdownItems.length - 1"
+                class="time-separator"
+                >:</span
+              >
             </template>
           </div>
           <div class="countdown-labels">
-            <span v-for="item in countdownItems" :key="`${item.label}-label`">{{ item.label }}</span>
+            <span v-for="item in countdownItems" :key="`${item.label}-label`">{{
+              item.label
+            }}</span>
           </div>
         </div>
       </div>
@@ -41,11 +47,18 @@
               :class="{ 'is-active': activeMenu?.slug === item.slug }"
               @mouseenter="handleNavEnter(item)"
             >
-              <NuxtLink :to="`/collections/${item.slug}`">{{ item.name }}</NuxtLink>
+              <NuxtLink :to="`/collections/${item.slug}`">{{
+                item.name
+              }}</NuxtLink>
             </li>
 
-            <li class="nav-item support-item" @mouseenter="closeMenuImmediately">
-              <button type="button" class="support-trigger">{{ copy.support }}</button>
+            <li
+              class="nav-item support-item"
+              @mouseenter="closeMenuImmediately"
+            >
+              <button type="button" class="support-trigger">
+                {{ copy.support }}
+              </button>
               <NavDropdown :links="supportLinks" />
             </li>
           </ul>
@@ -61,12 +74,22 @@
           </button>
 
           <div class="user-menu-wrapper">
-            <button type="button" class="icon-button" :aria-label="t('account')" @click="handleUserClick">
+            <button
+              type="button"
+              class="icon-button"
+              :aria-label="t('account')"
+              @click="handleUserClick"
+            >
               <UserIcon class="icon" />
             </button>
           </div>
 
-          <button type="button" class="cart-icon" :aria-label="t('cart')" @click="handleCartClick">
+          <button
+            type="button"
+            class="cart-icon"
+            :aria-label="t('cart')"
+            @click="handleCartClick"
+          >
             <ShoppingCartIcon class="icon" />
             <span class="cart-count">{{ cart.count.value }}</span>
           </button>
@@ -80,13 +103,21 @@
       @mouseleave="handleMegaMenuLeave"
     >
       <Transition name="fade" mode="out-in">
-        <NavMegaMenu v-if="activeMenu" :key="activeMenu.slug" :menu-data="activeMenu" />
+        <NavMegaMenu
+          v-if="activeMenu"
+          :key="activeMenu.slug"
+          :menu-data="activeMenu"
+        />
       </Transition>
     </div>
 
     <div class="mobile-strip">
       <div class="container mobile-links">
-        <NuxtLink v-for="item in navItems" :key="`mobile-${item.slug}`" :to="`/collections/${item.slug}`">
+        <NuxtLink
+          v-for="item in navItems"
+          :key="`mobile-${item.slug}`"
+          :to="`/collections/${item.slug}`"
+        >
           {{ item.name }}
         </NuxtLink>
       </div>
@@ -174,7 +205,9 @@ const fallbackMegaMenus = computed(() => [
             price: 219.99,
             compareAtPrice: 329.99,
             pic: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1200',
-            images: ['https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1200'],
+            images: [
+              'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1200',
+            ],
             tags: ['HOT'],
             skuList: [{ price: 219.99, stock: 10, status: 'ACTIVE' }],
           },
@@ -236,7 +269,9 @@ const fallbackMegaMenus = computed(() => [
             price: 1199.99,
             compareAtPrice: 1399.99,
             pic: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
-            images: ['https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200'],
+            images: [
+              'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
+            ],
             tags: ['Spring Sale'],
             skuList: [{ price: 1199.99, stock: 6, status: 'ACTIVE' }],
           },
@@ -276,7 +311,9 @@ const fallbackMegaMenus = computed(() => [
             price: 329.99,
             compareAtPrice: 429.99,
             pic: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200',
-            images: ['https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200'],
+            images: [
+              'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200',
+            ],
             tags: ['Spring Sale'],
             skuList: [{ price: 329.99, stock: 7, status: 'ACTIVE' }],
           },
@@ -296,7 +333,9 @@ const fallbackMegaMenus = computed(() => [
             price: 499.99,
             compareAtPrice: 629.99,
             pic: 'https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200',
-            images: ['https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200'],
+            images: [
+              'https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200',
+            ],
             tags: ['NEW'],
             skuList: [{ price: 499.99, stock: 4, status: 'ACTIVE' }],
           },
@@ -328,7 +367,9 @@ const fallbackMegaMenus = computed(() => [
             price: 49.99,
             compareAtPrice: 69.99,
             pic: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
-            images: ['https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200'],
+            images: [
+              'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
+            ],
             tags: ['HOT'],
             skuList: [{ price: 49.99, stock: 15, status: 'ACTIVE' }],
           },
@@ -339,7 +380,9 @@ const fallbackMegaMenus = computed(() => [
             price: 29.99,
             compareAtPrice: 39.99,
             pic: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200',
-            images: ['https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200'],
+            images: [
+              'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200',
+            ],
             tags: ['Spring Sale'],
             skuList: [{ price: 29.99, stock: 18, status: 'ACTIVE' }],
           },
@@ -351,23 +394,40 @@ const fallbackMegaMenus = computed(() => [
 
 const fallbackActivity = computed(() => ({
   title: lang.value === 'zh' ? '复活节促销' : 'Easter Sale',
-  subtitle: lang.value === 'zh' ? '本周热卖车型限时优惠' : "Save on this week's hottest rides",
+  subtitle:
+    lang.value === 'zh'
+      ? '本周热卖车型限时优惠'
+      : "Save on this week's hottest rides",
   countdownEndAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-  desktopBg: 'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
-  mobileBg: 'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
+  desktopBg:
+    'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
+  mobileBg:
+    'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
   linkUrl: '/collections/electric-bike',
 }))
 
-const resolvedActivity = computed(() => activity.value || fallbackActivity.value)
-const hasUsableMenuData = computed(
-  () => categoryMenu.value.some((item) => Array.isArray(item?.children) && item.children.length > 0),
+const resolvedActivity = computed(
+  () => activity.value || fallbackActivity.value,
 )
-const menuItems = computed(() => (hasUsableMenuData.value ? categoryMenu.value : fallbackMegaMenus.value))
+const hasUsableMenuData = computed(() =>
+  categoryMenu.value.some(
+    (item) => Array.isArray(item?.children) && item.children.length > 0,
+  ),
+)
+const menuItems = computed(() =>
+  hasUsableMenuData.value ? categoryMenu.value : fallbackMegaMenus.value,
+)
 const navItems = computed(() => menuItems.value)
 const visibleMenuSlug = computed(
-  () => hoverMenuSlug.value || (isHoveringMegaMenu.value ? activeMenuCacheSlug.value : null),
+  () =>
+    hoverMenuSlug.value ||
+    (isHoveringMegaMenu.value ? activeMenuCacheSlug.value : null),
 )
-const activeMenu = computed(() => menuItems.value.find((item: any) => item.slug === visibleMenuSlug.value) || null)
+const activeMenu = computed(
+  () =>
+    menuItems.value.find((item: any) => item.slug === visibleMenuSlug.value) ||
+    null,
+)
 
 const activityStyle = computed(() => ({
   '--activity-desktop-bg': `url("${resolvedActivity.value.desktopBg}")`,
@@ -416,10 +476,22 @@ const countdownParts = computed(() => {
 })
 
 const countdownItems = computed(() => [
-  { label: lang.value === 'zh' ? '天' : 'Days', value: formatCountdownValue(countdownParts.value.days) },
-  { label: lang.value === 'zh' ? '时' : 'Hours', value: formatCountdownValue(countdownParts.value.hours) },
-  { label: lang.value === 'zh' ? '分' : 'Mins', value: formatCountdownValue(countdownParts.value.minutes) },
-  { label: lang.value === 'zh' ? '秒' : 'Secs', value: formatCountdownValue(countdownParts.value.seconds) },
+  {
+    label: lang.value === 'zh' ? '天' : 'Days',
+    value: formatCountdownValue(countdownParts.value.days),
+  },
+  {
+    label: lang.value === 'zh' ? '时' : 'Hours',
+    value: formatCountdownValue(countdownParts.value.hours),
+  },
+  {
+    label: lang.value === 'zh' ? '分' : 'Mins',
+    value: formatCountdownValue(countdownParts.value.minutes),
+  },
+  {
+    label: lang.value === 'zh' ? '秒' : 'Secs',
+    value: formatCountdownValue(countdownParts.value.seconds),
+  },
 ])
 
 const updateCountdown = () => {
@@ -446,7 +518,9 @@ const fetchActivity = async () => {
   } catch {
     activity.value = null
   }
-  countdownTarget.value = new Date(resolvedActivity.value.countdownEndAt).getTime()
+  countdownTarget.value = new Date(
+    resolvedActivity.value.countdownEndAt,
+  ).getTime()
   updateCountdown()
 }
 
@@ -462,7 +536,8 @@ const resetMenuState = () => {
   isHoveringMegaMenu.value = false
 }
 
-const hasMegaMenu = (item: Record<string, any>) => Array.isArray(item?.children) && item.children.length > 0
+const hasMegaMenu = (item: Record<string, any>) =>
+  Array.isArray(item?.children) && item.children.length > 0
 
 const handleNavEnter = (item: Record<string, any>) => {
   clearMenuCloseTimer()
@@ -531,7 +606,12 @@ const toggleLang = () => {
 onMounted(async () => {
   handleScroll()
   window.addEventListener('scroll', handleScroll)
-  await Promise.allSettled([fetchCategoryMenu(), fetchActivity(), session.fetchMe(), cart.refreshCart()])
+  await Promise.allSettled([
+    fetchCategoryMenu(),
+    fetchActivity(),
+    session.fetchMe(),
+    cart.refreshCart(),
+  ])
   countdownTimer = window.setInterval(updateCountdown, 1000)
 })
 
@@ -718,7 +798,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
+  min-height: 50px;
   padding: 8px 16px;
   border: none;
   border-radius: 20px;
@@ -737,6 +817,7 @@ onUnmounted(() => {
 .nav-item > a.router-link-active {
   background: #111;
   color: #fff;
+  border-radius: 200px;
 }
 
 .mega-menus-container {

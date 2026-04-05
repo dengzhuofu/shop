@@ -274,52 +274,48 @@ const handleMouseLeave = () => {
 
 <style scoped lang="scss">
 .product-card {
-  border: 1px solid #f0f1f6;
-  border-radius: 18px;
+  border-radius: 12px;
   background: #fff;
+  transition: box-shadow 0.3s ease;
+  border: 1px solid $border-color;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
   cursor: pointer;
-  transition:
-    box-shadow 0.3s ease,
-    transform 0.3s ease;
 
   &:hover {
-    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
-    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
   }
 }
 
 .image-wrapper {
   position: relative;
-  height: 470px;
-  background: #fff;
+  padding-top: 100%;
+  background: $white;
   overflow: hidden;
 
   .tags-left {
     position: absolute;
-    top: 18px;
-    left: 18px;
-    z-index: 6;
+    top: 0;
+    left: 0;
+    z-index: 2;
 
     .tag-label {
       display: inline-block;
-      color: #fff;
-      font-size: 14px;
-      line-height: 1;
-      padding: 10px 14px;
-      font-weight: 700;
-      border-radius: 12px;
-      letter-spacing: 0.02em;
+      color: $white;
+      font-size: 12px;
+      padding: 4px 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-radius: 0 0 8px 0;
 
       &.new {
-        background: linear-gradient(135deg, #ff334f 0%, #ff4b87 100%);
+        background: #e62332;
       }
 
       &.hot {
-        background: linear-gradient(135deg, #ff7a18 0%, #ff5722 100%);
+        background: #ff5722;
       }
     }
   }
@@ -353,32 +349,32 @@ const handleMouseLeave = () => {
 
   .image-carousel {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 
     .main-img {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;
       padding: 0;
       opacity: 0;
-      transition:
-        opacity 0.4s ease,
-        transform 0.4s ease;
-      transform: scale(1.03);
-      object-position: center center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
 
       &.is-active {
         opacity: 1;
-        transform: scale(1.06);
+        z-index: 1;
       }
     }
   }
 
   .carousel-indicators {
     position: absolute;
-    bottom: 86px;
+    bottom: 70px;
     left: 0;
     width: 100%;
     display: flex;
@@ -388,30 +384,37 @@ const handleMouseLeave = () => {
     padding: 10px 0;
 
     .indicator-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.2);
+      width: 6px;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.3);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 
-      &:hover,
       &.is-active {
         background: #111;
-        transform: scale(1.2);
+        width: 16px;
+      }
+
+      &:hover:not(.is-active) {
+        background: rgba(0, 0, 0, 0.6);
       }
     }
   }
 
   .app-preview-img {
     position: absolute;
-    top: 54px;
-    right: 26px;
-    width: 84px;
+    top: 60px;
+    right: 10px;
+    width: 40px;
     height: auto;
     object-fit: contain;
-    z-index: 3;
-    filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.12));
+    z-index: 10;
+    background: #fff;
+    padding: 2px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   }
 
   .hover-actions {
@@ -433,7 +436,7 @@ const handleMouseLeave = () => {
 
     .btn-action {
       background: #111;
-      color: #fff;
+      color: $white;
       padding: 12px 32px;
       border-radius: 30px;
       font-weight: 600;
@@ -451,7 +454,7 @@ const handleMouseLeave = () => {
 
       &.btn-sold-out {
         background: rgba(0, 0, 0, 0.6);
-        color: #fff;
+        color: $white;
         cursor: not-allowed;
         box-shadow: none;
       }
@@ -460,43 +463,43 @@ const handleMouseLeave = () => {
 }
 
 .info {
-  padding: 8px 24px 26px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   flex: 1;
 
   .title {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 500;
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
-    color: #111827;
+    color: $text-color;
   }
 
   .price-area {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 20px;
 
     .current-price {
-      color: #ff3b7c;
+      color: #e62332;
       font-size: 22px;
       font-weight: 600;
     }
 
     .old-price {
-      color: #c8c8cf;
-      font-size: 13px;
+      color: $text-light;
+      font-size: 14px;
       position: relative;
 
       &::after {
-        content: "";
+        content: '';
         position: absolute;
         left: -2px;
         right: -2px;
@@ -508,11 +511,11 @@ const handleMouseLeave = () => {
     }
 
     .save-badge {
-      background: linear-gradient(135deg, #ff3370 0%, #ff4b87 100%);
-      color: #fff;
+      background: #e62332;
+      color: $white;
       font-size: 13px;
-      padding: 7px 14px;
-      border-radius: 999px;
+      padding: 4px 12px;
+      border-radius: 16px;
       font-weight: 600;
     }
   }
@@ -522,17 +525,17 @@ const handleMouseLeave = () => {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     margin-top: auto;
-    border-top: 1px solid #f0f1f6;
-    padding-top: 14px;
+    border-top: 1px solid $border-color;
+    padding-top: 16px;
 
     .spec-item {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       padding: 12px 0;
 
       &:nth-child(odd) {
-        border-right: 1px solid #f0f1f6;
+        border-right: 1px solid $border-color;
         padding-right: 12px;
       }
 
@@ -542,13 +545,13 @@ const handleMouseLeave = () => {
 
       &:nth-child(1),
       &:nth-child(2) {
-        border-bottom: 1px solid #f0f1f6;
+        border-bottom: 1px solid $border-color;
       }
 
       .spec-icon {
-        width: 22px;
-        height: 22px;
-        color: #111827;
+        width: 24px;
+        height: 24px;
+        color: #58cc02;
         stroke-width: 1.5;
       }
 
@@ -557,15 +560,15 @@ const handleMouseLeave = () => {
         flex-direction: column;
 
         .value {
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 600;
-          color: #101828;
+          color: $text-color;
           margin-bottom: 2px;
         }
 
         .label {
           font-size: 11px;
-          color: #98a2b3;
+          color: $text-light;
         }
       }
     }
@@ -573,18 +576,8 @@ const handleMouseLeave = () => {
 }
 
 @media (max-width: 768px) {
-  .image-wrapper {
-    height: 420px;
-
-    .carousel-indicators {
-      bottom: 76px;
-    }
-
-    .app-preview-img {
-      width: 72px;
-      top: 44px;
-      right: 18px;
-    }
+  .info {
+    padding: 16px;
   }
 }
 </style>
