@@ -46,7 +46,7 @@
           </NuxtLink>
         </div>
 
-        <div class="products-grid">
+        <div v-if="activeProducts.length" class="products-grid">
           <article
             v-for="product in activeProducts"
             :key="product.id"
@@ -109,9 +109,10 @@
                   v-if="!isSoldOut(product)"
                   type="button"
                   class="btn-action"
-                  @click.stop="goToDetail(product)"
+                  :disabled="actioningProductId === product.id"
+                  @click.stop="handleProductAction(product)"
                 >
-                  {{ hasOptions(product) ? t('chooseOptions') : t('addToCart') }}
+                  {{ actionLabel(product) }}
                 </button>
                 <button v-else type="button" class="btn-action btn-sold-out" disabled>
                   {{ t('soldOut') }}
@@ -131,6 +132,14 @@
             </div>
           </article>
         </div>
+
+        <div v-else class="products-empty-state">
+          <p>{{ t('emptyProducts') }}</p>
+          <NuxtLink :to="activeGroup?.allLinkUrl || `/collections/${menuData.slug}`" class="empty-link">
+            {{ activeGroup?.allLinkText || fallbackViewAll }}
+            <span class="arrow">&rarr;</span>
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </div>
@@ -146,11 +155,14 @@ const props = defineProps<{
 const router = useRouter()
 const { lang, t } = useShopLocale()
 const { money } = useShopFormat()
+const quickView = useQuickView()
+const { addSingleSkuToCart, productHasOptions } = useProductQuickActions()
 
 const activeGroupId = ref<number | null>(null)
 const hoveredProductId = ref<number | null>(null)
 const activeImageIndices = ref<Record<number, number>>({})
 const hoverTimers = ref<Record<number, ReturnType<typeof window.setInterval>>>({})
+const actioningProductId = ref<number | null>(null)
 
 const copy = computed(() =>
   lang.value === 'zh'
@@ -176,6 +188,7 @@ watch(
   (menuData) => {
     activeGroupId.value = menuData?.children?.[0]?.id ?? null
     hoveredProductId.value = null
+    actioningProductId.value = null
     activeImageIndices.value = {}
   },
   { immediate: true },
@@ -183,6 +196,34 @@ watch(
 
 const goToDetail = async (product: Record<string, any>) => {
   await router.push(`/products/${product.slug || product.id}`)
+}
+
+const handleProductAction = async (product: Record<string, any>) => {
+  if (actioningProductId.value === product.id || isSoldOut(product)) {
+    return
+  }
+
+  if (hasOptions(product)) {
+    quickView.openQuickView(product)
+    return
+  }
+
+  actioningProductId.value = product.id
+  try {
+    const result = await addSingleSkuToCart(product)
+    if (result.requiresOptions && result.product) {
+      quickView.openQuickView(result.product)
+    }
+  } finally {
+    actioningProductId.value = null
+  }
+}
+
+const actionLabel = (product: Record<string, any>) => {
+  if (actioningProductId.value === product.id && !hasOptions(product)) {
+    return t('adding')
+  }
+  return hasOptions(product) ? t('chooseOptions') : t('addToCart')
 }
 
 const leftTags = (product: Record<string, any>) =>
@@ -247,7 +288,7 @@ const isSoldOut = (product: Record<string, any>) => {
   return !skuList.some((sku) => Number(sku.stock || 0) > 0 && String(sku.status || 'ACTIVE') !== 'INACTIVE')
 }
 
-const hasOptions = (product: Record<string, any>) => Array.isArray(product.skuList) && product.skuList.length > 1
+const hasOptions = (product: Record<string, any>) => productHasOptions(product)
 
 const isFromPrice = (product: Record<string, any>) => {
   const skuList = Array.isArray(product.skuList) ? product.skuList : []
@@ -437,6 +478,33 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
+}
+
+.products-empty-state {
+  min-height: 320px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fcfcfc 0%, #f7f7f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.empty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.empty-link:hover {
+  color: #58cc02;
 }
 
 .product-card {

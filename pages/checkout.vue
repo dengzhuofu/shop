@@ -492,6 +492,8 @@ const completePayment = async () => {
     if (res?.code === 200) {
       paymentIntent.value = res.data
       message.value = t('orderSuccess')
+      await cart.refreshCart()
+      await navigateTo('/account/orders')
     }
   } finally {
     completingPayment.value = false

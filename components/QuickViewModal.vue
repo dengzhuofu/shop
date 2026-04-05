@@ -1,594 +1,751 @@
 <template>
-  <div class="quick-view-modal" v-if="isOpen" @click="close">
-    <div class="modal-content" @click.stop>
-      <!-- 关闭按钮 -->
-      <button class="btn-close" @click="close">
-        <span class="icon">✕</span>
-      </button>
+  <Teleport to="body">
+    <div v-if="isOpen" class="quick-view-modal" @click="close">
+      <div class="modal-shell" @click.stop>
+        <button type="button" class="btn-close" @click="close">
+          <XIcon class="icon-close" />
+        </button>
 
-      <div class="modal-body">
-        <!-- 左侧图片画廊 -->
-        <div class="image-gallery">
-          <div class="main-image">
-            <img :src="product.image" :alt="product.title" />
-            <!-- <div class="app-preview" v-if="product.appImage">
-              <img :src="product.appImage" alt="App Preview" />
-            </div> -->
-          </div>
-          <!-- 缩略图指示器 (仅作展示) -->
-          <div class="thumbnails-indicator">
-            <span class="dot active"></span>
-            <span class="dot" v-for="i in 10" :key="i"></span>
-          </div>
+        <div v-if="loading" class="modal-state">
+          <p>{{ t('loadingProduct') }}</p>
         </div>
 
-        <!-- 右侧商品信息 -->
-        <div class="product-info">
-          <div class="brand">isinwheel Official Store</div>
-          <h2 class="title">{{ product.title }}</h2>
-          
-          <div class="price-review-row">
-            <div class="reviews">
-              <span class="stars">★★★★★</span>
-              <span class="count">711 reviews</span>
-            </div>
-            <div class="price-box">
-              <span class="current-price">${{ product.price }}</span>
-              <span class="old-price" v-if="product.compareAtPrice">${{ product.compareAtPrice }}</span>
-            </div>
-          </div>
+        <div v-else-if="!productDetail" class="modal-state">
+          <p>{{ t('productUnavailable') }}</p>
+        </div>
 
-          <div class="installment">
-            4 interest-free installments, or from <strong>$24.37/mo</strong> with <strong>shop Pay</strong>
-            <a href="#" class="link">Check your purchasing power</a>
-          </div>
+        <div v-else class="modal-layout">
+          <section class="gallery-panel">
+            <div class="main-image-wrap">
+              <div v-if="leftTags.length" class="tags-left">
+                <span
+                  v-for="tag in leftTags"
+                  :key="tag"
+                  class="tag-label"
+                  :class="String(tag).toLowerCase()"
+                >
+                  {{ tag }}
+                </span>
+              </div>
 
-          <!-- 倒计时 Banner -->
-          <div class="countdown-banner">
-            <div class="left">
-              <span class="icon">⏱</span>
-              <div class="text">
-                <strong>Hurry up!</strong>
-                <small>SALE END IN:</small>
+              <div v-if="hasSpringSale" class="tags-right">
+                <div class="spring-sale-badge">
+                  <span class="text">Spring<br />Sale</span>
+                </div>
+              </div>
+
+              <img :src="activeImage" :alt="productDetail.title" class="main-image" />
+            </div>
+
+            <div v-if="galleryImages.length > 1" class="thumbs-list">
+              <button
+                v-for="(img, index) in galleryImages"
+                :key="`${img}-${index}`"
+                type="button"
+                class="thumb-btn"
+                :class="{ 'is-active': activeImage === img }"
+                @click="activeImage = img"
+              >
+                <img :src="img" :alt="`${productDetail.title}-${index + 1}`" />
+              </button>
+            </div>
+          </section>
+
+          <section class="info-panel">
+            <p class="brand">isinwheel Official Store</p>
+            <h2 class="title">{{ productDetail.title }}</h2>
+
+            <div class="price-row">
+              <div class="reviews">
+                <StarIcon v-for="index in 5" :key="index" class="star-icon" />
+                <span>{{ reviewCount }} reviews</span>
+              </div>
+              <div class="price-box">
+                <span class="current-price">{{ money(selectedPrice) }}</span>
+                <span v-if="selectedCompareAtPrice" class="old-price">
+                  {{ money(selectedCompareAtPrice) }}
+                </span>
               </div>
             </div>
-            <div class="right">
-              <div class="time-block">
-                <span class="num">3</span>
-                <span class="label">DAYS</span>
-              </div>
-              <span class="colon">:</span>
-              <div class="time-block">
-                <span class="num">0</span>
-                <span class="label">HOURS</span>
-              </div>
-              <span class="colon">:</span>
-              <div class="time-block">
-                <span class="num">17</span>
-                <span class="label">MINS</span>
-              </div>
-              <span class="colon">:</span>
-              <div class="time-block">
-                <span class="num">58</span>
-                <span class="label">SECS</span>
+
+            <div v-if="attributeKeys.length" class="variant-selectors">
+              <div v-for="attributeKey in attributeKeys" :key="attributeKey" class="selector-group">
+                <p class="selector-label">
+                  {{ formatAttributeKey(attributeKey) }}:
+                  <strong>{{ selection[attributeKey] }}</strong>
+                </p>
+
+                <div v-if="attributeKey === 'color'" class="color-options">
+                  <button
+                    v-for="option in attributeOptions[attributeKey] || []"
+                    :key="option"
+                    type="button"
+                    class="color-btn"
+                    :class="{ 'is-active': selection[attributeKey] === option }"
+                    :disabled="!isSelectable(attributeKey, option)"
+                    @click="selection[attributeKey] = option"
+                  >
+                    <img :src="optionThumbnail(attributeKey, option)" :alt="String(option)" />
+                  </button>
+                </div>
+
+                <div v-else class="options-list">
+                  <button
+                    v-for="option in attributeOptions[attributeKey] || []"
+                    :key="option"
+                    type="button"
+                    class="text-btn"
+                    :class="{ 'is-active': selection[attributeKey] === option }"
+                    :disabled="!isSelectable(attributeKey, option)"
+                    @click="selection[attributeKey] = option"
+                  >
+                    {{ option }}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- 选项选择 -->
-          <div class="options">
-            <div class="option-group">
-              <label>Style: <strong>2026 Upgraded Edition</strong></label>
-              <div class="buttons">
-                <button class="btn-option active">2026 Upgraded Edition</button>
+            <div class="stock-notice" :class="{ soldout: !selectedSkuAvailable }">
+              {{ selectedSkuAvailable ? t('inStock') : t('soldOut') }}
+            </div>
+
+            <div class="actions">
+              <div class="quantity-selector">
+                <button type="button" class="qty-btn" @click="quantity = Math.max(1, quantity - 1)">
+                  <MinusIcon class="qty-icon" />
+                </button>
+                <input v-model="quantity" type="number" min="1" class="qty-input" />
+                <button type="button" class="qty-btn" @click="quantity += 1">
+                  <PlusIcon class="qty-icon" />
+                </button>
               </div>
-            </div>
-            
-            <div class="option-group">
-              <label>Buy More Save More: <strong>S9 Pro*1</strong></label>
-              <div class="buttons">
-                <button class="btn-option active">S9 Pro*1</button>
-                <button class="btn-option">S9 Pro*2</button>
-              </div>
-            </div>
-          </div>
 
-          <!-- 库存状态 -->
-          <div class="stock-status">
-            <span class="dot"></span> In stock, ready to ship
-          </div>
-
-          <!-- 操作区 -->
-          <div class="actions">
-            <div class="quantity-selector">
-              <button class="btn-qty">-</button>
-              <span class="qty">1</span>
-              <button class="btn-qty">+</button>
+              <button
+                type="button"
+                class="btn-add-to-cart"
+                :disabled="!selectedSkuAvailable || adding"
+                @click="handleAddToCart"
+              >
+                {{ adding ? t('adding') : t('addToCart') }}
+              </button>
             </div>
-            <button class="btn-add-cart">Add to cart</button>
-          </div>
-          
-          <button class="btn-buy-shop">Buy with <span>shop</span></button>
-          <a href="#" class="more-payment">More payment options</a>
 
-          <div class="footer-links">
-            <div class="share">
-              Share: 
-              <span class="icon-share">p</span>
-              <span class="icon-share">✉</span>
-            </div>
-            <a href="#" class="need-help">Need help?</a>
-          </div>
-
-          <a href="#" class="view-details">
-            View full details <span>→</span>
-          </a>
+            <NuxtLink :to="productLink" class="view-details" @click="close">
+              {{ t('viewFullDetails') }}
+              <ArrowRightIcon class="detail-icon" />
+            </NuxtLink>
+          </section>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
-<script setup>
-import { ref, watch } from 'vue'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { ArrowRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon } from 'lucide-vue-next'
+import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false
-  },
-  product: {
-    type: Object,
-    default: () => ({})
+const props = defineProps<{
+  isOpen: boolean
+  product: Record<string, any> | null
+}>()
+
+const emit = defineEmits<{
+  close: []
+}>()
+
+const { t } = useShopLocale()
+const { money } = useShopFormat()
+const cart = useShopCart()
+const session = useShopSession()
+const { fetchProductDetail } = useProductQuickActions()
+
+const loading = ref(false)
+const adding = ref(false)
+const productDetail = ref<Record<string, any> | null>(null)
+const activeImage = ref('')
+const quantity = ref(1)
+const selection = reactive<Record<string, string>>({})
+let requestToken = 0
+
+const attributeOptions = computed(() => productDetail.value?.skuAttributeOptions || {})
+const attributeKeys = computed(() => sortAttributeKeys(Object.keys(attributeOptions.value || {})))
+const selectedSku = computed(() => findSelectedSku(productDetail.value?.skuList || [], selection))
+const selectedSkuAvailable = computed(() => Boolean(selectedSku.value && isSkuAvailable(selectedSku.value)))
+const selectedPrice = computed(() => selectedSku.value?.price || productDetail.value?.price || 0)
+const selectedCompareAtPrice = computed(() => selectedSku.value?.compareAtPrice || productDetail.value?.compareAtPrice || 0)
+const reviewCount = computed(() => Math.max(Number(productDetail.value?.reviewCount || 0), 61))
+const galleryImages = computed(() => {
+  const selectedImages = Array.isArray(selectedSku.value?.images) ? selectedSku.value.images : []
+  if (selectedImages.length) {
+    return selectedImages
   }
+  const productImages = Array.isArray(productDetail.value?.images) ? productDetail.value.images : []
+  if (productImages.length) {
+    return productImages
+  }
+  return [productDetail.value?.pic].filter(Boolean)
 })
+const leftTags = computed(() =>
+  (Array.isArray(productDetail.value?.tags) ? productDetail.value.tags : []).filter((tag: string) =>
+    ['NEW', 'HOT'].includes(String(tag).toUpperCase()),
+  ),
+)
+const hasSpringSale = computed(() =>
+  (Array.isArray(productDetail.value?.tags) ? productDetail.value.tags : []).some((tag: string) =>
+    String(tag).toLowerCase().includes('spring sale'),
+  ),
+)
+const productLink = computed(() => `/products/${productDetail.value?.slug || productDetail.value?.id || ''}`)
 
-const emit = defineEmits(['close'])
+const syncActiveImage = () => {
+  activeImage.value = galleryImages.value[0] || ''
+}
+
+const resetSelection = () => {
+  const nextSelection = findInitialSelection(productDetail.value?.skuList || [])
+  Object.keys(selection).forEach((key) => delete selection[key])
+  Object.assign(selection, nextSelection)
+}
+
+const formatAttributeKey = (value: string) =>
+  ({ color: 'Color', bundle: 'Bundle', style: 'Style' }[value] || value.charAt(0).toUpperCase() + value.slice(1))
+
+const optionThumbnail = (attributeKey: string, option: string) => {
+  const skuList = Array.isArray(productDetail.value?.skuList) ? productDetail.value.skuList : []
+  const matched = skuList.find((sku: any) => sku.attributes?.[attributeKey] === option)
+  return matched?.images?.[0] || matched?.pic || productDetail.value?.pic
+}
+
+const isSelectable = (attributeKey: string, option: string) =>
+  isOptionSelectable(productDetail.value?.skuList || [], selection, attributeKey, option)
 
 const close = () => {
   emit('close')
 }
 
-// 阻止背景滚动
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    document.body.style.overflow = 'hidden'
-  } else {
-    document.body.style.overflow = ''
+const syncBodyScroll = (locked: boolean) => {
+  if (!process.client) {
+    return
+  }
+  document.body.style.overflow = locked ? 'hidden' : ''
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && props.isOpen) {
+    close()
+  }
+}
+
+const loadProduct = async () => {
+  if (!props.isOpen || !props.product) {
+    productDetail.value = null
+    return
+  }
+
+  const token = ++requestToken
+  loading.value = true
+  try {
+    const detailedProduct = await fetchProductDetail(props.product)
+    if (token !== requestToken) {
+      return
+    }
+    productDetail.value = detailedProduct
+    quantity.value = 1
+    resetSelection()
+    syncActiveImage()
+  } finally {
+    if (token === requestToken) {
+      loading.value = false
+    }
+  }
+}
+
+const handleAddToCart = async () => {
+  if (!productDetail.value || !selectedSku.value) {
+    return
+  }
+
+  await session.fetchMe()
+  if (!session.isLoggedIn.value) {
+    close()
+    await navigateTo('/login')
+    return
+  }
+
+  adding.value = true
+  try {
+    await cart.addToCart({
+      productId: productDetail.value.id,
+      skuId: selectedSku.value.id,
+      quantity: Number(quantity.value),
+      addonCodes: [],
+    })
+    cart.openCart()
+    close()
+  } finally {
+    adding.value = false
+  }
+}
+
+watch(
+  () => [props.isOpen, props.product?.id, props.product?.slug],
+  async ([isOpen]) => {
+    syncBodyScroll(Boolean(isOpen))
+    if (!isOpen) {
+      productDetail.value = null
+      loading.value = false
+      quantity.value = 1
+      return
+    }
+    await loadProduct()
+  },
+  { immediate: true },
+)
+
+watch(galleryImages, syncActiveImage)
+
+onMounted(() => {
+  if (process.client) {
+    window.addEventListener('keydown', handleKeydown)
+  }
+})
+
+onBeforeUnmount(() => {
+  syncBodyScroll(false)
+  if (process.client) {
+    window.removeEventListener('keydown', handleKeydown)
   }
 })
 </script>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .quick-view-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.55);
   backdrop-filter: blur(4px);
+}
 
-  .modal-content {
-    background: #fff;
-    width: 90%;
-    max-width: 1000px;
-    height: 90vh;
-    max-height: 700px;
-    border-radius: 16px;
-    position: relative;
-    overflow-y: auto;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+.modal-shell {
+  position: relative;
+  width: min(1280px, 100%);
+  max-height: min(860px, calc(100vh - 48px));
+  overflow: auto;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+}
 
-    .btn-close {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #fff;
-      border: 1px solid #eee;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 10;
-      transition: all 0.3s ease;
-      
-      &:hover {
-        background: #f5f5f5;
-        transform: scale(1.1);
-      }
-    }
+.btn-close {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 4;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #ececec;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
 
-    .modal-body {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
+.icon-close {
+  width: 18px;
+  height: 18px;
+}
 
-      @media (min-width: 768px) {
-        flex-direction: row;
-      }
-    }
+.modal-state {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 16px;
+}
 
-    // 左侧图片画廊
-    .image-gallery {
-      flex: 1;
-      padding: 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-right: 1px solid #eee;
-      background: #fafafa;
+.modal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
+  min-height: 680px;
+}
 
-      .main-image {
-        position: relative;
-        width: 100%;
-        max-width: 400px;
-        aspect-ratio: 1;
+.gallery-panel {
+  padding: 36px;
+  border-right: 1px solid #ececec;
+  background: #fafafa;
+}
 
-        img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
+.main-image-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+}
 
-        .app-preview {
-          position: absolute;
-          top: 0;
-          right: -40px;
-          width: 120px;
-          
-          img {
-            width: 100%;
-            height: auto;
-          }
-        }
-      }
+.main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-      .thumbnails-indicator {
-        display: flex;
-        gap: 8px;
-        margin-top: 30px;
+.tags-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
 
-        .dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #ccc;
-          
-          &.active {
-            background: #111;
-            transform: scale(1.2);
-          }
-        }
-      }
-    }
+.tag-label {
+  display: inline-block;
+  color: #fff;
+  font-size: 11px;
+  padding: 5px 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 0 0 10px 0;
+}
 
-    // 右侧商品信息
-    .product-info {
-      flex: 1;
-      padding: 40px;
-      overflow-y: auto;
+.tag-label.new {
+  background: #e62332;
+}
 
-      .brand {
-        font-size: 13px;
-        color: #666;
-        margin-bottom: 8px;
-      }
+.tag-label.hot {
+  background: #ff5722;
+}
 
-      .title {
-        font-size: 32px;
-        font-weight: 800;
-        line-height: 1.2;
-        margin-bottom: 16px;
-        color: #111;
-      }
+.tags-right {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+}
 
-      .price-review-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
+.spring-sale-badge {
+  background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+  border: 2px solid #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 4px 10px;
+  transform: rotate(5deg);
+}
 
-        .reviews {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          
-          .stars {
-            color: #ffc107;
-            letter-spacing: 2px;
-          }
-          
-          .count {
-            font-size: 13px;
-            color: #666;
-          }
-        }
+.spring-sale-badge .text {
+  color: #2e7d32;
+  font-weight: 900;
+  font-size: 10px;
+  line-height: 1.1;
+  display: block;
+  text-align: center;
+  text-transform: uppercase;
+}
 
-        .price-box {
-          text-align: right;
-          
-          .current-price {
-            display: block;
-            font-size: 24px;
-            font-weight: 700;
-            color: #e62332;
-          }
-          
-          .old-price {
-            font-size: 14px;
-            color: #999;
-            text-decoration: line-through;
-          }
-        }
-      }
+.thumbs-list {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 74px));
+  gap: 12px;
+}
 
-      .installment {
-        font-size: 14px;
-        color: #333;
-        margin-bottom: 24px;
-        line-height: 1.5;
+.thumb-btn {
+  aspect-ratio: 1 / 1;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 4px;
+  background: #fff;
+  cursor: pointer;
+}
 
-        .link {
-          display: block;
-          color: #666;
-          text-decoration: underline;
-          margin-top: 4px;
-        }
-      }
+.thumb-btn.is-active {
+  border-color: #111;
+}
 
-      .countdown-banner {
-        background: #fff0f2;
-        border: 1px solid #ffd6da;
-        border-radius: 8px;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
+.thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
 
-        .left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          color: #e62332;
+.info-panel {
+  padding: 48px 42px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
 
-          .icon {
-            font-size: 24px;
-          }
+.brand {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
 
-          .text {
-            display: flex;
-            flex-direction: column;
-            
-            strong { font-size: 16px; }
-            small { font-size: 10px; font-weight: bold; }
-          }
-        }
+.title {
+  margin: 0;
+  color: #111;
+  font-size: 34px;
+  line-height: 1.05;
+  font-weight: 800;
+}
 
-        .right {
-          display: flex;
-          align-items: center;
-          gap: 4px;
+.price-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
 
-          .time-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            
-            .num {
-              background: #fff;
-              color: #e62332;
-              font-weight: bold;
-              padding: 4px 8px;
-              border-radius: 4px;
-              border: 1px solid #ffd6da;
-              min-width: 28px;
-              text-align: center;
-            }
-            
-            .label {
-              font-size: 9px;
-              color: #e62332;
-              margin-top: 4px;
-            }
-          }
-          
-          .colon {
-            color: #e62332;
-            font-weight: bold;
-            margin: 0 2px;
-            align-self: flex-start;
-            margin-top: 4px;
-          }
-        }
-      }
+.reviews {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #4b5563;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
 
-      .options {
-        margin-bottom: 24px;
+.star-icon {
+  width: 16px;
+  height: 16px;
+  color: #ffb400;
+  fill: currentColor;
+}
 
-        .option-group {
-          margin-bottom: 16px;
+.price-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
 
-          label {
-            display: block;
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 8px;
-          }
+.current-price {
+  color: #e62332;
+  font-size: 28px;
+  font-weight: 800;
+}
 
-          .buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+.old-price {
+  color: #9ca3af;
+  font-size: 18px;
+  text-decoration: line-through;
+}
 
-            .btn-option {
-              padding: 10px 20px;
-              border: 1px solid #ddd;
-              background: #fff;
-              border-radius: 8px;
-              font-size: 14px;
-              cursor: pointer;
-              transition: all 0.2s;
+.variant-selectors {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
 
-              &:hover {
-                border-color: #999;
-              }
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-              &.active {
-                border-color: #111;
-                border-width: 2px;
-                padding: 9px 19px; // 补偿边框宽度
-              }
-            }
-          }
-        }
-      }
+.selector-label {
+  margin: 0;
+  color: #374151;
+  font-size: 15px;
+}
 
-      .stock-status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: #333;
-        margin-bottom: 24px;
-        background: #f6fdf6;
-        padding: 8px 16px;
-        border-radius: 20px;
-        display: inline-flex;
+.options-list,
+.color-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 
-        .dot {
-          width: 8px;
-          height: 8px;
-          background: #58cc02;
-          border-radius: 50%;
-        }
-      }
+.text-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+}
 
-      .actions {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 16px;
+.text-btn.is-active {
+  border-color: #111;
+  box-shadow: inset 0 0 0 1px #111;
+}
 
-        .quantity-selector {
-          display: flex;
-          align-items: center;
-          border: 1px solid #ddd;
-          border-radius: 30px;
-          padding: 4px;
-          
-          button {
-            width: 36px;
-            height: 36px;
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-          }
-          
-          .qty {
-            width: 40px;
-            text-align: center;
-            font-weight: bold;
-          }
-        }
+.text-btn:disabled,
+.color-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
-        .btn-add-cart {
-          flex: 1;
-          background: #111;
-          color: #fff;
-          border: none;
-          border-radius: 30px;
-          font-size: 16px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: background 0.2s;
+.color-btn {
+  width: 68px;
+  height: 68px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 4px;
+  background: #fff;
+  cursor: pointer;
+}
 
-          &:hover {
-            background: #333;
-          }
-        }
-      }
+.color-btn.is-active {
+  border-color: #111;
+}
 
-      .btn-buy-shop {
-        width: 100%;
-        background: #5a31f4; // shop pay purple
-        color: #fff;
-        border: none;
-        border-radius: 30px;
-        padding: 16px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        margin-bottom: 12px;
-        
-        span {
-          font-weight: 900;
-        }
-      }
+.color-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
 
-      .more-payment {
-        display: block;
-        text-align: center;
-        font-size: 13px;
-        color: #666;
-        text-decoration: underline;
-        margin-bottom: 32px;
-      }
+.stock-notice {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #027a48;
+  font-size: 14px;
+  font-weight: 700;
+}
 
-      .footer-links {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid #eee;
-        padding-top: 24px;
-        margin-bottom: 24px;
+.stock-notice.soldout {
+  background: #fef3f2;
+  color: #b42318;
+}
 
-        .share {
-          font-size: 14px;
-          color: #666;
-          display: flex;
-          align-items: center;
-          gap: 12px;
+.actions {
+  display: flex;
+  gap: 14px;
+}
 
-          .icon-share {
-            cursor: pointer;
-            &:hover { color: #111; }
-          }
-        }
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  width: 148px;
+  border: 1px solid #d9d9d9;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
 
-        .need-help {
-          font-size: 14px;
-          color: #666;
-          text-decoration: underline;
-        }
-      }
+.qty-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
 
-      .view-details {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        padding: 16px 0;
-        border-top: 1px solid #eee;
-        color: #111;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 15px;
+.qty-icon {
+  width: 16px;
+  height: 16px;
+}
 
-        &:hover {
-          color: #58cc02;
-        }
-      }
-    }
+.qty-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-add-to-cart {
+  flex: 1;
+  min-height: 56px;
+  border: none;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-add-to-cart:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.view-details {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid #ececec;
+  color: #111;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.detail-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 1080px) {
+  .modal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery-panel {
+    border-right: none;
+    border-bottom: 1px solid #ececec;
+  }
+}
+
+@media (max-width: 720px) {
+  .quick-view-modal {
+    padding: 12px;
+  }
+
+  .modal-shell {
+    border-radius: 20px;
+    max-height: calc(100vh - 24px);
+  }
+
+  .gallery-panel,
+  .info-panel {
+    padding: 22px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .price-row,
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quantity-selector {
+    width: 100%;
   }
 }
 </style>

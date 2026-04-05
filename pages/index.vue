@@ -106,12 +106,18 @@
           </button>
         </div>
       </div>
-      <div class="product-grid">
+      <div v-if="featuredProducts.length" class="product-grid">
         <ProductCard
           v-for="product in featuredProducts"
           :key="product.id"
           :product="product"
         />
+      </div>
+      <div v-else class="products-empty-state">
+        <p>{{ t('emptyProducts') }}</p>
+        <NuxtLink :to="activeCategoryLink" class="empty-link">
+          {{ copy.viewAllCurrent }} <ArrowRightIcon class="icon-right" />
+        </NuxtLink>
       </div>
     </section>
 
@@ -473,10 +479,9 @@ const resolveCategorySlug = (product: any) => {
 }
 
 const featuredProducts = computed(() => {
-  const matched = products.value.filter(
-    (product) => resolveCategorySlug(product) === currentTab.value,
-  )
-  return (matched.length ? matched : products.value).slice(0, 4)
+  return products.value
+    .filter((product) => resolveCategorySlug(product) === currentTab.value)
+    .slice(0, 4)
 })
 
 const featureImage = computed(
@@ -1056,6 +1061,30 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 24px;
+}
+.products-empty-state {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px dashed $border-color;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fcfcfc 0%, #f7f7f7 100%);
+  color: $text-light;
+  text-align: center;
+}
+.empty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: $text-color;
+  font-weight: 700;
+  text-decoration: none;
+}
+.empty-link:hover {
+  color: $primary-color;
 }
 .video-container {
   position: relative;

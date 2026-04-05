@@ -65,9 +65,10 @@
           v-if="!isSoldOut"
           type="button"
           class="btn-action"
-          @click.stop="navigateToDetail"
+          :disabled="actionBusy"
+          @click.stop="handleActionClick"
         >
-          {{ actionText }}
+          {{ actionButtonText }}
         </button>
         <button v-else type="button" class="btn-action btn-sold-out" disabled>
           {{ t("soldOut") }}
@@ -119,9 +120,12 @@ const props = defineProps<{
 
 const { lang, t } = useShopLocale();
 const { money } = useShopFormat();
+const quickView = useQuickView();
+const { addSingleSkuToCart, productHasOptions } = useProductQuickActions();
 
 const isHovered = ref(false);
 const currentImageIndex = ref(0);
+const actionBusy = ref(false);
 
 const iconMap = {
   ZapIcon,
@@ -175,15 +179,13 @@ const isSoldOut = computed(() => {
   return Number(props.product.stock || 0) <= 0;
 });
 
-const hasOptions = computed(() => {
-  const skuList = Array.isArray(props.product.skuList)
-    ? props.product.skuList
-    : [];
-  return skuList.length > 1 || props.product.hasOptions !== false;
-});
+const hasOptions = computed(() => productHasOptions(props.product));
 
 const actionText = computed(() =>
   hasOptions.value ? t("chooseOptions") : t("addToCart"),
+);
+const actionButtonText = computed(() =>
+  actionBusy.value && !hasOptions.value ? t("adding") : actionText.value,
 );
 
 const isFrom = computed(() => {
@@ -235,6 +237,27 @@ const resolveTagLabel = (tag: string) => {
 
 const navigateToDetail = async () => {
   await navigateTo(productLink.value);
+};
+
+const handleActionClick = async () => {
+  if (isSoldOut.value || actionBusy.value) {
+    return;
+  }
+
+  if (hasOptions.value) {
+    quickView.openQuickView(props.product);
+    return;
+  }
+
+  actionBusy.value = true;
+  try {
+    const result = await addSingleSkuToCart(props.product);
+    if (result.requiresOptions && result.product) {
+      quickView.openQuickView(result.product);
+    }
+  } finally {
+    actionBusy.value = false;
+  }
 };
 
 const handleImageHover = (event: MouseEvent) => {

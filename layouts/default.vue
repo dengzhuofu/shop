@@ -7,10 +7,17 @@
     </main>
     <AppFooter />
     <CartSidebar />
+    <QuickViewModal
+      :is-open="quickViewOpen"
+      :product="quickViewProduct"
+      @close="closeQuickView"
+    />
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const { isOpen: quickViewOpen, product: quickViewProduct, closeQuickView } = useQuickView()
+</script>
 
 <style scoped lang="scss">
 .layout-default {
