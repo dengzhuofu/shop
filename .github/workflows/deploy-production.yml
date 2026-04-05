@@ -138,4 +138,4 @@ jobs:
           PROD_PROJECT_DIR: ${{ secrets.PROD_PROJECT_DIR }}
         run: |
           ssh -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
-            "cd '$PROD_PROJECT_DIR' && docker-compose -f compose.prod.yml ps"
+            "cd '$PROD_PROJECT_DIR' && if docker compose version >/dev/null 2>&1; then docker compose -f compose.prod.yml ps; else docker-compose -f compose.prod.yml ps; fi"

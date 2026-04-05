@@ -4,6 +4,7 @@ set -euo pipefail
 PROJECT_DIR="${1:-/opt/shop}"
 DEPLOY_MODE="${2:-build}"
 COMPOSE_CMD=""
+COMPOSE_IS_V1="false"
 DOCKER_MIRROR="${DOCKER_MIRROR:-https://docker.m.daocloud.io}"
 IS_ROOT="false"
 
@@ -32,6 +33,11 @@ fi
 install_docker_from_apt() {
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose
+}
+
+install_compose_plugin_from_apt() {
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin
 }
 
 configure_docker_mirror() {
@@ -63,10 +69,15 @@ if [ "$IS_ROOT" = "true" ]; then
   systemctl restart docker
 fi
 
+if ! docker compose version >/dev/null 2>&1 && [ "$IS_ROOT" = "true" ] && command -v apt-get >/dev/null 2>&1; then
+  install_compose_plugin_from_apt || true
+fi
+
 if docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD="docker compose"
 elif command -v docker-compose >/dev/null 2>&1; then
   COMPOSE_CMD="docker-compose"
+  COMPOSE_IS_V1="true"
 else
   if [ "$IS_ROOT" != "true" ]; then
     echo "Docker Compose is not available and bootstrap is running without root privileges." >&2
@@ -112,8 +123,14 @@ if [ "$DEPLOY_MODE" = "prepare" ]; then
 fi
 
 if [ "$DEPLOY_MODE" = "images" ]; then
-  $COMPOSE_CMD -f compose.prod.yml pull
-  $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans
+  if [ "$COMPOSE_IS_V1" = "true" ]; then
+    $COMPOSE_CMD -f compose.prod.yml pull --ignore-pull-failures
+    $COMPOSE_CMD -f compose.prod.yml rm -sf backend frontend nginx || true
+    $COMPOSE_CMD -f compose.prod.yml up -d db backend frontend nginx
+  else
+    $COMPOSE_CMD -f compose.prod.yml pull
+    $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans
+  fi
   exit 0
 fi
 
