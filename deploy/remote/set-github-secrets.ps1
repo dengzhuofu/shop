@@ -2,7 +2,7 @@ param(
   [string]$Repo = "dengzhuofu/shop",
   [string]$ServerHost = "101.200.239.103",
   [string]$ServerPort = "22",
-  [string]$ServerUser = "root",
+  [string]$ServerUser = "deploy",
   [string]$ProjectDir = "/opt/shop",
   [string]$SshPrivateKeyPath,
   [string]$GhcrUsername,

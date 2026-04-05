@@ -28,7 +28,7 @@ Create these repository secrets in GitHub:
 - `PROD_SERVER_PORT`
   Example: `22`
 - `PROD_SERVER_USER`
-  Example: `root`
+  Example: `deploy`
 - `PROD_PROJECT_DIR`
   Example: `/opt/shop`
 - `PROD_SSH_PRIVATE_KEY`
@@ -43,12 +43,13 @@ Create these repository secrets in GitHub:
 Add the matching SSH public key to the server user:
 
 ```bash
-mkdir -p /root/.ssh
-chmod 700 /root/.ssh
-cat >> /root/.ssh/authorized_keys <<'EOF'
+mkdir -p /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+cat >> /home/deploy/.ssh/authorized_keys <<'EOF'
 <your-github-actions-public-key>
 EOF
-chmod 600 /root/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh
 ```
 
 The first successful workflow run will upload the deploy bundle and bootstrap Docker automatically.
@@ -60,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File .\deploy\remote\set-github-secrets.ps1 
   -Repo "dengzhuofu/shop" `
   -ServerHost "101.200.239.103" `
   -ServerPort "22" `
-  -ServerUser "root" `
+  -ServerUser "deploy" `
   -ProjectDir "/opt/shop" `
   -SshPrivateKeyPath "C:\path\to\github_actions_key" `
   -GhcrUsername "<your-github-username>" `
