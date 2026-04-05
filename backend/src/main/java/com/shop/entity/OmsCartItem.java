@@ -16,7 +16,9 @@ public class OmsCartItem {
   private Long id;
   private Long userId;
   private Long productId;
+  // private Long skuId;
   private Long skuId;
+
   private Integer quantity;
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode selectedAttributesSnapshot;
