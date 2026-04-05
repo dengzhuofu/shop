@@ -22,6 +22,13 @@ export default defineNuxtConfig({
     }
   },
 
+  runtimeConfig: {
+    internalApiBase: process.env.NUXT_INTERNAL_API_BASE || 'http://localhost:8081',
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api',
+    },
+  },
+
   devtools: { enabled: true },
   modules: [
     '@pinia/nuxt'
@@ -40,7 +47,7 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8081',
+          target: process.env.NUXT_DEV_API_TARGET || 'http://localhost:8081',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },

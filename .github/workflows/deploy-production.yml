@@ -1,0 +1,141 @@
+name: Build And Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build Images And Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image names
+        id: vars
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          repo="${repo,,}"
+          echo "backend_image=ghcr.io/${owner}/${repo}-backend" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=ghcr.io/${owner}/${repo}-frontend" >> "$GITHUB_OUTPUT"
+          echo "deploy_bundle=deploy-bundle.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata for backend
+        id: meta_backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.vars.outputs.backend_image }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Docker metadata for frontend
+        id: meta_frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.vars.outputs.frontend_image }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push backend image
+        id: build_backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta_backend.outputs.tags }}
+          labels: ${{ steps.meta_backend.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build and push frontend image
+        id: build_frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          tags: ${{ steps.meta_frontend.outputs.tags }}
+          labels: ${{ steps.meta_frontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+      - name: Prepare SSH key
+        shell: bash
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${{ secrets.PROD_SERVER_PORT }}" -H "${{ secrets.PROD_SERVER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Build deploy bundle
+        shell: bash
+        run: |
+          tar -czf "${{ steps.vars.outputs.deploy_bundle }}" \
+            compose.prod.yml \
+            deploy/nginx/default.conf \
+            deploy/remote/bootstrap-server.sh \
+            deploy/remote/deploy_registry.sh \
+            backend/src/main/resources/schema.sql
+
+      - name: Upload deploy bundle to server
+        shell: bash
+        run: |
+          scp -P "${{ secrets.PROD_SERVER_PORT }}" "${{ steps.vars.outputs.deploy_bundle }}" \
+            "${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }}:/tmp/${{ steps.vars.outputs.deploy_bundle }}"
+
+      - name: Deploy on server
+        shell: bash
+        env:
+          BACKEND_IMAGE: ${{ steps.vars.outputs.backend_image }}@${{ steps.build_backend.outputs.digest }}
+          FRONTEND_IMAGE: ${{ steps.vars.outputs.frontend_image }}@${{ steps.build_frontend.outputs.digest }}
+          GHCR_USERNAME: ${{ secrets.PROD_GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.PROD_GHCR_READ_TOKEN }}
+          PROD_SERVER_HOST: ${{ secrets.PROD_SERVER_HOST }}
+          PROD_SERVER_PORT: ${{ secrets.PROD_SERVER_PORT }}
+          PROD_SERVER_USER: ${{ secrets.PROD_SERVER_USER }}
+          PROD_PROJECT_DIR: ${{ secrets.PROD_PROJECT_DIR }}
+        run: |
+          ssh -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+            "mkdir -p '$PROD_PROJECT_DIR' && tar -xzf '/tmp/${{ steps.vars.outputs.deploy_bundle }}' -C '$PROD_PROJECT_DIR' && rm -f '/tmp/${{ steps.vars.outputs.deploy_bundle }}'"
+          ssh -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+            "cd '$PROD_PROJECT_DIR' && chmod +x deploy/remote/bootstrap-server.sh deploy/remote/deploy_registry.sh"
+          ssh -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+            "export GHCR_USERNAME='$GHCR_USERNAME' GHCR_TOKEN='$GHCR_TOKEN'; \
+            bash '$PROD_PROJECT_DIR/deploy/remote/deploy_registry.sh' '$PROD_PROJECT_DIR' '$BACKEND_IMAGE' '$FRONTEND_IMAGE' '${{ github.sha }}'"
+
+      - name: Verify deployment
+        shell: bash
+        env:
+          PROD_SERVER_HOST: ${{ secrets.PROD_SERVER_HOST }}
+          PROD_SERVER_PORT: ${{ secrets.PROD_SERVER_PORT }}
+          PROD_SERVER_USER: ${{ secrets.PROD_SERVER_USER }}
+          PROD_PROJECT_DIR: ${{ secrets.PROD_PROJECT_DIR }}
+        run: |
+          ssh -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+            "cd '$PROD_PROJECT_DIR' && docker-compose -f compose.prod.yml ps"

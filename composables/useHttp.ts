@@ -4,6 +4,11 @@ export const useHttp = async (url: string, options: any = {}) => {
   const token = useCookie('token')
   const langCookie = useCookie('lang')
   const router = useRouter()
+  const config = useRuntimeConfig()
+  const requestUrl =
+    process.server && typeof url === 'string' && url.startsWith('/api')
+      ? `${config.internalApiBase}${url.replace(/^\/api/, '')}`
+      : url
 
   const defaultOptions = {
     // 请求拦截器
@@ -45,5 +50,5 @@ export const useHttp = async (url: string, options: any = {}) => {
   }
 
   // 合并默认配置和传入配置
-  return await $fetch(url, { ...defaultOptions, ...options })
+  return await $fetch(requestUrl, { ...defaultOptions, ...options })
 }

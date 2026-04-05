@@ -1,0 +1,16 @@
+node_modules/
+.nuxt/
+.output/
+dist/
+coverage/
+.git/
+.github/
+backend/
+tests/
+*.log
+out.html
+response.html
+response.txt
+_isinwheel_*.html
+.idea/
+deploy/remote/__pycache__/

@@ -19,6 +19,8 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/
+__pycache__/
 .waylog/
 .nuxtrc
 backend/src/main/resources/application-local.yml
