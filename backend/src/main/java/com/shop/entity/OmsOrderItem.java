@@ -11,22 +11,26 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("oms_order_item")
+@TableName(value = "oms_order_item", autoResultMap = true)
 public class OmsOrderItem {
   @TableId(type = IdType.AUTO)
   private Long id;
   private Long orderId;
   private Long productId;
   private Long skuId;
-  
-  private String productName;
+
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode productName;
   private String productPic;
   private String skuCode;
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode skuAttributesSnapshot;
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode addonsSnapshot;
 
   private Integer quantity;
-  private BigDecimal price;
+  private BigDecimal unitPrice;
+  private BigDecimal lineAmount;
   private LocalDateTime createTime;
   private LocalDateTime updateTime;
 }

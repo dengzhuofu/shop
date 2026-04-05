@@ -14,8 +14,18 @@ public class OmsOrder {
   private Long id;
   private Long userId;
   private String orderSn;
+  private BigDecimal subtotalAmount;
+  private BigDecimal taxAmount;
   private BigDecimal totalAmount;
-  private Integer status; // 0: 待付款, 1: 已付款, 2: 已发货, 3: 已完成, 4: 已取消
+  private String status;
+  private String paymentStatus;
+  private String currency;
+  private String country;
+  private String previewToken;
+  private String couponCode;
+  private Long couponUserId;
+  private BigDecimal couponDiscountAmount;
+  private Long paymentIntentId;
   
   private String receiverName;
   private String receiverPhone;
@@ -28,14 +38,13 @@ public class OmsOrder {
   private String receiverCity;
   private String receiverState;
   private String receiverZipCode;
-  private Integer payType; // 1: Alipay, 2: Wechat, 3: Credit Card, 4: PayPal
   private String paymentMethod;
-  private Integer payStatus;
   private String payTxnNo;
   private String checkoutSource;
   private String shippingMethod;
   private BigDecimal shippingAmount;
   private BigDecimal discountAmount;
+  private String remark;
   private LocalDateTime payTime;
   private String deliveryCompany;
   private String deliverySn;

@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.common.LanguageContext;
+import com.shop.common.ProductAddonUtils;
 import com.shop.common.Result;
 import com.shop.dto.CartAddDTO;
 import com.shop.dto.CartUpdateDTO;
@@ -39,6 +40,11 @@ public class CartController {
   public Result<Void> add(@RequestBody @Validated CartAddDTO dto) {
     Long userId = StpUtil.getLoginIdAsLong();
     String lang = LanguageContext.getLanguage();
+    PmsProduct product = productService.getById(dto.getProductId());
+    PmsSku sku = skuService.getById(dto.getSkuId());
+    if (product == null || sku == null) {
+      return Result.error(404, "Product or SKU not found");
+    }
 
     // Check if item already exists in cart
     OmsCartItem existingItem = cartItemService.getOne(new QueryWrapper<OmsCartItem>()
@@ -49,23 +55,21 @@ public class CartController {
     if (existingItem != null) {
       existingItem.setQuantity(existingItem.getQuantity() + dto.getQuantity());
       existingItem.setUpdateTime(LocalDateTime.now());
-      PmsSku selectedSku = skuService.getById(existingItem.getSkuId());
-      if (selectedSku != null) {
-        existingItem.setSelectedAttributesSnapshot(
-            objectMapper.valueToTree(SkuVO.buildSnapshot(selectedSku.getSpecs(), lang)));
-      }
+      existingItem.setSelectedAttributesSnapshot(
+          objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang)));
+      existingItem.setSelectedAddonsSnapshot(objectMapper.valueToTree(
+          ProductAddonUtils.resolveSelectedAddons(product.getUpsells(), dto.getAddonCodes(), lang)));
       cartItemService.updateById(existingItem);
     } else {
-      PmsSku sku = skuService.getById(dto.getSkuId());
       OmsCartItem newItem = new OmsCartItem();
       newItem.setUserId(userId);
       newItem.setProductId(dto.getProductId());
       newItem.setSkuId(dto.getSkuId());
       newItem.setQuantity(dto.getQuantity());
-      if (sku != null) {
-        newItem.setSelectedAttributesSnapshot(
-            objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang)));
-      }
+      newItem.setSelectedAttributesSnapshot(
+          objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang)));
+      newItem.setSelectedAddonsSnapshot(objectMapper.valueToTree(
+          ProductAddonUtils.resolveSelectedAddons(product.getUpsells(), dto.getAddonCodes(), lang)));
       newItem.setCreateTime(LocalDateTime.now());
       newItem.setUpdateTime(LocalDateTime.now());
       cartItemService.save(newItem);
@@ -88,16 +92,23 @@ public class CartController {
       vo.setSkuId(item.getSkuId());
       vo.setQuantity(item.getQuantity());
       if (sku != null) {
+        BigDecimal addonAmount = ProductAddonUtils.resolveAddonAmount(
+            product == null ? null : product.getUpsells(),
+            extractAddonCodes(item.getSelectedAddonsSnapshot()),
+            lang);
         vo.setProductPic(sku.getPic());
         vo.setUnitPrice(sku.getPrice());
-        vo.setLineAmount(sku.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        vo.setAddonAmount(addonAmount.multiply(BigDecimal.valueOf(item.getQuantity())));
+        vo.setLineAmount(sku.getPrice().add(addonAmount).multiply(BigDecimal.valueOf(item.getQuantity())));
         vo.setStock(sku.getStock());
         vo.setAttributes(item.getSelectedAttributesSnapshot() != null
             ? item.getSelectedAttributesSnapshot()
             : SkuVO.buildSnapshot(sku.getSpecs(), lang));
+        vo.setAddons(item.getSelectedAddonsSnapshot());
       }
       if (product != null) {
         vo.setTitle(ProductVO.extractLang(product.getName(), lang));
+        vo.setSlug(product.getSlug());
       }
       return vo;
     }).collect(Collectors.toList());
@@ -112,6 +123,12 @@ public class CartController {
       return Result.error(404, "Cart item not found");
     }
     cartItem.setQuantity(dto.getQuantity());
+    if (dto.getAddonCodes() != null) {
+      PmsProduct product = productService.getById(cartItem.getProductId());
+      cartItem.setSelectedAddonsSnapshot(objectMapper.valueToTree(
+          ProductAddonUtils.resolveSelectedAddons(product == null ? null : product.getUpsells(), dto.getAddonCodes(),
+              LanguageContext.getLanguage())));
+    }
     cartItem.setUpdateTime(LocalDateTime.now());
     cartItemService.updateById(cartItem);
     return Result.success(null);
@@ -126,5 +143,15 @@ public class CartController {
     }
     cartItemService.removeById(id);
     return Result.success(null);
+  }
+
+  private List<String> extractAddonCodes(com.fasterxml.jackson.databind.JsonNode addonsSnapshot) {
+    if (addonsSnapshot == null || !addonsSnapshot.isArray()) {
+      return List.of();
+    }
+    return java.util.stream.StreamSupport.stream(addonsSnapshot.spliterator(), false)
+        .map(item -> item.path("code").asText())
+        .filter(code -> code != null && !code.isBlank())
+        .collect(Collectors.toList());
   }
 }

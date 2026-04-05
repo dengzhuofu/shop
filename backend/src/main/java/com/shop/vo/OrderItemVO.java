@@ -9,9 +9,12 @@ public class OrderItemVO {
     private Long productId;
     private Long skuId;
     private String productName;
+    private String slug;
     private String productPic;
     private String skuCode;
     private Object skuAttributesSnapshot;
+    private Object addons;
     private Integer quantity;
-    private BigDecimal price;
+    private BigDecimal unitPrice;
+    private BigDecimal lineAmount;
 }

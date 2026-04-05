@@ -1,1185 +1,649 @@
 <template>
   <div class="checkout-page">
-    <div class="checkout-container">
-      <!-- 左侧内容 -->
-      <main class="checkout-main">
-        <div class="checkout-header">
-          <NuxtLink to="/" class="logo">
-            <h2><i>isinwheel</i></h2>
-          </NuxtLink>
-        </div>
+    <div class="checkout-shell">
+      <div class="top-row">
+        <NuxtLink to="/" class="brand">isinwheel</NuxtLink>
+        <button type="button" class="lang-btn" @click="toggleLang">
+          {{ lang === 'en' ? '中文' : 'EN' }}
+        </button>
+      </div>
 
-        <div class="checkout-section user-section">
-          <div class="user-info">
-            <span class="step-number">1</span>
-            <span class="user-email">{{ userEmail }}</span>
-            <button class="more-btn"><MoreVerticalIcon class="icon" /></button>
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">{{ t('checkout') }}</p>
+              <h1>{{ session.user.value?.email || t('checkout') }}</h1>
+            </div>
+            <NuxtLink to="/account/profile" class="secondary-link">{{ t('profile') }}</NuxtLink>
           </div>
-        </div>
 
-        <div class="checkout-section address-section">
-          <form class="address-form">
-            <div class="form-group">
-              <label>Country/Region</label>
-              <div class="select-wrapper">
-                <select v-model="form.country">
-                  <option value="US">United States</option>
-                </select>
-                <ChevronDownIcon class="select-icon" />
-              </div>
+          <div class="block">
+            <div class="block-head">
+              <h2>{{ t('addressTitle') }}</h2>
+              <button type="button" class="minor-btn" @click="saveAddressFromForm">
+                {{ t('saveAddress') }}
+              </button>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <input
-                  type="text"
-                  v-model="form.firstName"
-                  placeholder="First name"
-                />
-              </div>
-              <div class="form-group">
-                <input
-                  type="text"
-                  v-model="form.lastName"
-                  placeholder="Last name"
-                />
-              </div>
+            <p class="helper-text" v-if="!addresses.length">{{ t('noAddress') }}</p>
+
+            <div v-if="addresses.length" class="saved-addresses">
+              <label v-for="item in addresses" :key="item.id" class="saved-address">
+                <input v-model="selectedAddressId" :value="item.id" type="radio" />
+                <span>
+                  <strong>{{ item.firstName }} {{ item.lastName }}</strong>
+                  <small>
+                    {{ item.addressLine1 }}, {{ item.city }}, {{ item.state }} {{ item.zipCode }}
+                  </small>
+                </span>
+              </label>
+              <label class="saved-address">
+                <input v-model="selectedAddressId" value="manual" type="radio" />
+                <span>
+                  <strong>{{ t('useManualAddress') }}</strong>
+                  <small>{{ t('noAddress') }}</small>
+                </span>
+              </label>
             </div>
 
-            <div class="form-group">
-              <div class="input-with-icon">
-                <input
-                  type="text"
-                  v-model="form.address"
-                  placeholder="Address"
-                />
-                <SearchIcon class="search-icon" />
+            <form class="address-form" @submit.prevent>
+              <div class="two-col">
+                <label>
+                  <span>{{ t('firstName') }}</span>
+                  <input v-model="addressForm.firstName" type="text" required />
+                </label>
+                <label>
+                  <span>{{ t('lastName') }}</span>
+                  <input v-model="addressForm.lastName" type="text" required />
+                </label>
               </div>
-            </div>
 
-            <div class="form-group">
-              <input
-                type="text"
-                v-model="form.apartment"
-                placeholder="Apartment, suite, etc. (optional)"
-              />
-            </div>
+              <label>
+                <span>{{ t('country') }}</span>
+                <input v-model="addressForm.country" type="text" />
+              </label>
 
-            <div class="form-row three-cols">
-              <div class="form-group">
-                <input type="text" v-model="form.city" placeholder="City" />
+              <label>
+                <span>{{ t('addressLine1') }}</span>
+                <input v-model="addressForm.addressLine1" type="text" required />
+              </label>
+
+              <label>
+                <span>{{ t('addressLine2') }}</span>
+                <input v-model="addressForm.addressLine2" type="text" />
+              </label>
+
+              <div class="three-col">
+                <label>
+                  <span>{{ t('city') }}</span>
+                  <input v-model="addressForm.city" type="text" required />
+                </label>
+                <label>
+                  <span>{{ t('state') }}</span>
+                  <input v-model="addressForm.state" type="text" required />
+                </label>
+                <label>
+                  <span>{{ t('zipCode') }}</span>
+                  <input v-model="addressForm.zipCode" type="text" required />
+                </label>
               </div>
-              <div class="form-group">
-                <div class="select-wrapper">
-                  <select v-model="form.state">
-                    <option value="" disabled selected>State</option>
-                    <option value="AL">Alabama</option>
-                    <option value="NY">New York</option>
-                    <option value="CA">California</option>
-                  </select>
-                  <ChevronDownIcon class="select-icon" />
-                </div>
-              </div>
-              <div class="form-group">
-                <input
-                  type="text"
-                  v-model="form.zipCode"
-                  placeholder="ZIP code"
-                />
-              </div>
-            </div>
 
-            <div class="form-group">
-              <div class="input-with-icon">
-                <input type="tel" v-model="form.phone" placeholder="Phone" />
-                <HelpCircleIcon class="help-icon" />
-              </div>
-            </div>
-
-            <div class="checkbox-group">
-              <input type="checkbox" id="news" v-model="form.subscribe" />
-              <label for="news">Text me with news and offers</label>
-            </div>
-          </form>
-        </div>
-
-        <div class="checkout-section shipping-method">
-          <h2 class="section-title">Shipping method</h2>
-          <div class="info-box">
-            Enter your shipping address to view available shipping methods.
+              <label>
+                <span>{{ t('phone') }}</span>
+                <input v-model="addressForm.phone" type="tel" />
+              </label>
+            </form>
           </div>
-        </div>
 
-        <div class="checkout-section payment-section">
-          <h2 class="section-title">Payment</h2>
-          <p class="section-desc">All transactions are secure and encrypted.</p>
-
-          <div class="payment-methods">
-            <div class="payment-option selected">
-              <div class="option-header">
-                <div class="radio-wrap">
-                  <div class="radio-inner"></div>
-                </div>
-                <span class="option-name">Credit card</span>
-                <div class="card-icons">
-                  <span class="card-icon visa">VISA</span>
-                  <span class="card-icon master">MC</span>
-                  <span class="card-icon amex">AMEX</span>
-                  <span class="card-icon more">+5</span>
-                </div>
-              </div>
-              <div class="option-body">
-                <div class="card-form">
-                  <div class="form-group">
-                    <div class="input-with-icon">
-                      <input type="text" placeholder="Card number" />
-                      <LockIcon class="lock-icon" />
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <input
-                        type="text"
-                        placeholder="Expiration date (MM / YY)"
-                      />
-                    </div>
-                    <div class="form-group">
-                      <div class="input-with-icon">
-                        <input type="text" placeholder="Security code" />
-                        <HelpCircleIcon class="help-icon" />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <input type="text" placeholder="Name on card" />
-                  </div>
-                  <div class="checkbox-group">
-                    <input type="checkbox" id="billing" checked />
-                    <label for="billing"
-                      >Use shipping address as billing address</label
-                    >
-                  </div>
-                </div>
-              </div>
+          <div class="block">
+            <div class="block-head">
+              <h2>{{ t('myCoupons') }}</h2>
+              <button type="button" class="minor-btn" @click="refreshCoupons">{{ t('refreshData') }}</button>
             </div>
 
-            <div class="payment-option">
-              <div class="option-header">
-                <div class="radio-wrap"></div>
-                <span class="option-name"
-                  >Shop Pay
-                  <span class="sub-text"
-                    >· Pay in full or in installments</span
-                  ></span
-                >
-                <span class="brand-text shop">shop</span>
-              </div>
+            <div v-if="availableCoupons.length" class="coupon-list">
+              <label v-for="coupon in availableCoupons" :key="coupon.couponId" class="coupon-card">
+                <input v-model="selectedCouponUserId" :value="coupon.couponUserId" type="radio" />
+                <span class="coupon-copy">
+                  <strong>{{ coupon.code }}</strong>
+                  <small>{{ coupon.title }}</small>
+                </span>
+                <span>{{ money(coupon.discountAmount) }}</span>
+              </label>
             </div>
 
-            <div class="payment-option">
-              <div class="option-header">
-                <div class="radio-wrap"></div>
-                <span class="option-name">PayPal</span>
-                <span class="brand-text paypal">PayPal</span>
-              </div>
-            </div>
+            <p v-else class="helper-text">{{ t('noCoupons') }}</p>
 
-            <div class="payment-option">
-              <div class="option-header">
-                <div class="radio-wrap"></div>
-                <span class="option-name">Affirm - Pay Over Time</span>
-                <span class="brand-text affirm">affirm</span>
-              </div>
-            </div>
-
-            <div class="payment-option">
-              <div class="option-header">
-                <div class="radio-wrap"></div>
-                <span class="option-name">Klarna</span>
-                <span class="brand-text klarna">Klarna.</span>
-              </div>
+            <div class="claimable-list" v-if="claimableCoupons.length">
+              <h3>{{ t('availableCoupons') }}</h3>
+              <button
+                v-for="coupon in claimableCoupons"
+                :key="`claim-${coupon.couponId}`"
+                type="button"
+                class="claim-btn"
+                @click="claimCoupon(coupon.couponId)"
+              >
+                <span>{{ coupon.code }} · {{ coupon.title }}</span>
+                <strong>{{ t('claim') }}</strong>
+              </button>
             </div>
           </div>
 
-          <div class="save-info-section">
-            <h3 class="sub-title">Save my information for a faster checkout</h3>
-            <div class="form-group">
-              <div class="phone-input">
-                <SmartphoneIcon class="phone-icon" />
-                <div class="prefix">Mobile phone (optional)<br />+1</div>
-                <input type="tel" />
-              </div>
+          <div class="block">
+            <div class="action-stack">
+              <button type="button" class="primary-btn" @click="previewOrder">
+                {{ t('previewOrder') }}
+              </button>
+              <button type="button" class="primary-btn dark" :disabled="!preview.previewToken" @click="createOrder">
+                {{ t('createOrder') }}
+              </button>
+              <button
+                type="button"
+                class="primary-btn ghost"
+                :disabled="!paymentIntent?.id"
+                @click="completePayment"
+              >
+                {{ t('completeMockPayment') }}
+              </button>
             </div>
-            <p class="terms-text">
-              By providing your phone number, you agree to create a Shop account
-              subject to Shop's
-              <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
-            </p>
+            <p v-if="message" class="message-text">{{ message }}</p>
           </div>
+        </section>
 
-          <button
-            class="pay-now-btn"
-            @click="handlePay"
-            :disabled="isSubmitting"
-          >
-            {{ isSubmitting ? 'Processing...' : 'Pay now' }}
-          </button>
-        </div>
-      </main>
-
-      <!-- 右侧订单摘要 -->
-      <aside class="checkout-sidebar">
-        <div class="sidebar-inner">
-          <div class="cart-items">
-            <div
-              class="cart-item"
-              v-for="item in summaryItems"
-              :key="item.cartItemId || item.skuId"
-            >
-              <div class="item-img-wrapper">
-                <img
-                  :src="item.productPic || 'https://via.placeholder.com/100'"
-                  alt="Scooter"
-                  class="item-img"
-                />
-                <span class="item-qty">{{ item.quantity }}</span>
-              </div>
-              <div class="item-info">
-                <h4 class="item-title">{{ item.title }}</h4>
-                <p class="item-variant">
-                  {{ formatAttributes(item.attributes) }}
-                </p>
-              </div>
-              <div class="item-price">
-                ${{ Number(item.lineAmount || 0).toFixed(2) }}
-              </div>
+        <aside class="panel summary-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">{{ t('orderPreview') }}</p>
+              <h2>{{ t('cart') }}</h2>
             </div>
           </div>
 
-          <div class="points-banner">
-            <div class="points-icon"><GiftIcon class="icon" /></div>
-            <div class="points-text">
-              <strong>Complete this purchase to earn up to 839 Points</strong>
-              <p>Use your Points to redeem a discount on your next order.</p>
-            </div>
+          <div class="item-list">
+            <article v-for="item in cart.items.value" :key="item.cartItemId" class="summary-item">
+              <img :src="item.productPic" :alt="item.title" />
+              <div>
+                <strong>{{ item.title }}</strong>
+                <p>{{ attributeText(item.attributes) }}</p>
+                <small v-if="item.addons?.length">
+                  + {{ item.addons.map((addon: any) => addon.name).join(', ') }}
+                </small>
+              </div>
+              <span>{{ money(item.lineAmount) }}</span>
+            </article>
           </div>
 
-          <div class="discount-section">
-            <div class="discount-input">
-              <input type="text" placeholder="Discount code" />
-              <button class="apply-btn">Apply</button>
-            </div>
-          </div>
-
-          <div class="summary-lines">
+          <div class="totals">
             <div class="line">
-              <span class="label">Subtotal</span>
-              <span class="value"
-                >${{ Number(preview.subtotal || 0).toFixed(2) }}</span
-              >
+              <span>{{ t('subtotal') }}</span>
+              <strong>{{ money(preview.subtotal || cart.subtotal.value) }}</strong>
             </div>
-            <div class="line shipping-line">
-              <span class="label">
-                UPS Ground/FedEx Home Delivery(2-5 Business Days)
-                <HelpCircleIcon class="help-icon" />
-              </span>
-              <span class="value placeholder">{{
-                form.address
-                  ? `${form.address}, ${form.city}`
-                  : 'Enter shipping address'
-              }}</span>
+            <div class="line">
+              <span>{{ t('shipping') }}</span>
+              <strong>{{ money(preview.shippingAmount || 0) }}</strong>
+            </div>
+            <div class="line">
+              <span>{{ t('tax') }}</span>
+              <strong>{{ money(preview.taxAmount || 0) }}</strong>
+            </div>
+            <div class="line" v-if="preview.discountAmount">
+              <span>{{ t('coupon') }}</span>
+              <strong>-{{ money(preview.discountAmount || 0) }}</strong>
+            </div>
+            <div class="line total">
+              <span>{{ t('total') }}</span>
+              <strong>{{ money(preview.totalAmount || cart.subtotal.value) }}</strong>
             </div>
           </div>
 
-          <div class="total-line">
-            <span class="label">Total</span>
-            <div class="value">
-              <span class="currency">USD</span>
-              <span class="amount"
-                >${{ Number(preview.totalAmount || 0).toFixed(2) }}</span
-              >
-            </div>
+          <div class="payment-box" v-if="paymentIntent">
+            <p class="eyebrow">{{ t('paymentStep') }}</p>
+            <strong>{{ paymentIntent.methodCode }}</strong>
+            <p>{{ t('paymentReady') }}</p>
           </div>
-        </div>
-      </aside>
+        </aside>
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { computed, ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import {
-  MoreVerticalIcon,
-  ChevronDownIcon,
-  SearchIcon,
-  HelpCircleIcon,
-  LockIcon,
-  SmartphoneIcon,
-  GiftIcon,
-} from 'lucide-vue-next'
+<script setup lang="ts">
+import { onMounted, reactive, ref, watch } from 'vue'
 
 definePageMeta({
   layout: 'blank',
 })
 
-const form = ref({
+const { lang, setLang, t } = useShopLocale()
+const { money, attributeText } = useShopFormat()
+const cart = useShopCart()
+const session = useShopSession()
+
+const addresses = ref<any[]>([])
+const availableCoupons = ref<any[]>([])
+const claimableCoupons = ref<any[]>([])
+const selectedAddressId = ref<number | 'manual' | null>(null)
+const selectedCouponUserId = ref<number | null>(null)
+const preview = ref<Record<string, any>>({})
+const createdOrder = ref<Record<string, any> | null>(null)
+const paymentIntent = ref<Record<string, any> | null>(null)
+const message = ref('')
+
+const addressForm = reactive({
   country: 'United States',
   firstName: '',
   lastName: '',
-  address: '',
-  apartment: '',
+  phone: '',
+  addressLine1: '',
+  addressLine2: '',
   city: '',
   state: '',
   zipCode: '',
-  phone: '',
-  subscribe: false,
 })
 
-const userEmail = ref('user@example.com')
-const addresses = ref([])
-const summaryItems = ref([])
-const preview = ref({
-  subtotal: 0,
-  totalAmount: 0,
-  shippingAmount: 0,
-  discountAmount: 0,
-})
-const isSubmitting = ref(false)
-const route = useRoute()
-const isDirectCheckout = computed(() => route.query.source === 'direct')
-const directCheckoutItem = computed(() => {
-  const productId = Number(route.query.productId)
-  const skuId = Number(route.query.skuId)
-  const quantity = Number(route.query.quantity || 1)
-  if (!productId || !skuId || !quantity) {
-    return null
+const applyAddress = (address: any) => {
+  if (!address) {
+    return
   }
-  return {
-    productId,
-    skuId,
-    quantity,
+  addressForm.country = address.country || 'United States'
+  addressForm.firstName = address.firstName || ''
+  addressForm.lastName = address.lastName || ''
+  addressForm.phone = address.phone || ''
+  addressForm.addressLine1 = address.addressLine1 || ''
+  addressForm.addressLine2 = address.addressLine2 || ''
+  addressForm.city = address.city || ''
+  addressForm.state = address.state || ''
+  addressForm.zipCode = address.zipCode || ''
+}
+
+watch(selectedAddressId, (value) => {
+  if (value === 'manual') {
+    return
+  }
+  const matched = addresses.value.find((item) => item.id === value)
+  if (matched) {
+    applyAddress(matched)
   }
 })
 
-const defaultAddress = computed(
-  () => addresses.value.find((item) => item.isDefault) || addresses.value[0],
-)
-
-const applyAddress = (address) => {
-  if (!address) return
-  form.value = {
-    ...form.value,
-    country: address.country || 'United States',
-    firstName: address.firstName || '',
-    lastName: address.lastName || '',
-    address: address.addressLine1 || '',
-    apartment: address.addressLine2 || '',
-    city: address.city || '',
-    state: address.state || '',
-    zipCode: address.zipCode || '',
-    phone: address.phone || '',
+const fetchAddresses = async () => {
+  const res = await useHttp('/api/address/list')
+  addresses.value = res?.code === 200 ? res.data || [] : []
+  if (addresses.value.length && !selectedAddressId.value) {
+    selectedAddressId.value = addresses.value[0].id
+    applyAddress(addresses.value[0])
   }
 }
 
-const fetchAddress = async () => {
-  try {
-    const res = await useHttp('/api/address/list')
-    if (res?.code === 200) {
-      addresses.value = res.data || []
-      applyAddress(defaultAddress.value)
-    }
-  } catch (error) {
-    console.error('Failed to fetch address', error)
+const refreshCoupons = async () => {
+  const [myRes, availableRes] = await Promise.all([
+    useHttp('/api/coupon/my'),
+    useHttp('/api/coupon/available'),
+  ])
+  availableCoupons.value = myRes?.code === 200 ? myRes.data || [] : []
+  claimableCoupons.value =
+    availableRes?.code === 200
+      ? (availableRes.data || []).filter((coupon: any) => !coupon.claimed)
+      : []
+}
+
+const claimCoupon = async (couponId: number) => {
+  await useHttp(`/api/coupon/${couponId}/claim`, { method: 'POST' })
+  await refreshCoupons()
+}
+
+const saveAddressFromForm = async () => {
+  const res = await useHttp('/api/address', {
+    method: 'POST',
+    body: {
+      ...addressForm,
+      isDefault: !addresses.value.length,
+    },
+  })
+  if (res?.code === 200) {
+    await fetchAddresses()
+    selectedAddressId.value = res.data.id
+    message.value = t('saveAddress')
   }
 }
 
-const fetchCartSummary = async () => {
-  try {
-    if (isDirectCheckout.value && directCheckoutItem.value) {
-      const previewRes = await useHttp('/api/order/preview', {
-        method: 'POST',
-        body: {
-          source: 'direct',
-          items: [directCheckoutItem.value],
-        },
-      })
-      if (previewRes?.code === 200) {
-        preview.value = previewRes.data
-        summaryItems.value = previewRes.data.items || []
-      }
-      return
-    }
-    const cartRes = await useHttp('/api/cart/list')
-    if (cartRes?.code === 200) {
-      summaryItems.value = cartRes.data || []
-      const cartItemIds = summaryItems.value.map((item) => item.cartItemId)
-      if (cartItemIds.length > 0) {
-        const previewRes = await useHttp('/api/order/preview', {
-          method: 'POST',
-          body: {
-            source: 'cart',
-            cartItemIds,
-          },
-        })
-        if (previewRes?.code === 200) {
-          preview.value = previewRes.data
-          summaryItems.value = previewRes.data.items || summaryItems.value
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to fetch cart summary', error)
+const buildPreviewPayload = () => ({
+  source: 'cart',
+  cartItemIds: cart.items.value.map((item) => item.cartItemId),
+  addressId: typeof selectedAddressId.value === 'number' ? selectedAddressId.value : undefined,
+  shippingMethod: 'UPS Ground/FedEx Home Delivery(2-5 Business Days)',
+  couponUserId: selectedCouponUserId.value || undefined,
+})
+
+const previewOrder = async () => {
+  const res = await useHttp('/api/order/preview', {
+    method: 'POST',
+    body: buildPreviewPayload(),
+  })
+  if (res?.code === 200) {
+    preview.value = res.data
+    message.value = t('paymentPending')
   }
 }
 
-const handlePay = async () => {
-  if (summaryItems.value.length === 0 || isSubmitting.value) return
-  isSubmitting.value = true
-  try {
-    const createBody = {
-      source: isDirectCheckout.value ? 'direct' : 'cart',
-      cartItemIds: isDirectCheckout.value
-        ? []
-        : summaryItems.value.map((item) => item.cartItemId),
-      items:
-        isDirectCheckout.value && directCheckoutItem.value
-          ? [directCheckoutItem.value]
-          : [],
-      paymentMethod: 'credit_card',
-      shippingMethod: 'UPS Ground/FedEx Home Delivery(2-5 Business Days)',
-      addressId: defaultAddress.value?.id,
-      addressSnapshot: {
-        country: form.value.country,
-        firstName: form.value.firstName,
-        lastName: form.value.lastName,
-        phone: form.value.phone,
-        addressLine1: form.value.address,
-        addressLine2: form.value.apartment,
-        city: form.value.city,
-        state: form.value.state,
-        zipCode: form.value.zipCode,
-      },
-    }
-    const createRes = await useHttp('/api/order/create', {
-      method: 'POST',
-      body: createBody,
-    })
-    if (createRes?.code !== 200) {
-      alert(createRes?.message || 'Create order failed')
-      return
-    }
-    const order = createRes.data
-    const payRes = await useHttp('/api/order/pay', {
+const createOrder = async () => {
+  if (!preview.value.previewToken) {
+    message.value = t('previewRequired')
+    return
+  }
+
+  const res = await useHttp('/api/order/create', {
+    method: 'POST',
+    body: {
+      ...buildPreviewPayload(),
+      previewToken: preview.value.previewToken,
+      addressSnapshot: typeof selectedAddressId.value === 'number' ? undefined : addressForm,
+      remark: 'Nuxt checkout flow',
+    },
+  })
+
+  if (res?.code === 200) {
+    createdOrder.value = res.data
+    message.value = t('orderCreated')
+    const intentRes = await useHttp('/api/payment/intent', {
       method: 'POST',
       body: {
-        orderId: order.id,
+        orderId: res.data.id,
         paymentMethod: 'credit_card',
-        mockResult: 'success',
       },
     })
-    if (payRes?.code === 200) {
-      alert('Payment success')
-      navigateTo('/account/orders')
-    } else {
-      alert(payRes?.message || 'Payment failed')
+    if (intentRes?.code === 200) {
+      paymentIntent.value = intentRes.data
+      message.value = t('paymentReady')
     }
-  } catch (error) {
-    console.error('Pay order failed', error)
-    alert('Pay order failed')
-  } finally {
-    isSubmitting.value = false
+    await cart.refreshCart()
   }
 }
 
-const formatAttributes = (attributes) => {
-  if (!attributes || typeof attributes !== 'object') return ''
-  const source =
-    attributes.attributeDisplay || attributes.attributes || attributes
-  if (!source || typeof source !== 'object') return ''
-  return Object.values(source)
-    .map((value) =>
-      typeof value === 'object' && value !== null
-        ? Object.values(value).join('/')
-        : String(value),
-    )
-    .join(' / ')
+const completePayment = async () => {
+  if (!paymentIntent.value?.id) {
+    return
+  }
+
+  const res = await useHttp('/api/payment/mock/complete', {
+    method: 'POST',
+    body: {
+      paymentIntentId: paymentIntent.value.id,
+      mockResult: 'success',
+    },
+  })
+
+  if (res?.code === 200) {
+    paymentIntent.value = res.data
+    message.value = t('orderSuccess')
+  }
 }
 
-onMounted(() => {
-  fetchAddress()
-  fetchCartSummary()
+const toggleLang = () => {
+  setLang(lang.value === 'en' ? 'zh' : 'en')
+  if (process.client) {
+    window.location.reload()
+  }
+}
+
+onMounted(async () => {
+  await session.fetchMe()
+  if (!session.isLoggedIn.value) {
+    await navigateTo('/login')
+    return
+  }
+
+  await Promise.all([cart.refreshCart(), fetchAddresses(), refreshCoupons()])
 })
 </script>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .checkout-page {
   min-height: 100vh;
-  background-color: #fff;
-  font-family: 'Montserrat', sans-serif;
-  color: #333;
+  background: linear-gradient(180deg, #f8f7f1, #eef2ff);
+  padding: 24px;
 }
 
-.checkout-container {
-  display: flex;
-  max-width: 1200px;
+.checkout-shell {
+  max-width: 1320px;
   margin: 0 auto;
-  min-height: 100vh;
 }
 
-.checkout-main {
-  flex: 1;
-  padding: 40px 5%;
-  border-right: 1px solid #e6e6e6;
-  padding-right: 6%;
-
-  .checkout-header {
-    margin-bottom: 40px;
-    .logo {
-      text-decoration: none;
-      color: #111;
-      h2 {
-        font-size: 28px;
-        font-weight: 800;
-        margin: 0;
-      }
-    }
-  }
-
-  .checkout-section {
-    margin-bottom: 40px;
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #111;
-    }
-
-    .section-desc {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 16px;
-    }
-  }
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
 }
 
-.user-section {
+.brand {
+  text-decoration: none;
+  color: #0f172a;
+  font-family: 'Poppins', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.lang-btn,
+.minor-btn,
+.secondary-link {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: white;
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  gap: 22px;
+}
+
+.panel {
+  background: white;
+  border-radius: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 28px;
+}
+
+.panel-head,
+.block-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-
-  &::before {
-    content: 'OR';
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff;
-    padding: 0 10px;
-    font-size: 12px;
-    color: #999;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: #e6e6e6;
-    z-index: -1;
-  }
-
-  .user-info {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    border: 1px solid #e6e6e6;
-    border-radius: 8px;
-    padding: 12px 16px;
-    background: #fff;
-
-    .step-number {
-      width: 24px;
-      height: 24px;
-      background: #f0f0f0;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
-      margin-right: 12px;
-    }
-
-    .user-email {
-      font-size: 14px;
-      font-weight: 500;
-      flex: 1;
-    }
-
-    .more-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #666;
-      padding: 4px;
-      .icon {
-        width: 20px;
-        height: 20px;
-      }
-    }
-  }
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.address-form,
-.card-form {
+.panel-head {
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  color: #0f766e;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.block {
+  padding: 22px 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.helper-text,
+.message-text {
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.saved-addresses,
+.coupon-list,
+.claimable-list,
+.item-list,
+.action-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  margin-top: 16px;
+}
 
-  .form-group {
-    position: relative;
+.saved-address,
+.coupon-card,
+.claim-btn,
+.summary-item {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: #f8fafc;
+}
 
-    label {
-      position: absolute;
-      top: 6px;
-      left: 12px;
-      font-size: 11px;
-      color: #666;
-      z-index: 1;
-    }
+.saved-address,
+.coupon-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
 
-    input[type='text'],
-    input[type='tel'],
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 6px;
-      font-size: 14px;
-      background: #fff;
-      transition: all 0.2s;
-      outline: none;
+.claim-btn {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border: none;
+  text-align: left;
+  background: #ecfeff;
+}
 
-      &:focus {
-        border-color: #58cc02;
-        box-shadow: 0 0 0 1px #58cc02;
-      }
+.saved-address span,
+.coupon-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
-      &::placeholder {
-        color: #999;
-      }
-    }
+.saved-address small,
+.coupon-copy small,
+.summary-item p,
+.summary-item small {
+  color: #64748b;
+  line-height: 1.5;
+}
 
-    select {
-      appearance: none;
-      padding-top: 24px;
-      padding-bottom: 8px;
-    }
+.address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
 
-    .select-wrapper {
-      position: relative;
-      .select-icon {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 16px;
-        height: 16px;
-        color: #666;
-        pointer-events: none;
-      }
-    }
-
-    .input-with-icon {
-      position: relative;
-      .search-icon,
-      .help-icon,
-      .lock-icon {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 16px;
-        height: 16px;
-        color: #999;
-      }
-    }
-  }
-
-  .form-row {
+  label {
     display: flex;
-    gap: 16px;
-    .form-group {
-      flex: 1;
-    }
-
-    &.three-cols {
-      .form-group {
-        flex: 1;
-      }
-    }
-  }
-
-  .checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-
-    input[type='checkbox'] {
-      width: 18px;
-      height: 18px;
-      border: 1px solid #d9d9d9;
-      border-radius: 4px;
-      accent-color: #58cc02;
-      cursor: pointer;
-    }
-
-    label {
-      font-size: 14px;
-      color: #333;
-      cursor: pointer;
-      position: static;
-    }
-  }
-}
-
-.shipping-method {
-  .info-box {
-    background: #f5f5f5;
-    padding: 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #666;
-    text-align: center;
-  }
-}
-
-.payment-section {
-  .payment-methods {
-    border: 1px solid #d9d9d9;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 24px;
-
-    .payment-option {
-      border-bottom: 1px solid #d9d9d9;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      &.selected {
-        background: #fafafa;
-      }
-
-      .option-header {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        cursor: pointer;
-
-        .radio-wrap {
-          width: 18px;
-          height: 18px;
-          border: 1px solid #d9d9d9;
-          border-radius: 50%;
-          margin-right: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #fff;
-        }
-
-        .option-name {
-          font-size: 14px;
-          font-weight: 500;
-          flex: 1;
-
-          .sub-text {
-            font-size: 12px;
-            color: #666;
-            font-weight: 400;
-          }
-        }
-
-        .card-icons {
-          display: flex;
-          gap: 4px;
-
-          .card-icon {
-            font-size: 10px;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 2px;
-            border: 1px solid #eee;
-            background: #fff;
-
-            &.visa {
-              color: #1a1f71;
-            }
-            &.master {
-              color: #ff5f00;
-            }
-            &.amex {
-              color: #002663;
-            }
-            &.more {
-              color: #666;
-            }
-          }
-        }
-
-        .brand-text {
-          font-weight: 800;
-          font-size: 16px;
-
-          &.shop {
-            color: #5a31f4;
-          }
-          &.paypal {
-            color: #003087;
-          }
-          &.affirm {
-            color: #000;
-          }
-          &.klarna {
-            color: #ffb3c7;
-          }
-        }
-      }
-
-      &.selected .radio-wrap {
-        border-color: #58cc02;
-        .radio-inner {
-          width: 10px;
-          height: 10px;
-          background: #58cc02;
-          border-radius: 50%;
-        }
-      }
-
-      .option-body {
-        padding: 0 16px 16px 16px;
-        background: #fafafa;
-
-        .card-form {
-          margin-top: 8px;
-        }
-      }
-    }
-  }
-
-  .save-info-section {
-    margin-bottom: 24px;
-
-    .sub-title {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    .phone-input {
-      display: flex;
-      align-items: center;
-      border: 1px solid #d9d9d9;
-      border-radius: 6px;
-      padding: 8px 12px;
-      gap: 12px;
-
-      .phone-icon {
-        width: 24px;
-        height: 24px;
-        color: #666;
-      }
-
-      .prefix {
-        font-size: 11px;
-        color: #666;
-        line-height: 1.2;
-      }
-
-      input {
-        flex: 1;
-        border: none;
-        outline: none;
-        font-size: 14px;
-      }
-    }
-
-    .terms-text {
-      font-size: 12px;
-      color: #666;
-      margin-top: 12px;
-      line-height: 1.5;
-
-      a {
-        color: #111;
-        text-decoration: underline;
-      }
-    }
-  }
-
-  .pay-now-btn {
-    width: 100%;
-    padding: 16px;
-    background: #58cc02;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-
-    &:hover {
-      background: #46a302;
-    }
-  }
-}
-
-/* 右侧边栏 */
-.checkout-sidebar {
-  flex: 0 0 45%;
-  background: #fafafa;
-  border-left: 1px solid #e6e6e6;
-  padding: 40px 5%;
-
-  .sidebar-inner {
-    position: sticky;
-    top: 40px;
-  }
-
-  .cart-items {
-    margin-bottom: 24px;
-
-    .cart-item {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-
-      .item-img-wrapper {
-        position: relative;
-        width: 64px;
-        height: 64px;
-        background: #fff;
-        border: 1px solid #e6e6e6;
-        border-radius: 8px;
-        padding: 4px;
-
-        .item-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .item-qty {
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          width: 20px;
-          height: 20px;
-          background: rgba(114, 114, 114, 0.9);
-          color: #fff;
-          font-size: 12px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-        }
-      }
-
-      .item-info {
-        flex: 1;
-
-        .item-title {
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 4px;
-          color: #333;
-        }
-
-        .item-variant {
-          font-size: 12px;
-          color: #666;
-        }
-      }
-
-      .item-price {
-        font-size: 14px;
-        font-weight: 500;
-        color: #333;
-      }
-    }
-  }
-
-  .points-banner {
-    display: flex;
-    gap: 12px;
-    background: #f0f0f0;
-    padding: 16px;
-    border-radius: 8px;
-    margin-bottom: 24px;
-
-    .points-icon {
-      .icon {
-        width: 20px;
-        height: 20px;
-        color: #555;
-      }
-    }
-
-    .points-text {
-      font-size: 13px;
-      color: #333;
-
-      strong {
-        display: block;
-        margin-bottom: 4px;
-      }
-
-      p {
-        margin: 0;
-        color: #666;
-      }
-    }
-  }
-
-  .discount-section {
-    margin-bottom: 24px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #e6e6e6;
-
-    .discount-input {
-      display: flex;
-      gap: 12px;
-
-      input {
-        flex: 1;
-        padding: 12px 16px;
-        border: 1px solid #d9d9d9;
-        border-radius: 6px;
-        font-size: 14px;
-        outline: none;
-
-        &:focus {
-          border-color: #58cc02;
-        }
-      }
-
-      .apply-btn {
-        padding: 0 24px;
-        background: #f0f0f0;
-        border: 1px solid #d9d9d9;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #999;
-        cursor: not-allowed;
-
-        &:hover {
-          background: #e6e6e6;
-        }
-      }
-    }
-  }
-
-  .summary-lines {
-    margin-bottom: 24px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #e6e6e6;
-
-    .line {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      font-size: 14px;
-
-      .label {
-        color: #333;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-
-        .help-icon {
-          width: 14px;
-          height: 14px;
-          color: #999;
-        }
-      }
-
-      .value {
-        font-weight: 500;
-
-        &.placeholder {
-          font-size: 12px;
-          color: #666;
-          font-weight: 400;
-          text-align: right;
-          max-width: 150px;
-        }
-      }
-    }
-  }
-
-  .total-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .label {
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
-    }
-
-    .value {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-
-      .currency {
-        font-size: 12px;
-        color: #666;
-      }
-
-      .amount {
-        font-size: 24px;
-        font-weight: 700;
-        color: #111;
-      }
-    }
-  }
-}
-
-@media (max-width: 992px) {
-  .checkout-container {
-    flex-direction: column-reverse;
-  }
-
-  .checkout-main {
-    border-right: none;
-    padding: 40px 5%;
-  }
-
-  .checkout-sidebar {
-    border-left: none;
-    border-bottom: 1px solid #e6e6e6;
-    padding: 40px 5%;
-  }
-}
-
-@media (max-width: 640px) {
-  .form-row,
-  .form-row.three-cols {
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  input {
+    min-height: 48px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    padding: 0 14px;
+  }
+}
+
+.two-col,
+.three-col {
+  display: grid;
+  gap: 14px;
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.three-col {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.action-stack .primary-btn {
+  min-height: 52px;
+  border-radius: 999px;
+  border: none;
+  background: #0f766e;
+  color: white;
+  font-weight: 800;
+
+  &.dark {
+    background: #0f172a;
+  }
+
+  &.ghost {
+    background: #e0f2fe;
+    color: #0f172a;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+  }
+}
+
+.summary-panel .summary-item {
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+
+  img {
+    width: 76px;
+    height: 76px;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+}
+
+.totals {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  &.total {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    font-size: 18px;
+  }
+}
+
+.payment-box {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background: #0f172a;
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .two-col,
+  .three-col {
+    grid-template-columns: 1fr;
   }
 }
 </style>

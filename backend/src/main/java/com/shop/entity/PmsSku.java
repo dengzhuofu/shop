@@ -18,15 +18,21 @@ public class PmsSku {
   private Long productId;
   private String skuCode;
   private BigDecimal price;
+  private BigDecimal compareAtPrice;
   private Integer stock;
 
   private String pic;
+
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode images;
 
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode description;
 
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode specs;
+
+  private String status;
 
   private LocalDateTime createTime;
   private LocalDateTime updateTime;

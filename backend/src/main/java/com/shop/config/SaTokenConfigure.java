@@ -13,10 +13,12 @@ public class SaTokenConfigure implements WebMvcConfigurer {
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
     registry.addInterceptor(new SaInterceptor(handle -> {
-      SaRouter.match("/**")
+          SaRouter.match("/**")
           .notMatch(
               "/auth/login",
+              "/auth/register/email",
               "/product/**",
+              "/category/**",
               "/review/**",
               "/swagger-ui.html",
               "/swagger-ui/**",

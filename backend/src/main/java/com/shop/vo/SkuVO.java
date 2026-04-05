@@ -1,9 +1,10 @@
 package com.shop.vo;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.shop.common.LanguageContext;
+import com.shop.common.JsonLocaleUtils;
 import com.shop.entity.PmsSku;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -15,12 +16,15 @@ public class SkuVO {
   private Long productId;
   private String skuCode;
   private BigDecimal price;
+  private BigDecimal compareAtPrice;
   private Integer stock;
   private String pic;
+  private Object images;
   private String description;
   private Object specs;
   private Object attributes;
   private Object attributeDisplay;
+  private String status;
 
   public static SkuVO from(PmsSku sku) {
     SkuVO vo = new SkuVO();
@@ -28,14 +32,17 @@ public class SkuVO {
     vo.setProductId(sku.getProductId());
     vo.setSkuCode(sku.getSkuCode());
     vo.setPrice(sku.getPrice());
+    vo.setCompareAtPrice(sku.getCompareAtPrice());
     vo.setStock(sku.getStock());
     vo.setPic(sku.getPic());
+    vo.setImages(JsonLocaleUtils.localizedObject(sku.getImages()));
+    vo.setStatus(sku.getStatus());
 
-    String lang = LanguageContext.getLanguage();
+    String lang = JsonLocaleUtils.currentLanguage();
     vo.setDescription(ProductVO.extractLang(sku.getDescription(), lang));
 
     JsonNode specsNode = sku.getSpecs();
-    vo.setSpecs(specsNode);
+    vo.setSpecs(JsonLocaleUtils.localizedObject(specsNode, lang));
     vo.setAttributes(resolveAttributes(specsNode, lang));
     vo.setAttributeDisplay(resolveAttributes(specsNode, lang));
 

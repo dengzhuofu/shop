@@ -1,132 +1,153 @@
 <template>
   <div class="orders-page">
-    <h1 class="page-title">Orders</h1>
-    
-    <div class="orders-content">
-      <div class="order-list" v-if="orders.length">
-        <div class="order-row" v-for="order in orders" :key="order.id">
-          <div class="meta">
-            <h3>{{ order.orderSn }}</h3>
-            <p>{{ order.createTime }}</p>
-          </div>
-          <div class="status">{{ statusText(order.status) }}</div>
-          <div class="amount">${{ Number(order.totalAmount || 0).toFixed(2) }}</div>
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">{{ t('orderHistory') }}</p>
+          <h2>{{ t('orders') }}</h2>
         </div>
+        <button type="button" class="minor-btn" @click="fetchOrders">{{ t('refreshData') }}</button>
       </div>
-      <div class="empty-state" v-else>
-        <h3 class="empty-title">No orders yet</h3>
-        <p class="empty-desc">Go to store to place an order.</p>
+
+      <div v-if="orders.length" class="order-list">
+        <article v-for="order in orders" :key="order.id" class="order-card">
+          <div class="top-row">
+            <div>
+              <strong>{{ order.orderSn }}</strong>
+              <p>{{ order.createTime }}</p>
+            </div>
+            <span class="status-chip">{{ statusText(order.status) }}</span>
+          </div>
+
+          <div class="line-items">
+            <div v-for="item in order.items || []" :key="item.id" class="line-item">
+              <NuxtLink :to="`/products/${item.slug || item.productId}`">{{ item.productName }}</NuxtLink>
+              <span>{{ money(item.lineAmount) }}</span>
+            </div>
+          </div>
+
+          <div class="totals">
+            <span>{{ t('total') }}</span>
+            <strong>{{ money(order.totalAmount) }}</strong>
+          </div>
+        </article>
       </div>
-    </div>
+
+      <p v-else class="helper-text">{{ t('noOrders') }}</p>
+    </section>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
 definePageMeta({
-  layout: 'account'
+  layout: 'account',
 })
 
-const orders = ref([])
+const { t } = useShopLocale()
+const { money, statusText } = useShopFormat()
+
+const orders = ref<any[]>([])
 
 const fetchOrders = async () => {
-  try {
-    const res = await useHttp('/api/order/list?pageNum=1&pageSize=20')
-    if (res?.code === 200) {
-      orders.value = res.data.records || []
-    }
-  } catch (error) {
-    console.error('Failed to fetch orders', error)
-  }
-}
-
-const statusText = (status) => {
-  const map = {
-    0: 'Pending',
-    1: 'Paid',
-    2: 'Shipped',
-    3: 'Completed',
-    4: 'Cancelled'
-  }
-  return map[status] || 'Unknown'
+  const res = await useHttp('/api/order/list?pageNum=1&pageSize=20')
+  orders.value = res?.code === 200 ? res.data?.records || [] : []
 }
 
 onMounted(fetchOrders)
 </script>
 
-<style lang="scss" scoped>
-.orders-page {
-  .page-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 24px;
-    color: #111;
+<style scoped lang="scss">
+.card {
+  border-radius: 28px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 24px;
+}
+
+.section-head,
+.top-row,
+.totals,
+.line-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-head {
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  color: #0f766e;
+}
+
+.minor-btn {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-card {
+  border-radius: 22px;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.top-row p,
+.helper-text,
+.line-item a {
+  color: #64748b;
+}
+
+.top-row p {
+  margin: 6px 0 0;
+}
+
+.status-chip {
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0f172a;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.line-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.line-item {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+
+  &:last-child {
+    border-bottom: none;
   }
 
-  .orders-content {
-    background: #fff;
-    border-radius: 8px;
-    padding: 60px 20px;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eaeaea;
-
-    .order-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      text-align: left;
-
-      .order-row {
-        display: grid;
-        grid-template-columns: 1fr 120px 120px;
-        align-items: center;
-        gap: 16px;
-        padding: 16px;
-        border: 1px solid #efefef;
-        border-radius: 8px;
-
-        .meta h3 {
-          margin: 0 0 6px;
-          font-size: 14px;
-        }
-
-        .meta p {
-          margin: 0;
-          color: #666;
-          font-size: 12px;
-        }
-
-        .status {
-          font-size: 13px;
-          color: #333;
-        }
-
-        .amount {
-          text-align: right;
-          font-weight: 700;
-        }
-      }
-    }
-
-    .empty-state {
-      .empty-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #111;
-        margin-bottom: 8px;
-      }
-
-      .empty-desc {
-        font-size: 14px;
-        color: #666;
-        a {
-          color: #111;
-          text-decoration: underline;
-        }
-      }
-    }
+  a {
+    text-decoration: none;
   }
+}
+
+.totals {
+  padding-top: 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 </style>

@@ -1,9 +1,10 @@
 package com.shop.vo;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.shop.common.LanguageContext;
+import com.shop.common.JsonLocaleUtils;
 import com.shop.entity.PmsProduct;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -14,78 +15,69 @@ import java.util.stream.Collectors;
 @Data
 public class ProductVO {
   private Long id;
-  private String title; // Mapping name to title for frontend
+  private Long categoryId;
+  private String categorySlug;
+  private String slug;
+  private String title;
+  private String subtitle;
   private String description;
   private BigDecimal price;
   private BigDecimal compareAtPrice;
   private Integer stock;
   private String pic;
-
   private Object tags;
   private Object images;
   private String appImage;
   private Object specs;
   private Object quickKnow;
+  private Object specTable;
+  private Object boxItems;
+  private Object faqs;
   private Object upsells;
   private Object skuAttributeOptions;
   private Object skuAttributeDisplayOptions;
-
   private List<SkuVO> skuList;
 
   public static ProductVO from(PmsProduct product, List<com.shop.entity.PmsSku> skus) {
     ProductVO vo = new ProductVO();
     vo.setId(product.getId());
+    vo.setCategoryId(product.getCategoryId());
+    vo.setSlug(product.getSlug());
     vo.setPrice(product.getPrice());
     vo.setCompareAtPrice(product.getCompareAtPrice());
     vo.setStock(product.getStock());
     vo.setPic(product.getPic());
     vo.setAppImage(product.getAppImage());
 
-    String lang = LanguageContext.getLanguage();
+    String lang = JsonLocaleUtils.currentLanguage();
     vo.setTitle(extractLang(product.getName(), lang));
+    vo.setSubtitle(extractLang(product.getSubtitle(), lang));
     vo.setDescription(extractLang(product.getDescription(), lang));
-    vo.setQuickKnow(extractLangObject(product.getQuickKnow(), lang));
-
-    // Multi-language JSON fields handling
     vo.setTags(extractLangObject(product.getTags(), lang));
     vo.setImages(extractLangObject(product.getImages(), lang));
     vo.setSpecs(extractLangObject(product.getSpecs(), lang));
+    vo.setQuickKnow(extractLangObject(product.getQuickKnow(), lang));
+    vo.setSpecTable(extractLangObject(product.getSpecTable(), lang));
+    vo.setBoxItems(extractLangObject(product.getBoxItems(), lang));
+    vo.setFaqs(extractLangObject(product.getFaqs(), lang));
     vo.setUpsells(extractLangObject(product.getUpsells(), lang));
 
     if (skus != null) {
       vo.setSkuList(skus.stream().map(SkuVO::from).collect(Collectors.toList()));
       vo.setSkuAttributeOptions(buildSkuAttributeOptions(vo.getSkuList()));
       vo.setSkuAttributeDisplayOptions(buildSkuAttributeDisplayOptions(vo.getSkuList()));
+    } else {
+      vo.setSkuList(new ArrayList<>());
     }
     return vo;
   }
 
   public static String extractLang(JsonNode node, String lang) {
-    if (node == null || node.isNull())
-      return null;
-    if (node.has(lang)) {
-      return node.get(lang).asText();
-    }
-    if (node.has("zh")) {
-      return node.get("zh").asText();
-    }
-    return node.toString();
+    return JsonLocaleUtils.localizedText(node, lang);
   }
 
   public static Object extractLangObject(JsonNode node, String lang) {
-    if (node == null || node.isNull())
-      return null;
-    // If the node itself is a localized object like {"zh": [...], "en": [...]}
-    if (node.isObject() && (node.has("zh") || node.has("en"))) {
-      if (node.has(lang)) {
-        return node.get(lang);
-      }
-      if (node.has("zh")) {
-        return node.get("zh");
-      }
-    }
-    // If it's a regular array or object without localization at root
-    return node;
+    return JsonLocaleUtils.localizedObject(node, lang);
   }
 
   private static Map<String, List<String>> buildSkuAttributeOptions(List<SkuVO> skuList) {

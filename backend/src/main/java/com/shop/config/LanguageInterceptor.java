@@ -16,7 +16,7 @@ public class LanguageInterceptor implements HandlerInterceptor {
       if (lang != null && lang.startsWith("en")) {
         lang = "en";
       } else {
-        lang = "zh";
+        lang = "en";
       }
     }
     LanguageContext.setLanguage(lang);

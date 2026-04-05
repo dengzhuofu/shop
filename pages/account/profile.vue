@@ -1,223 +1,307 @@
 <template>
   <div class="profile-page">
-    <h1 class="page-title">Profile</h1>
-    
-    <div class="profile-card">
-      <div class="info-row">
-        <div class="info-label">Name <Edit2Icon class="icon" /></div>
-        <div class="info-value"></div>
+    <section class="card">
+      <div class="section-head">
+        <h2>{{ t('profile') }}</h2>
+        <button type="button" class="minor-btn" @click="session.fetchMe()">{{ t('refreshData') }}</button>
       </div>
-      <div class="info-row">
-        <div class="info-label">Email</div>
-        <div class="info-value">1873363854@qq.com</div>
-      </div>
-    </div>
-
-    <div class="addresses-section">
-      <div class="section-header">
-        <h2 class="section-title">Addresses</h2>
-        <button class="add-btn" @click="isAddModalOpen = true">+ Add</button>
-      </div>
-      
-      <div class="addresses-content">
-        <div class="address-item" v-for="address in addresses" :key="address.id">
-          <div class="line">
-            {{ address.firstName }} {{ address.lastName }}
-            <span class="default-tag" v-if="address.isDefault">Default</span>
-          </div>
-          <div class="line">{{ address.addressLine1 }} {{ address.addressLine2 }}</div>
-          <div class="line">{{ address.city }}, {{ address.state }} {{ address.zipCode }}</div>
-          <div class="line">{{ address.country }} · {{ address.phone }}</div>
+      <div class="info-grid" v-if="session.user.value">
+        <div>
+          <span>{{ t('firstName') }}</span>
+          <strong>{{ session.user.value.firstName }}</strong>
         </div>
-        <div class="empty-addresses" v-if="!addresses.length">
-          <InfoIcon class="icon" />
-          <span>No addresses added</span>
+        <div>
+          <span>{{ t('lastName') }}</span>
+          <strong>{{ session.user.value.lastName }}</strong>
+        </div>
+        <div>
+          <span>{{ t('email') }}</span>
+          <strong>{{ session.user.value.email }}</strong>
         </div>
       </div>
-    </div>
+    </section>
 
-    <AddAddressModal 
-      :isOpen="isAddModalOpen" 
-      @close="isAddModalOpen = false" 
-      @save="handleSaveAddress"
-    />
+    <section class="card">
+      <div class="section-head">
+        <h2>{{ t('addresses') }}</h2>
+        <button type="button" class="minor-btn" @click="saveAddress">{{ t('saveAddress') }}</button>
+      </div>
+
+      <div class="address-list" v-if="addresses.length">
+        <article v-for="address in addresses" :key="address.id" class="address-card">
+          <strong>{{ address.firstName }} {{ address.lastName }}</strong>
+          <p>{{ address.addressLine1 }} {{ address.addressLine2 }}</p>
+          <p>{{ address.city }}, {{ address.state }} {{ address.zipCode }}</p>
+          <small>{{ address.country }} · {{ address.phone }}</small>
+        </article>
+      </div>
+      <p v-else class="helper-text">{{ t('noAddress') }}</p>
+
+      <form class="address-form" @submit.prevent="saveAddress">
+        <div class="two-col">
+          <label>
+            <span>{{ t('firstName') }}</span>
+            <input v-model="form.firstName" type="text" required />
+          </label>
+          <label>
+            <span>{{ t('lastName') }}</span>
+            <input v-model="form.lastName" type="text" required />
+          </label>
+        </div>
+        <label>
+          <span>{{ t('addressLine1') }}</span>
+          <input v-model="form.addressLine1" type="text" required />
+        </label>
+        <label>
+          <span>{{ t('addressLine2') }}</span>
+          <input v-model="form.addressLine2" type="text" />
+        </label>
+        <div class="three-col">
+          <label>
+            <span>{{ t('city') }}</span>
+            <input v-model="form.city" type="text" required />
+          </label>
+          <label>
+            <span>{{ t('state') }}</span>
+            <input v-model="form.state" type="text" required />
+          </label>
+          <label>
+            <span>{{ t('zipCode') }}</span>
+            <input v-model="form.zipCode" type="text" required />
+          </label>
+        </div>
+        <div class="two-col">
+          <label>
+            <span>{{ t('country') }}</span>
+            <input v-model="form.country" type="text" />
+          </label>
+          <label>
+            <span>{{ t('phone') }}</span>
+            <input v-model="form.phone" type="tel" />
+          </label>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>{{ t('myCoupons') }}</h2>
+        <button type="button" class="minor-btn" @click="refreshCoupons">{{ t('refreshData') }}</button>
+      </div>
+
+      <div class="coupon-list" v-if="myCoupons.length">
+        <article v-for="coupon in myCoupons" :key="coupon.couponUserId" class="coupon-card">
+          <strong>{{ coupon.code }}</strong>
+          <p>{{ coupon.title }}</p>
+          <small>{{ money(coupon.discountAmount) }}</small>
+        </article>
+      </div>
+      <p v-else class="helper-text">{{ t('noCoupons') }}</p>
+
+      <div class="claim-list" v-if="claimableCoupons.length">
+        <h3>{{ t('availableCoupons') }}</h3>
+        <button
+          v-for="coupon in claimableCoupons"
+          :key="coupon.couponId"
+          type="button"
+          class="claim-btn"
+          @click="claimCoupon(coupon.couponId)"
+        >
+          <span>{{ coupon.code }} · {{ coupon.title }}</span>
+          <strong>{{ t('claim') }}</strong>
+        </button>
+      </div>
+    </section>
   </div>
 </template>
 
-<script setup>
-import { onMounted, ref } from 'vue'
-import { Edit2Icon, InfoIcon } from 'lucide-vue-next'
-import AddAddressModal from '~/components/AddAddressModal.vue'
+<script setup lang="ts">
+import { onMounted, reactive, ref } from 'vue'
 
 definePageMeta({
-  layout: 'account'
+  layout: 'account',
 })
 
-const isAddModalOpen = ref(false)
-const addresses = ref([])
+const { t } = useShopLocale()
+const { money } = useShopFormat()
+const session = useShopSession()
+
+const addresses = ref<any[]>([])
+const myCoupons = ref<any[]>([])
+const claimableCoupons = ref<any[]>([])
+
+const form = reactive({
+  country: 'United States',
+  firstName: '',
+  lastName: '',
+  phone: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  zipCode: '',
+})
 
 const fetchAddresses = async () => {
-  try {
-    const res = await useHttp('/api/address/list')
-    if (res?.code === 200) {
-      addresses.value = res.data || []
-    }
-  } catch (error) {
-    console.error('Failed to fetch addresses', error)
-  }
+  const res = await useHttp('/api/address/list')
+  addresses.value = res?.code === 200 ? res.data || [] : []
 }
 
-const handleSaveAddress = async (form) => {
+const saveAddress = async () => {
   await useHttp('/api/address', {
     method: 'POST',
     body: {
-      country: form.country === 'US' ? 'United States' : form.country,
-      firstName: form.firstName,
-      lastName: form.lastName,
-      phone: form.phone,
-      addressLine1: form.address,
-      addressLine2: form.apartment,
-      city: form.city,
-      state: form.state,
-      zipCode: form.zipCode,
-      isDefault: form.isDefault
-    }
+      ...form,
+      isDefault: !addresses.value.length,
+    },
   })
-  isAddModalOpen.value = false
-  fetchAddresses()
+  await fetchAddresses()
 }
 
-onMounted(fetchAddresses)
+const refreshCoupons = async () => {
+  const [myRes, availableRes] = await Promise.all([
+    useHttp('/api/coupon/my'),
+    useHttp('/api/coupon/available'),
+  ])
+  myCoupons.value = myRes?.code === 200 ? myRes.data || [] : []
+  claimableCoupons.value =
+    availableRes?.code === 200
+      ? (availableRes.data || []).filter((coupon: any) => !coupon.claimed)
+      : []
+}
+
+const claimCoupon = async (couponId: number) => {
+  await useHttp(`/api/coupon/${couponId}/claim`, {
+    method: 'POST',
+  })
+  await refreshCoupons()
+}
+
+onMounted(async () => {
+  await session.fetchMe()
+  await Promise.all([fetchAddresses(), refreshCoupons()])
+})
 </script>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .profile-page {
-  .page-title {
-    font-size: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.card {
+  border-radius: 28px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 24px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.minor-btn {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.info-grid,
+.two-col,
+.three-col,
+.coupon-list,
+.address-list {
+  display: grid;
+  gap: 14px;
+}
+
+.info-grid,
+.coupon-list,
+.address-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.three-col {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.info-grid div,
+.coupon-card,
+.address-card {
+  border-radius: 20px;
+  background: #f8fafc;
+  padding: 16px;
+}
+
+.info-grid span,
+.coupon-card small,
+.address-card small,
+.helper-text {
+  color: #64748b;
+}
+
+.address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     font-weight: 700;
-    margin-bottom: 24px;
-    color: #111;
   }
 
-  .profile-card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eaeaea;
-    margin-bottom: 24px;
-
-    .info-row {
-      margin-bottom: 16px;
-      
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .info-label {
-        font-size: 13px;
-        color: #666;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
-
-        .icon {
-          width: 12px;
-          height: 12px;
-          cursor: pointer;
-          color: #111;
-        }
-      }
-
-      .info-value {
-        font-size: 14px;
-        color: #111;
-        font-weight: 500;
-        min-height: 20px;
-      }
-    }
+  input {
+    min-height: 46px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 14px;
+    padding: 0 14px;
   }
+}
 
-  .addresses-section {
-    background: #fff;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eaeaea;
+.claim-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
+.claim-btn {
+  border: none;
+  border-radius: 18px;
+  background: #ecfeff;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+}
 
-      .section-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: #111;
-        margin: 0;
-      }
+@media (max-width: 980px) {
+  .info-grid,
+  .coupon-list,
+  .address-list {
+    grid-template-columns: 1fr;
+  }
+}
 
-      .add-btn {
-        background: none;
-        border: none;
-        color: #111;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 0;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-
-    .addresses-content {
-      background: #f9f9f9;
-      border-radius: 6px;
-      padding: 16px;
-
-      .address-item {
-        padding: 12px;
-        border-radius: 6px;
-        border: 1px solid #e8e8e8;
-        background: #fff;
-        margin-bottom: 10px;
-        font-size: 13px;
-        color: #333;
-        line-height: 1.6;
-
-        .line {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .default-tag {
-          font-size: 11px;
-          padding: 2px 8px;
-          background: #ecfdf5;
-          color: #059669;
-          border-radius: 999px;
-          font-weight: 600;
-        }
-      }
-
-      .empty-addresses {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #666;
-        font-size: 14px;
-
-        .icon {
-          width: 16px;
-          height: 16px;
-        }
-      }
-    }
+@media (max-width: 720px) {
+  .two-col,
+  .three-col {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -2,11 +2,13 @@ package com.shop.dto;
 
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
 
 @Data
 public class LoginDTO {
-  @NotBlank(message = "Username cannot be empty")
-  private String username;
+  @Email(message = "Email is invalid")
+  @NotBlank(message = "Email cannot be empty")
+  private String email;
 
   @NotBlank(message = "Password cannot be empty")
   private String password;

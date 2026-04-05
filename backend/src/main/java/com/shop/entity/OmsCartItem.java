@@ -10,7 +10,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("oms_cart_item")
+@TableName(value = "oms_cart_item", autoResultMap = true)
 public class OmsCartItem {
   @TableId(type = IdType.AUTO)
   private Long id;
@@ -20,6 +20,8 @@ public class OmsCartItem {
   private Integer quantity;
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode selectedAttributesSnapshot;
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode selectedAddonsSnapshot;
   private LocalDateTime createTime;
   private LocalDateTime updateTime;
 }

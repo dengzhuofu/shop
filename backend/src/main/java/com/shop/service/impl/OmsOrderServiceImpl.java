@@ -1,18 +1,23 @@
 package com.shop.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.shop.common.LanguageContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shop.common.JsonLocaleUtils;
+import com.shop.common.PaymentMethodCatalog;
+import com.shop.common.PreviewTokenUtils;
+import com.shop.common.ProductAddonUtils;
 import com.shop.dto.OrderCreateDTO;
-import com.shop.dto.OrderPayDTO;
 import com.shop.dto.OrderPreviewDTO;
 import com.shop.entity.OmsCartItem;
 import com.shop.entity.OmsOrder;
 import com.shop.entity.OmsOrderItem;
 import com.shop.entity.PmsProduct;
 import com.shop.entity.PmsSku;
+import com.shop.entity.SmsCoupon;
+import com.shop.entity.SmsCouponUser;
 import com.shop.entity.UmsUserAddress;
 import com.shop.mapper.OmsOrderMapper;
 import com.shop.service.OmsCartItemService;
@@ -20,22 +25,28 @@ import com.shop.service.OmsOrderItemService;
 import com.shop.service.OmsOrderService;
 import com.shop.service.PmsProductService;
 import com.shop.service.PmsSkuService;
+import com.shop.service.SmsCouponService;
+import com.shop.service.SmsCouponUserService;
 import com.shop.service.UmsUserAddressService;
 import com.shop.vo.CartItemVO;
-import com.shop.vo.OrderPreviewVO;
+import com.shop.vo.CouponVO;
 import com.shop.vo.OrderItemVO;
+import com.shop.vo.OrderPreviewVO;
 import com.shop.vo.OrderVO;
 import com.shop.vo.ProductVO;
 import com.shop.vo.SkuVO;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,119 +56,127 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> implements OmsOrderService {
 
+  private static final String DEFAULT_CURRENCY = "USD";
+  private static final String DEFAULT_COUNTRY = "US";
+  private static final String DEFAULT_SHIPPING_METHOD = "UPS Ground/FedEx Home Delivery(2-5 Business Days)";
+  private static final BigDecimal FIXED_SHIPPING_AMOUNT = BigDecimal.ZERO;
+  private static final BigDecimal FIXED_TAX_RATE = new BigDecimal("0.0825");
+
   private final OmsCartItemService cartItemService;
   private final OmsOrderItemService orderItemService;
   private final PmsSkuService skuService;
   private final PmsProductService productService;
   private final UmsUserAddressService userAddressService;
+  private final SmsCouponService couponService;
+  private final SmsCouponUserService couponUserService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   public OrderPreviewVO previewOrder(OrderPreviewDTO dto, Long userId) {
-    List<CartItemVO> items = resolvePreviewItems(dto, userId);
-    BigDecimal subtotal = items.stream()
-        .map(CartItemVO::getLineAmount)
+    String language = JsonLocaleUtils.currentLanguage();
+    List<ResolvedCheckoutItem> resolvedItems = resolveCheckoutItems(dto.getCartItemIds(), userId, language);
+    if (resolvedItems.isEmpty()) {
+      throw new RuntimeException("No checkout items found");
+    }
+
+    BigDecimal subtotal = resolvedItems.stream()
+        .map(ResolvedCheckoutItem::getLineAmount)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    CouponResolution couponResolution = resolveCoupon(dto.getCouponUserId(), userId, subtotal);
+    BigDecimal discountAmount = couponResolution.getDiscountAmount();
+    BigDecimal shippingAmount = FIXED_SHIPPING_AMOUNT;
+    BigDecimal taxableAmount = subtotal.subtract(discountAmount).add(shippingAmount);
+    BigDecimal taxAmount = roundCurrency(taxableAmount.multiply(FIXED_TAX_RATE));
+    BigDecimal totalAmount = roundCurrency(taxableAmount.add(taxAmount));
+
     OrderPreviewVO previewVO = new OrderPreviewVO();
-    previewVO.setItems(items);
-    previewVO.setSubtotal(subtotal);
-    previewVO.setShippingAmount(BigDecimal.ZERO);
-    previewVO.setDiscountAmount(BigDecimal.ZERO);
-    previewVO.setTotalAmount(subtotal);
+    previewVO.setItems(resolvedItems.stream().map(ResolvedCheckoutItem::getCartItemVO).collect(Collectors.toList()));
+    previewVO.setCurrency(DEFAULT_CURRENCY);
+    previewVO.setCountry(DEFAULT_COUNTRY);
+    previewVO.setSubtotal(roundCurrency(subtotal));
+    previewVO.setShippingAmount(shippingAmount);
+    previewVO.setTaxAmount(taxAmount);
+    previewVO.setDiscountAmount(discountAmount);
+    previewVO.setTotalAmount(totalAmount);
+    previewVO.setCoupon(couponResolution.getCouponVO());
+    previewVO.setPaymentMethods(PaymentMethodCatalog.methods(language));
+    previewVO.setPreviewToken(buildPreviewToken(userId, resolvedItems, dto.getCouponUserId(), shippingAmount, taxAmount,
+        totalAmount));
     return previewVO;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public OmsOrder createOrder(OrderCreateDTO dto, Long userId) {
-    String lang = LanguageContext.getLanguage();
-    List<OrderCreateDTO.Item> items = resolveCreateItems(dto, userId);
-    if (items.isEmpty()) {
+    OrderPreviewDTO previewDTO = new OrderPreviewDTO();
+    previewDTO.setSource(dto.getSource());
+    previewDTO.setCartItemIds(dto.getCartItemIds());
+    previewDTO.setAddressId(dto.getAddressId());
+    previewDTO.setShippingMethod(dto.getShippingMethod());
+    previewDTO.setCouponUserId(dto.getCouponUserId());
+
+    OrderPreviewVO preview = previewOrder(previewDTO, userId);
+    if (dto.getPreviewToken() == null || !dto.getPreviewToken().equals(preview.getPreviewToken())) {
+      throw new RuntimeException("Preview token mismatch. Please preview again before creating the order.");
+    }
+
+    List<ResolvedCheckoutItem> resolvedItems = resolveCheckoutItems(dto.getCartItemIds(), userId, JsonLocaleUtils.currentLanguage());
+    if (resolvedItems.isEmpty()) {
       throw new RuntimeException("Order items not found");
     }
+
     OmsOrder order = new OmsOrder();
     order.setUserId(userId);
-    String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-    order.setOrderSn("ORD" + dateStr + UUID.randomUUID().toString().substring(0, 4).toUpperCase());
-    order.setStatus(0);
-    order.setPayStatus(0);
+    order.setOrderSn(buildOrderSn());
+    order.setSubtotalAmount(preview.getSubtotal());
+    order.setTaxAmount(preview.getTaxAmount());
+    order.setTotalAmount(preview.getTotalAmount());
+    order.setStatus("PENDING_PAYMENT");
+    order.setPaymentStatus("PENDING");
+    order.setCurrency(DEFAULT_CURRENCY);
+    order.setCountry(DEFAULT_COUNTRY);
+    order.setPreviewToken(preview.getPreviewToken());
+    order.setCouponUserId(dto.getCouponUserId());
+    order.setCouponCode(extractCouponCode(preview.getCoupon()));
+    order.setCouponDiscountAmount(preview.getDiscountAmount());
     order.setCheckoutSource(dto.getSource() == null ? "cart" : dto.getSource());
-    order.setPaymentMethod(dto.getPaymentMethod());
-    order.setShippingMethod(dto.getShippingMethod());
-    order.setShippingAmount(BigDecimal.ZERO);
-    order.setDiscountAmount(dto.getDiscountAmount() == null ? BigDecimal.ZERO : dto.getDiscountAmount());
+    order.setShippingMethod(dto.getShippingMethod() == null ? DEFAULT_SHIPPING_METHOD : dto.getShippingMethod());
+    order.setShippingAmount(preview.getShippingAmount());
+    order.setDiscountAmount(preview.getDiscountAmount());
+    order.setRemark(dto.getRemark());
     order.setCreateTime(LocalDateTime.now());
     order.setUpdateTime(LocalDateTime.now());
 
-    OrderCreateDTO.AddressSnapshot addressSnapshot = dto.getAddressSnapshot();
-    if (dto.getAddressId() != null) {
-      UmsUserAddress address = userAddressService.getById(dto.getAddressId());
-      if (address != null && address.getUserId().equals(userId)) {
-        addressSnapshot = new OrderCreateDTO.AddressSnapshot();
-        addressSnapshot.setCountry(address.getCountry());
-        addressSnapshot.setFirstName(address.getFirstName());
-        addressSnapshot.setLastName(address.getLastName());
-        addressSnapshot.setPhone(address.getPhone());
-        addressSnapshot.setAddressLine1(address.getAddressLine1());
-        addressSnapshot.setAddressLine2(address.getAddressLine2());
-        addressSnapshot.setCity(address.getCity());
-        addressSnapshot.setState(address.getState());
-        addressSnapshot.setZipCode(address.getZipCode());
-      }
-    }
-    if (addressSnapshot != null) {
-      order.setReceiverCountry(addressSnapshot.getCountry());
-      order.setReceiverFirstName(addressSnapshot.getFirstName());
-      order.setReceiverLastName(addressSnapshot.getLastName());
-      order.setReceiverPhone(addressSnapshot.getPhone());
-      order.setReceiverAddressLine1(addressSnapshot.getAddressLine1());
-      order.setReceiverAddressLine2(addressSnapshot.getAddressLine2());
-      order.setReceiverCity(addressSnapshot.getCity());
-      order.setReceiverState(addressSnapshot.getState());
-      order.setReceiverZipCode(addressSnapshot.getZipCode());
-      order.setReceiverName((addressSnapshot.getFirstName() == null ? "" : addressSnapshot.getFirstName()) + " "
-          + (addressSnapshot.getLastName() == null ? "" : addressSnapshot.getLastName()));
-      order.setReceiverAddress(String.join(", ",
-          nullToEmpty(addressSnapshot.getAddressLine1()),
-          nullToEmpty(addressSnapshot.getCity()),
-          nullToEmpty(addressSnapshot.getState())));
-    }
-
-    BigDecimal subtotal = BigDecimal.ZERO;
-    for (OrderCreateDTO.Item item : items) {
-      PmsSku sku = skuService.getById(item.getSkuId());
-      if (sku == null || sku.getStock() < item.getQuantity()) {
-        throw new RuntimeException("Insufficient stock for SKU: " + item.getSkuId());
-      }
-      subtotal = subtotal.add(sku.getPrice().multiply(new BigDecimal(item.getQuantity())));
-      sku.setStock(sku.getStock() - item.getQuantity());
-      skuService.updateById(sku);
-    }
-    BigDecimal totalAmount = subtotal.add(order.getShippingAmount()).subtract(order.getDiscountAmount());
-    order.setTotalAmount(totalAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : totalAmount);
+    applyAddress(order, dto.getAddressId(), dto.getAddressSnapshot(), userId);
     this.save(order);
 
-    for (OrderCreateDTO.Item item : items) {
-      PmsSku sku = skuService.getById(item.getSkuId());
-      PmsProduct product = productService.getById(item.getProductId());
+    for (ResolvedCheckoutItem item : resolvedItems) {
+      PmsSku sku = item.getSku();
+      if (!"ACTIVE".equalsIgnoreCase(sku.getStatus()) || sku.getStock() < item.getQuantity()) {
+        throw new RuntimeException("Insufficient stock for SKU: " + sku.getId());
+      }
+      sku.setStock(sku.getStock() - item.getQuantity());
+      skuService.updateById(sku);
+
       OmsOrderItem orderItem = new OmsOrderItem();
       orderItem.setOrderId(order.getId());
-      orderItem.setProductId(item.getProductId());
-      orderItem.setSkuId(item.getSkuId());
-      orderItem.setProductName(
-          product == null ? "Product " + item.getProductId() : ProductVO.extractLang(product.getName(), lang));
+      orderItem.setProductId(item.getProduct().getId());
+      orderItem.setSkuId(sku.getId());
+      orderItem.setProductName(item.getProduct().getName());
       orderItem.setProductPic(sku.getPic());
       orderItem.setSkuCode(sku.getSkuCode());
+      orderItem.setSkuAttributesSnapshot(item.getCartItem().getSelectedAttributesSnapshot());
+      orderItem.setAddonsSnapshot(item.getCartItem().getSelectedAddonsSnapshot());
       orderItem.setQuantity(item.getQuantity());
-      orderItem.setPrice(sku.getPrice());
-      orderItem.setSkuAttributesSnapshot(objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang)));
+      orderItem.setUnitPrice(sku.getPrice());
+      orderItem.setLineAmount(item.getLineAmount());
       orderItem.setCreateTime(LocalDateTime.now());
       orderItem.setUpdateTime(LocalDateTime.now());
       orderItemService.save(orderItem);
     }
 
-    if (!"direct".equalsIgnoreCase(order.getCheckoutSource()) && dto.getCartItemIds() != null
-        && !dto.getCartItemIds().isEmpty()) {
+    if (dto.getCartItemIds() != null && !dto.getCartItemIds().isEmpty()) {
       cartItemService.removeByIds(dto.getCartItemIds());
     }
 
@@ -165,62 +184,22 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
   }
 
   @Override
-  @Transactional(rollbackFor = Exception.class)
-  public OmsOrder payOrder(OrderPayDTO dto, Long userId) {
-    OmsOrder order = this.getById(dto.getOrderId());
-    if (order == null || !order.getUserId().equals(userId)) {
-      throw new RuntimeException("Order not found");
-    }
-    if (order.getStatus() != 0) {
-      throw new RuntimeException("Order status is not payable");
-    }
-    order.setPaymentMethod(dto.getPaymentMethod() == null ? order.getPaymentMethod() : dto.getPaymentMethod());
-    if ("fail".equalsIgnoreCase(dto.getMockResult())) {
-      order.setPayStatus(2);
-      order.setStatus(0);
-    } else {
-      order.setPayStatus(1);
-      order.setStatus(1);
-      order.setPayTime(LocalDateTime.now());
-      order.setPayTxnNo("MOCK_TXN_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-    }
-    order.setUpdateTime(LocalDateTime.now());
-    this.updateById(order);
-    return order;
-  }
-
-  @Override
-  public Page<OrderVO> getUserOrders(Long userId, Integer status, Integer pageNum, Integer pageSize) {
+  public Page<OrderVO> getUserOrders(Long userId, String status, Integer pageNum, Integer pageSize) {
     Page<OmsOrder> page = new Page<>(pageNum, pageSize);
     QueryWrapper<OmsOrder> wrapper = new QueryWrapper<>();
     wrapper.eq("user_id", userId);
-    if (status != null && status >= 0) {
+    if (status != null && !status.isBlank()) {
       wrapper.eq("status", status);
     }
     wrapper.orderByDesc("create_time");
 
     Page<OmsOrder> orderPage = this.page(page, wrapper);
-
     Page<OrderVO> voPage = new Page<>(pageNum, pageSize);
     voPage.setTotal(orderPage.getTotal());
-
-    List<OrderVO> voList = orderPage.getRecords().stream().map(order -> {
-      OrderVO vo = new OrderVO();
-      BeanUtils.copyProperties(order, vo);
-
-      List<OmsOrderItem> items = orderItemService.list(new QueryWrapper<OmsOrderItem>().eq("order_id", order.getId()));
-      List<OrderItemVO> itemVOs = items.stream().map(item -> {
-        OrderItemVO itemVO = new OrderItemVO();
-        BeanUtils.copyProperties(item, itemVO);
-        itemVO.setSkuAttributesSnapshot(item.getSkuAttributesSnapshot());
-        return itemVO;
-      }).collect(Collectors.toList());
-
-      vo.setItems(itemVOs);
-      return vo;
-    }).collect(Collectors.toList());
-
-    voPage.setRecords(voList);
+    voPage.setCurrent(orderPage.getCurrent());
+    voPage.setSize(orderPage.getSize());
+    voPage.setPages(orderPage.getPages());
+    voPage.setRecords(orderPage.getRecords().stream().map(this::toOrderVO).collect(Collectors.toList()));
     return voPage;
   }
 
@@ -230,20 +209,7 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     if (order == null || !order.getUserId().equals(userId)) {
       return null;
     }
-
-    OrderVO vo = new OrderVO();
-    BeanUtils.copyProperties(order, vo);
-
-    List<OmsOrderItem> items = orderItemService.list(new QueryWrapper<OmsOrderItem>().eq("order_id", order.getId()));
-    List<OrderItemVO> itemVOs = items.stream().map(item -> {
-      OrderItemVO itemVO = new OrderItemVO();
-      BeanUtils.copyProperties(item, itemVO);
-      itemVO.setSkuAttributesSnapshot(item.getSkuAttributesSnapshot());
-      return itemVO;
-    }).collect(Collectors.toList());
-
-    vo.setItems(itemVOs);
-    return vo;
+    return toOrderVO(order);
   }
 
   @Override
@@ -253,13 +219,13 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     if (order == null || !order.getUserId().equals(userId)) {
       return false;
     }
-    if (order.getStatus() != 0) {
-      return false; // Only pending payment can be cancelled
+    if (!"PENDING_PAYMENT".equals(order.getStatus())) {
+      return false;
     }
-    order.setStatus(4); // Cancelled
+    order.setStatus("CANCELLED");
+    order.setPaymentStatus("CANCELLED");
     order.setUpdateTime(LocalDateTime.now());
 
-    // Add stock back
     List<OmsOrderItem> items = orderItemService.list(new QueryWrapper<OmsOrderItem>().eq("order_id", order.getId()));
     for (OmsOrderItem item : items) {
       PmsSku sku = skuService.getById(item.getSkuId());
@@ -272,84 +238,229 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     return this.updateById(order);
   }
 
-  private List<CartItemVO> resolvePreviewItems(OrderPreviewDTO dto, Long userId) {
-    String lang = LanguageContext.getLanguage();
-    List<CartItemVO> result = new ArrayList<>();
-    if ("direct".equalsIgnoreCase(dto.getSource()) && dto.getItems() != null) {
-      for (OrderCreateDTO.Item item : dto.getItems()) {
-        PmsSku sku = skuService.getById(item.getSkuId());
-        PmsProduct product = productService.getById(item.getProductId());
-        if (sku == null || product == null) {
-          continue;
-        }
-        CartItemVO vo = new CartItemVO();
-        vo.setProductId(item.getProductId());
-        vo.setSkuId(item.getSkuId());
-        vo.setTitle(ProductVO.extractLang(product.getName(), lang));
-        vo.setProductPic(sku.getPic());
-        vo.setUnitPrice(sku.getPrice());
-        vo.setQuantity(item.getQuantity());
-        vo.setLineAmount(sku.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-        vo.setAttributes(SkuVO.buildSnapshot(sku.getSpecs(), lang));
-        vo.setStock(sku.getStock());
-        result.add(vo);
-      }
-      return result;
+  private List<ResolvedCheckoutItem> resolveCheckoutItems(List<Long> cartItemIds, Long userId, String language) {
+    if (cartItemIds == null || cartItemIds.isEmpty()) {
+      return new ArrayList<>();
     }
-    if (dto.getCartItemIds() == null || dto.getCartItemIds().isEmpty()) {
-      return result;
-    }
-    List<OmsCartItem> cartItems = cartItemService.listByIds(dto.getCartItemIds()).stream()
+
+    List<OmsCartItem> cartItems = cartItemService.listByIds(cartItemIds).stream()
         .filter(item -> item.getUserId().equals(userId))
+        .sorted(Comparator.comparing(OmsCartItem::getId))
         .collect(Collectors.toList());
+
+    List<ResolvedCheckoutItem> result = new ArrayList<>();
     for (OmsCartItem cartItem : cartItems) {
       PmsSku sku = skuService.getById(cartItem.getSkuId());
       PmsProduct product = productService.getById(cartItem.getProductId());
-      if (sku == null || product == null) {
+      if (sku == null || product == null || !Boolean.TRUE.equals(product.getPublished())) {
         continue;
       }
-      CartItemVO vo = new CartItemVO();
-      vo.setCartItemId(cartItem.getId());
-      vo.setProductId(cartItem.getProductId());
-      vo.setSkuId(cartItem.getSkuId());
-      vo.setTitle(ProductVO.extractLang(product.getName(), lang));
-      vo.setProductPic(sku.getPic());
-      vo.setUnitPrice(sku.getPrice());
-      vo.setQuantity(cartItem.getQuantity());
-      vo.setLineAmount(sku.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
-      vo.setAttributes(cartItem.getSelectedAttributesSnapshot() != null
-          ? cartItem.getSelectedAttributesSnapshot()
-          : SkuVO.buildSnapshot(sku.getSpecs(), lang));
-      vo.setStock(sku.getStock());
-      result.add(vo);
+
+      BigDecimal addonAmount = resolveAddonAmount(product.getUpsells(), cartItem.getSelectedAddonsSnapshot(), language);
+      BigDecimal lineAmount = sku.getPrice().add(addonAmount).multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+
+      CartItemVO itemVO = new CartItemVO();
+      itemVO.setCartItemId(cartItem.getId());
+      itemVO.setProductId(product.getId());
+      itemVO.setSkuId(sku.getId());
+      itemVO.setTitle(ProductVO.extractLang(product.getName(), language));
+      itemVO.setSlug(product.getSlug());
+      itemVO.setProductPic(sku.getPic());
+      itemVO.setUnitPrice(sku.getPrice());
+      itemVO.setAddonAmount(addonAmount.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+      itemVO.setQuantity(cartItem.getQuantity());
+      itemVO.setLineAmount(roundCurrency(lineAmount));
+      itemVO.setAttributes(cartItem.getSelectedAttributesSnapshot() != null
+          ? objectMapper.convertValue(cartItem.getSelectedAttributesSnapshot(), Object.class)
+          : SkuVO.buildSnapshot(sku.getSpecs(), language));
+      itemVO.setAddons(cartItem.getSelectedAddonsSnapshot() == null ? List.of()
+          : objectMapper.convertValue(cartItem.getSelectedAddonsSnapshot(), Object.class));
+      itemVO.setStock(sku.getStock());
+
+      ResolvedCheckoutItem resolved = new ResolvedCheckoutItem();
+      resolved.setCartItem(cartItem);
+      resolved.setProduct(product);
+      resolved.setSku(sku);
+      resolved.setQuantity(cartItem.getQuantity());
+      resolved.setAddonAmount(addonAmount);
+      resolved.setLineAmount(roundCurrency(lineAmount));
+      resolved.setCartItemVO(itemVO);
+      result.add(resolved);
     }
     return result;
   }
 
-  private List<OrderCreateDTO.Item> resolveCreateItems(OrderCreateDTO dto, Long userId) {
-    if ("direct".equalsIgnoreCase(dto.getSource()) && dto.getItems() != null) {
-      return dto.getItems();
+  private CouponResolution resolveCoupon(Long couponUserId, Long userId, BigDecimal subtotal) {
+    CouponResolution resolution = new CouponResolution();
+    resolution.setDiscountAmount(BigDecimal.ZERO);
+
+    if (couponUserId == null) {
+      return resolution;
     }
-    if (dto.getCartItemIds() == null || dto.getCartItemIds().isEmpty()) {
-      return new ArrayList<>();
+
+    SmsCouponUser couponUser = couponUserService.getById(couponUserId);
+    if (couponUser == null || !couponUser.getUserId().equals(userId)) {
+      throw new RuntimeException("Coupon not found");
     }
-    List<OmsCartItem> cartItems = cartItemService.listByIds(dto.getCartItemIds()).stream()
-        .filter(item -> item.getUserId().equals(userId))
-        .collect(Collectors.toList());
-    return cartItems.stream().map(item -> {
-      OrderCreateDTO.Item orderItem = new OrderCreateDTO.Item();
-      orderItem.setProductId(item.getProductId());
-      orderItem.setSkuId(item.getSkuId());
-      orderItem.setQuantity(item.getQuantity());
-      if (item.getSelectedAttributesSnapshot() != null) {
-        Map<String, Object> attributes = objectMapper.convertValue(item.getSelectedAttributesSnapshot(), Map.class);
-        orderItem.setAttributes(attributes);
+
+    SmsCoupon coupon = couponService.getById(couponUser.getCouponId());
+    if (coupon == null || !Boolean.TRUE.equals(coupon.getActive())) {
+      throw new RuntimeException("Coupon is unavailable");
+    }
+    if (subtotal.compareTo(coupon.getThresholdAmount()) < 0) {
+      throw new RuntimeException("Coupon threshold not met");
+    }
+
+    resolution.setDiscountAmount(coupon.getDiscountAmount());
+    resolution.setCouponVO(CouponVO.from(coupon, couponUser));
+    return resolution;
+  }
+
+  private void applyAddress(OmsOrder order, Long addressId, OrderCreateDTO.AddressSnapshot addressSnapshot, Long userId) {
+    OrderCreateDTO.AddressSnapshot resolvedSnapshot = addressSnapshot;
+    if (addressId != null) {
+      UmsUserAddress address = userAddressService.getById(addressId);
+      if (address == null || !address.getUserId().equals(userId)) {
+        throw new RuntimeException("Address not found");
       }
-      return orderItem;
+      resolvedSnapshot = new OrderCreateDTO.AddressSnapshot();
+      resolvedSnapshot.setCountry(address.getCountry());
+      resolvedSnapshot.setFirstName(address.getFirstName());
+      resolvedSnapshot.setLastName(address.getLastName());
+      resolvedSnapshot.setPhone(address.getPhone());
+      resolvedSnapshot.setAddressLine1(address.getAddressLine1());
+      resolvedSnapshot.setAddressLine2(address.getAddressLine2());
+      resolvedSnapshot.setCity(address.getCity());
+      resolvedSnapshot.setState(address.getState());
+      resolvedSnapshot.setZipCode(address.getZipCode());
+    }
+
+    if (resolvedSnapshot == null) {
+      throw new RuntimeException("Address is required");
+    }
+
+    order.setReceiverCountry(resolvedSnapshot.getCountry());
+    order.setReceiverFirstName(resolvedSnapshot.getFirstName());
+    order.setReceiverLastName(resolvedSnapshot.getLastName());
+    order.setReceiverPhone(resolvedSnapshot.getPhone());
+    order.setReceiverAddressLine1(resolvedSnapshot.getAddressLine1());
+    order.setReceiverAddressLine2(resolvedSnapshot.getAddressLine2());
+    order.setReceiverCity(resolvedSnapshot.getCity());
+    order.setReceiverState(resolvedSnapshot.getState());
+    order.setReceiverZipCode(resolvedSnapshot.getZipCode());
+    order.setReceiverName((resolvedSnapshot.getFirstName() == null ? "" : resolvedSnapshot.getFirstName()) + " "
+        + (resolvedSnapshot.getLastName() == null ? "" : resolvedSnapshot.getLastName()));
+    order.setReceiverAddress(String.join(", ",
+        nullToEmpty(resolvedSnapshot.getAddressLine1()),
+        nullToEmpty(resolvedSnapshot.getCity()),
+        nullToEmpty(resolvedSnapshot.getState()),
+        nullToEmpty(resolvedSnapshot.getZipCode())));
+  }
+
+  private OrderVO toOrderVO(OmsOrder order) {
+    String language = JsonLocaleUtils.currentLanguage();
+    OrderVO vo = new OrderVO();
+    BeanUtils.copyProperties(order, vo);
+
+    List<OmsOrderItem> items = orderItemService.list(new QueryWrapper<OmsOrderItem>().eq("order_id", order.getId()));
+    List<OrderItemVO> itemVOs = items.stream().map(item -> {
+      OrderItemVO itemVO = new OrderItemVO();
+      itemVO.setId(item.getId());
+      itemVO.setProductId(item.getProductId());
+      itemVO.setSkuId(item.getSkuId());
+      itemVO.setProductName(JsonLocaleUtils.localizedText(item.getProductName(), language));
+      itemVO.setProductPic(item.getProductPic());
+      itemVO.setSkuCode(item.getSkuCode());
+      itemVO.setSkuAttributesSnapshot(item.getSkuAttributesSnapshot() == null ? null
+          : objectMapper.convertValue(item.getSkuAttributesSnapshot(), Object.class));
+      itemVO.setAddons(item.getAddonsSnapshot() == null ? List.of()
+          : objectMapper.convertValue(item.getAddonsSnapshot(), Object.class));
+      itemVO.setQuantity(item.getQuantity());
+      itemVO.setUnitPrice(item.getUnitPrice());
+      itemVO.setLineAmount(item.getLineAmount());
+      PmsProduct product = productService.getById(item.getProductId());
+      itemVO.setSlug(product == null ? null : product.getSlug());
+      return itemVO;
     }).collect(Collectors.toList());
+
+    vo.setItems(itemVOs);
+    return vo;
+  }
+
+  private BigDecimal resolveAddonAmount(JsonNode upsellsNode, JsonNode selectedAddonsSnapshot, String language) {
+    List<String> addonCodes = extractAddonCodes(selectedAddonsSnapshot);
+    return ProductAddonUtils.resolveAddonAmount(upsellsNode, addonCodes, language);
+  }
+
+  private List<String> extractAddonCodes(JsonNode selectedAddonsSnapshot) {
+    if (selectedAddonsSnapshot == null || !selectedAddonsSnapshot.isArray()) {
+      return List.of();
+    }
+    List<String> addonCodes = new ArrayList<>();
+    for (JsonNode addon : selectedAddonsSnapshot) {
+      String code = addon.path("code").asText();
+      if (code != null && !code.isBlank()) {
+        addonCodes.add(code);
+      }
+    }
+    return addonCodes;
+  }
+
+  private String buildPreviewToken(Long userId, List<ResolvedCheckoutItem> items, Long couponUserId,
+      BigDecimal shippingAmount, BigDecimal taxAmount, BigDecimal totalAmount) {
+    StringBuilder payload = new StringBuilder();
+    payload.append(couponUserId == null ? "none" : couponUserId).append("|")
+        .append(shippingAmount).append("|")
+        .append(taxAmount).append("|")
+        .append(totalAmount);
+    for (ResolvedCheckoutItem item : items) {
+      payload.append("|").append(item.getProduct().getId())
+          .append(":").append(item.getSku().getId())
+          .append(":").append(item.getQuantity())
+          .append(":").append(item.getLineAmount())
+          .append(":").append(String.join(",", extractAddonCodes(item.getCartItem().getSelectedAddonsSnapshot())));
+    }
+    return PreviewTokenUtils.buildToken(userId, payload.toString());
+  }
+
+  private String buildOrderSn() {
+    String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    return "ORD" + dateStr + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+  }
+
+  private BigDecimal roundCurrency(BigDecimal amount) {
+    return amount.setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private String extractCouponCode(Object couponObject) {
+    if (couponObject instanceof CouponVO couponVO) {
+      return couponVO.getCode();
+    }
+    if (!(couponObject instanceof Map<?, ?> couponMap)) {
+      return null;
+    }
+    Object code = couponMap.get("code");
+    return code == null ? null : String.valueOf(code);
   }
 
   private String nullToEmpty(String value) {
     return value == null ? "" : value;
+  }
+
+  @Data
+  private static class CouponResolution {
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+    private CouponVO couponVO;
+  }
+
+  @Data
+  private static class ResolvedCheckoutItem {
+    private OmsCartItem cartItem;
+    private PmsProduct product;
+    private PmsSku sku;
+    private Integer quantity;
+    private BigDecimal addonAmount;
+    private BigDecimal lineAmount;
+    private CartItemVO cartItemVO;
   }
 }

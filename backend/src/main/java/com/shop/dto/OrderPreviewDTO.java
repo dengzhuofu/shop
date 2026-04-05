@@ -11,4 +11,5 @@ public class OrderPreviewDTO {
   private List<OrderCreateDTO.Item> items;
   private Long addressId;
   private String shippingMethod;
+  private Long couponUserId;
 }

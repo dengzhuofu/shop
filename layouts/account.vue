@@ -1,167 +1,92 @@
 <template>
   <div class="layout-account">
-    <header class="account-header">
-      <div class="container header-inner">
-        <div class="left-nav">
-          <NuxtLink to="/" class="logo">
-            <h2><i>isinwheel</i></h2>
-          </NuxtLink>
-          <nav class="nav-links">
-            <NuxtLink to="/account/orders" class="nav-link" active-class="active">Orders</NuxtLink>
-            <NuxtLink to="/account/profile" class="nav-link" active-class="active">Profile</NuxtLink>
-          </nav>
-        </div>
-        <div class="right-actions">
-          <UserIcon class="icon" />
+    <AppHeader />
+    <main class="account-main container">
+      <div class="account-hero">
+        <div>
+          <p class="eyebrow">{{ t('account') }}</p>
+          <h1>{{ session.user.value?.fullName || session.user.value?.email || t('account') }}</h1>
         </div>
       </div>
-    </header>
-    <main class="account-main">
-      <slot />
+
+      <nav class="account-tabs">
+        <NuxtLink to="/account/profile" active-class="active">{{ t('profile') }}</NuxtLink>
+        <NuxtLink to="/account/orders" active-class="active">{{ t('orders') }}</NuxtLink>
+      </nav>
+
+      <section class="account-content">
+        <slot />
+      </section>
     </main>
-    <footer class="account-footer">
-      <div class="container footer-inner">
-        <div class="region">
-          <GlobeIcon class="icon" />
-          <span>United States ⌄</span>
-        </div>
-        <div class="footer-links">
-          <a href="#">Refund policy</a>
-          <a href="#">Shipping</a>
-          <a href="#">Privacy policy</a>
-          <a href="#">Terms of service</a>
-          <a href="#">Contact information</a>
-        </div>
-      </div>
-    </footer>
+    <AppFooter />
+    <CartSidebar />
   </div>
 </template>
 
-<script setup>
-import { UserIcon, GlobeIcon } from 'lucide-vue-next'
+<script setup lang="ts">
+import { onMounted } from 'vue'
+
+const { t } = useShopLocale()
+const session = useShopSession()
+
+onMounted(() => {
+  session.fetchMe()
+})
 </script>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .layout-account {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #fafafa;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.account-header {
-  background: #fff;
-  border-bottom: 1px solid #eaeaea;
-  padding: 16px 0;
-
-  .header-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-
-  .left-nav {
-    display: flex;
-    align-items: center;
-    gap: 40px;
-
-    .logo {
-      text-decoration: none;
-      color: #111;
-      h2 {
-        font-size: 24px;
-        font-weight: 800;
-        margin: 0;
-      }
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 20px;
-
-      .nav-link {
-        text-decoration: none;
-        color: #666;
-        font-size: 14px;
-        font-weight: 500;
-        padding-bottom: 4px;
-
-        &:hover {
-          color: #111;
-        }
-
-        &.active {
-          color: #111;
-          border-bottom: 2px solid #111;
-        }
-      }
-    }
-  }
-
-  .right-actions {
-    .icon {
-      width: 24px;
-      height: 24px;
-      color: #111;
-      cursor: pointer;
-    }
-  }
+  background: #f8f7f1;
 }
 
 .account-main {
-  flex: 1;
-  padding: 40px 20px;
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
+  padding-top: 40px;
 }
 
-.account-footer {
-  border-top: 1px solid #eaeaea;
-  padding: 20px 0;
-  background: #fafafa;
+.account-hero {
+  border-radius: 28px;
+  padding: 28px 32px;
+  background: linear-gradient(135deg, #0f172a, #1f2937);
+  color: white;
+  margin-bottom: 22px;
 
-  .footer-inner {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+  .eyebrow {
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     font-size: 12px;
-    color: #666;
-    flex-wrap: wrap;
+    color: rgba(255, 255, 255, 0.68);
+  }
 
-    .region {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      color: #333;
+  h1 {
+    margin: 0;
+    font-size: 34px;
+  }
+}
 
-      .icon {
-        width: 14px;
-        height: 14px;
-      }
-    }
+.account-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
 
-    .footer-links {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
+  a {
+    border-radius: 999px;
+    padding: 12px 18px;
+    text-decoration: none;
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    font-weight: 700;
 
-      a {
-        color: #666;
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
+    &.active {
+      background: #0f766e;
+      color: white;
     }
   }
+}
+
+.account-content {
+  margin-bottom: 32px;
 }
 </style>

@@ -15,12 +15,17 @@ import java.time.LocalDateTime;
 public class PmsProduct {
   @TableId(type = IdType.AUTO)
   private Long id;
+  private Long categoryId;
+  private String slug;
 
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode name;
 
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode description;
+
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode subtitle;
 
   private BigDecimal price;
   private BigDecimal compareAtPrice;
@@ -43,6 +48,18 @@ public class PmsProduct {
 
   @TableField(typeHandler = JacksonTypeHandler.class)
   private JsonNode upsells;
+
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode specTable;
+
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode boxItems;
+
+  @TableField(typeHandler = JacksonTypeHandler.class)
+  private JsonNode faqs;
+
+  private Boolean published;
+  private Integer sortOrder;
 
   private LocalDateTime createTime;
   private LocalDateTime updateTime;

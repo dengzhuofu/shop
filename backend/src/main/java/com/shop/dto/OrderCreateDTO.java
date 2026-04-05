@@ -13,9 +13,9 @@ public class OrderCreateDTO {
   private List<Item> items;
   private Long addressId;
   private AddressSnapshot addressSnapshot;
-  private String paymentMethod;
   private String shippingMethod;
-  private BigDecimal discountAmount;
+  private Long couponUserId;
+  private String previewToken;
   private String remark;
 
   @Data
@@ -23,6 +23,7 @@ public class OrderCreateDTO {
     private Long productId;
     private Long skuId;
     private Integer quantity;
+    private List<String> addonCodes;
     private Map<String, Object> attributes;
   }
 
