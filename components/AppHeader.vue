@@ -32,26 +32,23 @@
           <h2><i>isinwheel</i></h2>
         </NuxtLink>
 
-        <div class="desktop-nav" @mouseleave="closeMenu">
+        <div class="desktop-nav" @mouseleave="scheduleMenuClose">
           <ul class="nav-list">
             <li
               v-for="item in navItems"
               :key="item.slug"
               class="nav-item"
-              @mouseenter="openMenu(item.slug)"
+              :class="{ 'is-active': activeMenu?.slug === item.slug }"
+              @mouseenter="handleNavEnter(item)"
             >
               <NuxtLink :to="`/collections/${item.slug}`">{{ item.name }}</NuxtLink>
             </li>
 
-            <li class="nav-item support-item" @mouseenter="closeMenu">
+            <li class="nav-item support-item" @mouseenter="closeMenuImmediately">
               <button type="button" class="support-trigger">{{ copy.support }}</button>
               <NavDropdown :links="supportLinks" />
             </li>
           </ul>
-
-          <Transition name="fade">
-            <NavMegaMenu v-if="activeMenu" :menu-data="activeMenu" />
-          </Transition>
         </div>
 
         <div class="actions">
@@ -77,6 +74,16 @@
       </div>
     </div>
 
+    <div
+      class="mega-menus-container"
+      @mouseenter="handleMegaMenuEnter"
+      @mouseleave="handleMegaMenuLeave"
+    >
+      <Transition name="fade" mode="out-in">
+        <NavMegaMenu v-if="activeMenu" :key="activeMenu.slug" :menu-data="activeMenu" />
+      </Transition>
+    </div>
+
     <div class="mobile-strip">
       <div class="container mobile-links">
         <NuxtLink v-for="item in navItems" :key="`mobile-${item.slug}`" :to="`/collections/${item.slug}`">
@@ -99,10 +106,13 @@ const router = useRouter()
 const categoryMenu = ref<any[]>([])
 const activity = ref<Record<string, any> | null>(null)
 const isScrolled = ref(false)
-const activeMenuSlug = ref<string | null>(null)
+const hoverMenuSlug = ref<string | null>(null)
+const activeMenuCacheSlug = ref<string | null>(null)
+const isHoveringMegaMenu = ref(false)
 const countdownTarget = ref(0)
 const countdownMs = ref(0)
 let countdownTimer: ReturnType<typeof window.setInterval> | null = null
+let closeMenuTimer: ReturnType<typeof window.setTimeout> | null = null
 
 const fallbackCategories = computed(() => [
   { slug: 'electric-scooters', name: t('electricScooters') },
@@ -122,7 +132,10 @@ const fallbackActivity = computed(() => ({
 
 const resolvedActivity = computed(() => activity.value || fallbackActivity.value)
 const navItems = computed(() => (categoryMenu.value.length ? categoryMenu.value : fallbackCategories.value))
-const activeMenu = computed(() => categoryMenu.value.find((item) => item.slug === activeMenuSlug.value) || null)
+const visibleMenuSlug = computed(
+  () => hoverMenuSlug.value || (isHoveringMegaMenu.value ? activeMenuCacheSlug.value : null),
+)
+const activeMenu = computed(() => categoryMenu.value.find((item) => item.slug === visibleMenuSlug.value) || null)
 
 const activityStyle = computed(() => ({
   '--activity-desktop-bg': `url("${resolvedActivity.value.desktopBg}")`,
@@ -205,12 +218,56 @@ const fetchActivity = async () => {
   updateCountdown()
 }
 
-const openMenu = (slug: string) => {
-  activeMenuSlug.value = slug
+const clearMenuCloseTimer = () => {
+  if (closeMenuTimer) {
+    window.clearTimeout(closeMenuTimer)
+    closeMenuTimer = null
+  }
 }
 
-const closeMenu = () => {
-  activeMenuSlug.value = null
+const resetMenuState = () => {
+  hoverMenuSlug.value = null
+  isHoveringMegaMenu.value = false
+}
+
+const hasMegaMenu = (item: Record<string, any>) => Array.isArray(item?.children) && item.children.length > 0
+
+const handleNavEnter = (item: Record<string, any>) => {
+  clearMenuCloseTimer()
+  isHoveringMegaMenu.value = false
+  if (!hasMegaMenu(item)) {
+    resetMenuState()
+    return
+  }
+  hoverMenuSlug.value = item.slug
+  activeMenuCacheSlug.value = item.slug
+}
+
+const scheduleMenuClose = () => {
+  clearMenuCloseTimer()
+  closeMenuTimer = window.setTimeout(() => {
+    resetMenuState()
+  }, 140)
+}
+
+const closeMenuImmediately = () => {
+  clearMenuCloseTimer()
+  activeMenuCacheSlug.value = null
+  resetMenuState()
+}
+
+const handleMegaMenuEnter = () => {
+  if (!activeMenuCacheSlug.value) {
+    return
+  }
+  clearMenuCloseTimer()
+  hoverMenuSlug.value = null
+  isHoveringMegaMenu.value = true
+}
+
+const handleMegaMenuLeave = () => {
+  isHoveringMegaMenu.value = false
+  scheduleMenuClose()
 }
 
 const handleUserClick = async () => {
@@ -250,6 +307,7 @@ onUnmounted(() => {
   if (countdownTimer) {
     window.clearInterval(countdownTimer)
   }
+  clearMenuCloseTimer()
   window.removeEventListener('scroll', handleScroll)
 })
 </script>
@@ -368,11 +426,14 @@ onUnmounted(() => {
 
 .main-nav {
   padding: 16px 0;
+  position: static;
 }
 
 .nav-content {
+  position: static;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 28px;
 }
 
@@ -392,7 +453,7 @@ onUnmounted(() => {
 }
 
 .desktop-nav {
-  position: relative;
+  position: static;
   display: flex;
   flex: 1 1 auto;
   justify-content: center;
@@ -400,6 +461,7 @@ onUnmounted(() => {
 }
 
 .nav-list {
+  position: static;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -415,6 +477,8 @@ onUnmounted(() => {
   flex: 0 0 auto;
   font-size: 15px;
   font-weight: 600;
+  padding: 20px 0;
+  margin: -20px 0;
 }
 
 .nav-item a,
@@ -436,9 +500,16 @@ onUnmounted(() => {
 
 .nav-item:hover > a,
 .nav-item:hover > .support-trigger,
+.nav-item.is-active > a,
+.nav-item.is-active > .support-trigger,
 .nav-item > a.router-link-active {
   background: #111;
   color: #fff;
+}
+
+.mega-menus-container {
+  position: relative;
+  z-index: 110;
 }
 
 .support-item:hover :deep(.nav-dropdown) {
@@ -539,12 +610,15 @@ onUnmounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(10px);
 }
 
 @media (max-width: 1100px) {
