@@ -1,33 +1,33 @@
 <template>
   <div class="profile-page">
-    <section class="card">
-      <div class="section-head">
-        <h2>{{ t('profile') }}</h2>
-        <button type="button" class="minor-btn" @click="session.fetchMe()">{{ t('refreshData') }}</button>
-      </div>
-      <div class="info-grid" v-if="session.user.value">
-        <div>
-          <span>{{ t('firstName') }}</span>
-          <strong>{{ session.user.value.firstName }}</strong>
+    <section class="panel identity-panel">
+      <div class="identity-grid">
+        <div class="field-row">
+          <span class="field-label">{{ profileCopy.name }}</span>
+          <div class="field-value">
+            <strong>{{ fullName }}</strong>
+            <button type="button" class="edit-btn" @click="session.fetchMe()">✎</button>
+          </div>
         </div>
-        <div>
-          <span>{{ t('lastName') }}</span>
-          <strong>{{ session.user.value.lastName }}</strong>
-        </div>
-        <div>
-          <span>{{ t('email') }}</span>
-          <strong>{{ session.user.value.email }}</strong>
+
+        <div class="field-row">
+          <span class="field-label">{{ t('email') }}</span>
+          <div class="field-value">
+            <strong>{{ session.user.value?.email || '--' }}</strong>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-head">
         <h2>{{ t('addresses') }}</h2>
-        <button type="button" class="minor-btn" @click="saveAddress">{{ t('saveAddress') }}</button>
+        <button type="button" class="inline-action" @click="addressFormOpen = !addressFormOpen">
+          + {{ profileCopy.add }}
+        </button>
       </div>
 
-      <div class="address-list" v-if="addresses.length">
+      <div v-if="addresses.length" class="address-list">
         <article v-for="address in addresses" :key="address.id" class="address-card">
           <strong>{{ address.firstName }} {{ address.lastName }}</strong>
           <p>{{ address.addressLine1 }} {{ address.addressLine2 }}</p>
@@ -35,9 +35,13 @@
           <small>{{ address.country }} · {{ address.phone }}</small>
         </article>
       </div>
-      <p v-else class="helper-text">{{ t('noAddress') }}</p>
 
-      <form class="address-form" @submit.prevent="saveAddress">
+      <div v-else class="empty-state">
+        <span class="empty-icon">i</span>
+        <p>{{ t('noAddress') }}</p>
+      </div>
+
+      <form v-show="addressFormOpen || !addresses.length" class="address-form" @submit.prevent="saveAddress">
         <div class="two-col">
           <label>
             <span>{{ t('firstName') }}</span>
@@ -48,14 +52,17 @@
             <input v-model="form.lastName" type="text" required />
           </label>
         </div>
+
         <label>
           <span>{{ t('addressLine1') }}</span>
           <input v-model="form.addressLine1" type="text" required />
         </label>
+
         <label>
           <span>{{ t('addressLine2') }}</span>
           <input v-model="form.addressLine2" type="text" />
         </label>
+
         <div class="three-col">
           <label>
             <span>{{ t('city') }}</span>
@@ -70,6 +77,7 @@
             <input v-model="form.zipCode" type="text" required />
           </label>
         </div>
+
         <div class="two-col">
           <label>
             <span>{{ t('country') }}</span>
@@ -80,16 +88,19 @@
             <input v-model="form.phone" type="tel" />
           </label>
         </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-btn">{{ t('saveAddress') }}</button>
+        </div>
       </form>
     </section>
 
-    <section class="card">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-head">
         <h2>{{ t('myCoupons') }}</h2>
-        <button type="button" class="minor-btn" @click="refreshCoupons">{{ t('refreshData') }}</button>
       </div>
 
-      <div class="coupon-list" v-if="myCoupons.length">
+      <div v-if="myCoupons.length" class="coupon-list">
         <article v-for="coupon in myCoupons" :key="coupon.couponUserId" class="coupon-card">
           <strong>{{ coupon.code }}</strong>
           <p>{{ coupon.title }}</p>
@@ -98,8 +109,7 @@
       </div>
       <p v-else class="helper-text">{{ t('noCoupons') }}</p>
 
-      <div class="claim-list" v-if="claimableCoupons.length">
-        <h3>{{ t('availableCoupons') }}</h3>
+      <div v-if="claimableCoupons.length" class="claim-list">
         <button
           v-for="coupon in claimableCoupons"
           :key="coupon.couponId"
@@ -116,19 +126,20 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 definePageMeta({
   layout: 'account',
 })
 
-const { t } = useShopLocale()
+const { lang, t } = useShopLocale()
 const { money } = useShopFormat()
 const session = useShopSession()
 
 const addresses = ref<any[]>([])
 const myCoupons = ref<any[]>([])
 const claimableCoupons = ref<any[]>([])
+const addressFormOpen = ref(false)
 
 const form = reactive({
   country: 'United States',
@@ -142,27 +153,58 @@ const form = reactive({
   zipCode: '',
 })
 
+const profileCopy = computed(() =>
+  lang.value === 'zh'
+    ? {
+        name: '姓名',
+        add: '新增',
+      }
+    : {
+        name: 'Name',
+        add: 'Add',
+      },
+)
+
+const fullName = computed(() => {
+  const first = session.user.value?.firstName || ''
+  const last = session.user.value?.lastName || ''
+  return `${first} ${last}`.trim() || '--'
+})
+
+const resetForm = () => {
+  form.country = 'United States'
+  form.firstName = ''
+  form.lastName = ''
+  form.phone = ''
+  form.addressLine1 = ''
+  form.addressLine2 = ''
+  form.city = ''
+  form.state = ''
+  form.zipCode = ''
+}
+
 const fetchAddresses = async () => {
   const res = await useHttp('/api/address/list')
   addresses.value = res?.code === 200 ? res.data || [] : []
 }
 
 const saveAddress = async () => {
-  await useHttp('/api/address', {
+  const res = await useHttp('/api/address', {
     method: 'POST',
     body: {
       ...form,
       isDefault: !addresses.value.length,
     },
   })
-  await fetchAddresses()
+  if (res?.code === 200) {
+    await fetchAddresses()
+    addressFormOpen.value = false
+    resetForm()
+  }
 }
 
 const refreshCoupons = async () => {
-  const [myRes, availableRes] = await Promise.all([
-    useHttp('/api/coupon/my'),
-    useHttp('/api/coupon/available'),
-  ])
+  const [myRes, availableRes] = await Promise.all([useHttp('/api/coupon/my'), useHttp('/api/coupon/available')])
   myCoupons.value = myRes?.code === 200 ? myRes.data || [] : []
   claimableCoupons.value =
     availableRes?.code === 200
@@ -187,45 +229,150 @@ onMounted(async () => {
 .profile-page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
 }
 
-.card {
-  border-radius: 28px;
-  background: white;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 24px;
+.panel {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 24px;
+  padding: 30px 32px;
 }
 
-.section-head {
+.identity-grid {
+  display: grid;
+  gap: 28px;
+}
+
+.field-row {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  color: #76808f;
+  font-size: 15px;
+}
+
+.field-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  strong {
+    color: #111;
+    font-size: 17px;
+    font-weight: 600;
+  }
+}
+
+.edit-btn,
+.inline-action,
+.primary-btn,
+.claim-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 22px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #111;
+  }
 }
 
-.minor-btn {
-  border: 1px solid rgba(15, 23, 42, 0.1);
+.inline-action {
+  color: #111;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.empty-state {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid #eaeaea;
+  border-radius: 18px;
+  background: #fafafa;
+  color: #636363;
+
+  p {
+    margin: 0;
+  }
+}
+
+.empty-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #9a9a9a;
   border-radius: 999px;
-  background: #f8fafc;
-  padding: 10px 14px;
+  color: #7b7b7b;
+  font-size: 14px;
   font-weight: 700;
 }
 
-.info-grid,
-.two-col,
-.three-col,
-.coupon-list,
-.address-list {
+.address-list,
+.coupon-list {
   display: grid;
   gap: 14px;
 }
 
-.info-grid,
-.coupon-list,
-.address-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.address-card,
+.coupon-card {
+  border-radius: 18px;
+  background: #fafafa;
+  border: 1px solid #eeeeee;
+  padding: 18px;
+
+  p,
+  small {
+    margin: 6px 0 0;
+    color: #707070;
+  }
+}
+
+.address-form {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #111;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  input {
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid #dcdcdc;
+    border-radius: 14px;
+    font-size: 14px;
+    outline: none;
+  }
+}
+
+.two-col,
+.three-col {
+  display: grid;
+  gap: 14px;
 }
 
 .two-col {
@@ -236,72 +383,53 @@ onMounted(async () => {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.info-grid div,
-.coupon-card,
-.address-card {
-  border-radius: 20px;
-  background: #f8fafc;
-  padding: 16px;
-}
-
-.info-grid span,
-.coupon-card small,
-.address-card small,
-.helper-text {
-  color: #64748b;
-}
-
-.address-form {
+.form-actions {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 18px;
-
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-weight: 700;
-  }
-
-  input {
-    min-height: 46px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    border-radius: 14px;
-    padding: 0 14px;
-  }
+  justify-content: flex-start;
 }
 
-.claim-list {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.claim-btn {
-  border: none;
-  border-radius: 18px;
-  background: #ecfeff;
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+.primary-btn {
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
   font-weight: 700;
 }
 
-@media (max-width: 980px) {
-  .info-grid,
-  .coupon-list,
-  .address-list {
-    grid-template-columns: 1fr;
-  }
+.helper-text {
+  margin: 0;
+  color: #777;
 }
 
-@media (max-width: 720px) {
+.claim-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.claim-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 18px;
+  background: #f7f7f5;
+  border: 1px solid #ececec;
+  padding: 14px 16px;
+  color: #111;
+  font-weight: 600;
+}
+
+@media (max-width: 840px) {
   .two-col,
   .three-col {
     grid-template-columns: 1fr;
+  }
+
+  .panel {
+    padding: 22px;
   }
 }
 </style>

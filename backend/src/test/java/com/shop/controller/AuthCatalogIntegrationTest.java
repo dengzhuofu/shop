@@ -48,6 +48,18 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.data[0].slug").value("electric-scooters"))
         .andExpect(jsonPath("$.data[0].name").value("电动滑板车"));
 
+    mockMvc.perform(get("/marketing/activities/current").param("lang", "zh"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.code").value("spring-ride-festival"))
+        .andExpect(jsonPath("$.data.title").value("复活节促销"))
+        .andExpect(jsonPath("$.data.enabled").value(true));
+
+    mockMvc.perform(get("/category/menu").param("lang", "zh"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[1].slug").value("electric-bike"))
+        .andExpect(jsonPath("$.data[1].children[0].name").value("城市通勤"))
+        .andExpect(jsonPath("$.data[1].children[0].products[0].categorySlug").value("electric-bike"));
+
     String loginToken = loginAndGetToken("admin@isinwheel.local", "123456");
     assertThat(loginToken).isNotBlank();
 
@@ -64,6 +76,6 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
         .getContentAsString();
 
     JsonNode productJson = objectMapper.readTree(productResponse);
-    assertThat(productJson.path("data").path("skuList").size()).isEqualTo(2);
+    assertThat(productJson.path("data").path("skuList").size()).isEqualTo(6);
   }
 }

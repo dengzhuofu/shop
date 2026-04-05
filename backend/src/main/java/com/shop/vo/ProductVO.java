@@ -25,6 +25,7 @@ public class ProductVO {
   private BigDecimal compareAtPrice;
   private Integer stock;
   private String pic;
+  private Boolean isNew;
   private Object tags;
   private Object images;
   private String appImage;
@@ -47,6 +48,7 @@ public class ProductVO {
     vo.setCompareAtPrice(product.getCompareAtPrice());
     vo.setStock(product.getStock());
     vo.setPic(product.getPic());
+    vo.setIsNew(Boolean.TRUE.equals(product.getIsNew()));
     vo.setAppImage(product.getAppImage());
 
     String lang = JsonLocaleUtils.currentLanguage();
