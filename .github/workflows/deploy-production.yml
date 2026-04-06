@@ -165,10 +165,20 @@ jobs:
         run: |
           PROJECT_DIR="${PROD_PROJECT_DIR:-/opt/shop}"
           cd "$PROJECT_DIR"
+          mkdir -p diagnostics
           if docker compose version >/dev/null 2>&1; then
-            docker compose -f compose.prod.yml ps || true
-            docker compose -f compose.prod.yml logs --tail=200 nginx frontend backend db || true
+            docker compose -f compose.prod.yml ps | tee diagnostics/compose-ps.txt || true
+            docker compose -f compose.prod.yml logs --tail=200 nginx frontend backend db | tee diagnostics/compose-logs.txt || true
           else
-            docker-compose -f compose.prod.yml ps || true
-            docker-compose -f compose.prod.yml logs --tail=200 nginx frontend backend db || true
+            docker-compose -f compose.prod.yml ps | tee diagnostics/compose-ps.txt || true
+            docker-compose -f compose.prod.yml logs --tail=200 nginx frontend backend db | tee diagnostics/compose-logs.txt || true
           fi
+
+      - name: Upload diagnostics artifact on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-diagnostics
+          path: ${{ env.PROD_PROJECT_DIR }}/diagnostics
+          if-no-files-found: error
+          retention-days: 3
