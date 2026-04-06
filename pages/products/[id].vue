@@ -26,20 +26,36 @@
           </div>
 
           <div v-if="galleryImages.length > 1" class="thumbnails">
-            <button type="button" class="nav-btn" @click="cycleImage(-1)"><ChevronLeftIcon /></button>
-            <div class="thumbs-list">
-              <button
-                v-for="(img, index) in galleryImages"
-                :key="`${img}-${index}`"
-                type="button"
-                class="thumbnail-btn"
-                :class="{ 'is-active': activeImage === img }"
-                @click="activeImage = img"
-              >
-                <img :src="img" :alt="`${product.title}-${index}`" />
-              </button>
+            <button
+              type="button"
+              class="thumb-stepper"
+              :disabled="!canSlideThumbsBackward"
+              @click="stepThumbs(-1)"
+            >
+              <ChevronLeftIcon />
+            </button>
+            <div class="thumbs-viewport">
+              <div class="thumbs-list">
+                <button
+                  v-for="(img, index) in visibleThumbImages"
+                  :key="`${img}-${thumbStartIndex + index}`"
+                  type="button"
+                  class="thumbnail-btn"
+                  :class="{ 'is-active': activeImage === img }"
+                  @click="activeImage = img"
+                >
+                  <img :src="img" :alt="`${product.title}-${thumbStartIndex + index}`" />
+                </button>
+              </div>
             </div>
-            <button type="button" class="nav-btn" @click="cycleImage(1)"><ChevronRightIcon /></button>
+            <button
+              type="button"
+              class="thumb-stepper"
+              :disabled="!canSlideThumbsForward"
+              @click="stepThumbs(1)"
+            >
+              <ChevronRightIcon />
+            </button>
           </div>
 
           <div class="key-specs">
@@ -263,6 +279,7 @@ const { money, attributeText } = useShopFormat()
 
 const product = ref<any | null>(null)
 const activeImage = ref('')
+const thumbStartIndex = ref(0)
 const quantity = ref(1)
 const adding = ref(false)
 const activeAccordion = ref<'quick-know' | 'specification' | 'in-the-box' | 'faq' | null>('quick-know')
@@ -303,6 +320,14 @@ const activeImageIndex = computed(() => {
   const index = galleryImages.value.indexOf(activeImage.value)
   return index >= 0 ? index : 0
 })
+const THUMB_WINDOW = 4
+const visibleThumbImages = computed(() =>
+  galleryImages.value.slice(thumbStartIndex.value, thumbStartIndex.value + THUMB_WINDOW),
+)
+const canSlideThumbsBackward = computed(() => thumbStartIndex.value > 0)
+const canSlideThumbsForward = computed(
+  () => thumbStartIndex.value + THUMB_WINDOW < galleryImages.value.length,
+)
 
 const resolvedSpecs = computed(() =>
   (Array.isArray(product.value?.specs) ? product.value.specs : []).slice(0, 6).map((spec: any) => ({
@@ -327,6 +352,7 @@ const normalizedQuantity = computed(() =>
 
 const syncActiveImage = () => {
   activeImage.value = galleryImages.value[0] || ''
+  thumbStartIndex.value = 0
 }
 
 const resetSelection = () => {
@@ -376,6 +402,30 @@ const cycleImage = (step: number) => {
   activeImage.value = galleryImages.value[nextIndex]
 }
 
+const ensureActiveThumbVisible = () => {
+  if (galleryImages.value.length <= THUMB_WINDOW) {
+    thumbStartIndex.value = 0
+    return
+  }
+
+  if (activeImageIndex.value < thumbStartIndex.value) {
+    thumbStartIndex.value = activeImageIndex.value
+    return
+  }
+
+  if (activeImageIndex.value >= thumbStartIndex.value + THUMB_WINDOW) {
+    thumbStartIndex.value = activeImageIndex.value - THUMB_WINDOW + 1
+  }
+}
+
+const stepThumbs = (direction: number) => {
+  const maxStart = Math.max(galleryImages.value.length - THUMB_WINDOW, 0)
+  thumbStartIndex.value = Math.min(
+    Math.max(thumbStartIndex.value + direction, 0),
+    maxStart,
+  )
+}
+
 const handleAddToCart = async () => {
   await session.fetchMe()
   if (!session.isLoggedIn.value) {
@@ -397,6 +447,7 @@ const handleAddToCart = async () => {
 
 watch(() => route.params.id, fetchProduct)
 watch(galleryImages, syncActiveImage)
+watch(activeImage, ensureActiveThumbVisible)
 
 onMounted(async () => {
   await session.fetchMe()
@@ -406,11 +457,11 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .product-detail-page { padding: 20px 0 120px; max-width: 1440px; background: #fff; margin: 0 auto; }
-.product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
-.product-media { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 20px; }
-.main-image-container { position: relative; border-radius: 20px; background: #fff; border: 1px solid #f0f0f0; overflow: hidden; aspect-ratio: 1/1; }
-.main-image { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
-.main-image:hover { transform: scale(1.05); }
+.product-layout { display: grid; grid-template-columns: minmax(0, .82fr) minmax(460px, 1.18fr); gap: 48px; align-items: start; }
+.product-media { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 18px; max-width: 560px; width: 100%; justify-self: start; }
+.main-image-container { position: relative; width: 100%; border-radius: 20px; background: linear-gradient(180deg, #fcfcfc 0%, #f4f4f4 100%); border: 1px solid #f0f0f0; overflow: hidden; aspect-ratio: 1/1; max-height: 560px; }
+.main-image { width: 100%; height: 100%; object-fit: contain; transition: transform .3s ease; padding: 24px; }
+.main-image:hover { transform: scale(1.02); }
 .gallery-controls { position: absolute; right: 16px; bottom: 16px; z-index: 3; display: inline-flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 999px; background: rgba(17, 24, 39, .72); color: #fff; backdrop-filter: blur(10px); }
 .gallery-nav { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .08); display: flex; align-items: center; justify-content: center; color: inherit; }
 .gallery-nav-icon { width: 18px; height: 18px; }
@@ -422,12 +473,13 @@ onMounted(async () => {
 .tags-right { position: absolute; top: 20px; right: 20px; }
 .spring-sale-badge { background: linear-gradient(135deg,#d4fc79 0%,#96e6a1 100%); border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,.1); border-radius: 12px; padding: 6px 12px; transform: rotate(5deg); }
 .spring-sale-badge .text { color: #2e7d32; font-weight: 900; font-size: 12px; line-height: 1.1; display: block; text-align: center; text-transform: uppercase; }
-.thumbnails { display: flex; justify-content: center; align-items: center; gap: 12px; }
-.nav-btn { width: 32px; height: 32px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; border: none; }
-.thumbs-list { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; }
-.thumbs-list::-webkit-scrollbar { display: none; }
-.thumbnail-btn { width: 60px; height: 60px; border-radius: 8px; border: 2px solid transparent; background: #f9f9f9; padding: 4px; flex-shrink: 0; }
-.thumbnail-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+.thumbnails { display: flex; align-items: center; gap: 12px; max-width: 432px; }
+.thumb-stepper { width: 38px; height: 38px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; border: 1px solid #d9d9d9; color: #111; flex-shrink: 0; }
+.thumb-stepper:disabled { opacity: .35; cursor: not-allowed; }
+.thumbs-viewport { overflow: hidden; width: 100%; }
+.thumbs-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.thumbnail-btn { width: 100%; aspect-ratio: 1/1; border-radius: 12px; border: 2px solid transparent; background: #f9f9f9; padding: 6px; }
+.thumbnail-btn img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
 .thumbnail-btn.is-active { border-color: #333; background: #fff; }
 .key-specs { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 24px; background: #fafafa; border-radius: 16px; }
 .spec-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
@@ -502,6 +554,7 @@ onMounted(async () => {
 .sticky-actions { display: flex; align-items: center; gap: 24px; }
 .price-area.mini .current-price { font-size: 20px; }
 .btn-add-to-cart.mini { padding: 10px 40px; border: none; border-radius: 30px; background: #111; color: #fff; font-weight: 700; }
-@media (max-width: 1024px) { .product-layout { grid-template-columns: 1fr; gap: 40px; } .product-media { position: static; } }
+@media (max-width: 1024px) { .product-layout { grid-template-columns: 1fr; gap: 40px; } .product-media { position: static; max-width: 100%; } .main-image-container { max-height: none; } .thumbnails { max-width: 100%; } }
 @media (max-width: 960px) { .sticky-content { flex-direction: column; align-items: stretch; } .key-specs { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 640px) { .main-image { padding: 18px; } .thumbs-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } .gallery-controls { right: 12px; bottom: 12px; } }
 </style>

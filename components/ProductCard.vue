@@ -113,6 +113,7 @@ import {
   NavigationIcon,
   ZapIcon,
 } from "lucide-vue-next";
+import { mergeProductImages } from "~/utils/productMedia";
 
 const props = defineProps<{
   product: Record<string, any>;
@@ -135,16 +136,12 @@ const iconMap = {
 } as const;
 
 const displayImages = computed(() => {
-  if (Array.isArray(props.product.images) && props.product.images.length) {
-    return props.product.images;
-  }
-  if (props.product.image) {
-    return [props.product.image];
-  }
-  if (props.product.pic) {
-    return [props.product.pic];
-  }
-  return ["https://via.placeholder.com/600x600?text=isinwheel"];
+  const images = mergeProductImages(
+    props.product.images,
+    props.product.image,
+    props.product.pic,
+  ).slice(0, 3);
+  return images.length ? images : ["https://via.placeholder.com/600x600?text=isinwheel"];
 });
 
 const leftTags = computed(() => {
@@ -315,7 +312,7 @@ const handleMouseLeave = () => {
 .image-wrapper {
   position: relative;
   padding-top: 100%;
-  background: $white;
+  background: linear-gradient(180deg, #fff 0%, #f7f7f7 100%);
   overflow: hidden;
 
   .tags-left {
@@ -383,8 +380,8 @@ const handleMouseLeave = () => {
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      padding: 0;
+      object-fit: contain;
+      padding: 14px;
       opacity: 0;
       transition: opacity 0.4s ease, transform 0.4s ease;
 

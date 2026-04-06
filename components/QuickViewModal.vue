@@ -38,25 +38,45 @@
 
               <div v-if="galleryImages.length > 1" class="gallery-controls">
                 <button type="button" class="gallery-nav" @click="cycleImage(-1)">
-                  <MinusIcon class="gallery-nav__icon rotate" />
+                  <ChevronLeftIcon class="gallery-nav__icon" />
                 </button>
                 <span class="gallery-count">{{ activeImageIndex + 1 }} / {{ galleryImages.length }}</span>
                 <button type="button" class="gallery-nav" @click="cycleImage(1)">
-                  <PlusIcon class="gallery-nav__icon" />
+                  <ChevronRightIcon class="gallery-nav__icon" />
                 </button>
               </div>
             </div>
 
-            <div v-if="galleryImages.length > 1" class="thumbs-list">
+            <div v-if="galleryImages.length > 1" class="thumbs-shell">
               <button
-                v-for="(img, index) in galleryImages"
-                :key="`${img}-${index}`"
                 type="button"
-                class="thumb-btn"
-                :class="{ 'is-active': activeImage === img }"
-                @click="activeImage = img"
+                class="thumb-stepper"
+                :disabled="!canSlideThumbsBackward"
+                @click="stepThumbs(-1)"
               >
-                <img :src="img" :alt="`${productDetail.title}-${index + 1}`" />
+                <ChevronLeftIcon class="thumb-stepper__icon" />
+              </button>
+              <div class="thumbs-viewport">
+                <div class="thumbs-list">
+                  <button
+                    v-for="(img, index) in visibleThumbImages"
+                    :key="`${img}-${thumbStartIndex + index}`"
+                    type="button"
+                    class="thumb-btn"
+                    :class="{ 'is-active': activeImage === img }"
+                    @click="activeImage = img"
+                  >
+                    <img :src="img" :alt="`${productDetail.title}-${thumbStartIndex + index + 1}`" />
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="thumb-stepper"
+                :disabled="!canSlideThumbsForward"
+                @click="stepThumbs(1)"
+              >
+                <ChevronRightIcon class="thumb-stepper__icon" />
               </button>
             </div>
           </section>
@@ -153,7 +173,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ArrowRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon } from 'lucide-vue-next'
+import { ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon } from 'lucide-vue-next'
 import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
 import { mergeProductImages } from '~/utils/productMedia'
 
@@ -176,6 +196,7 @@ const loading = ref(false)
 const adding = ref(false)
 const productDetail = ref<Record<string, any> | null>(null)
 const activeImage = ref('')
+const thumbStartIndex = ref(0)
 const quantity = ref(1)
 const selection = reactive<Record<string, string>>({})
 let requestToken = 0
@@ -199,6 +220,14 @@ const activeImageIndex = computed(() => {
   const index = galleryImages.value.indexOf(activeImage.value)
   return index >= 0 ? index : 0
 })
+const THUMB_WINDOW = 4
+const visibleThumbImages = computed(() =>
+  galleryImages.value.slice(thumbStartIndex.value, thumbStartIndex.value + THUMB_WINDOW),
+)
+const canSlideThumbsBackward = computed(() => thumbStartIndex.value > 0)
+const canSlideThumbsForward = computed(
+  () => thumbStartIndex.value + THUMB_WINDOW < galleryImages.value.length,
+)
 const leftTags = computed(() =>
   (Array.isArray(productDetail.value?.tags) ? productDetail.value.tags : []).filter((tag: string) =>
     ['NEW', 'HOT'].includes(String(tag).toUpperCase()),
@@ -213,6 +242,7 @@ const productLink = computed(() => `/products/${productDetail.value?.slug || pro
 
 const syncActiveImage = () => {
   activeImage.value = galleryImages.value[0] || ''
+  thumbStartIndex.value = 0
 }
 
 const resetSelection = () => {
@@ -243,6 +273,30 @@ const cycleImage = (step: number) => {
   const nextIndex =
     (activeImageIndex.value + step + galleryImages.value.length) % galleryImages.value.length
   activeImage.value = galleryImages.value[nextIndex]
+}
+
+const ensureActiveThumbVisible = () => {
+  if (galleryImages.value.length <= THUMB_WINDOW) {
+    thumbStartIndex.value = 0
+    return
+  }
+
+  if (activeImageIndex.value < thumbStartIndex.value) {
+    thumbStartIndex.value = activeImageIndex.value
+    return
+  }
+
+  if (activeImageIndex.value >= thumbStartIndex.value + THUMB_WINDOW) {
+    thumbStartIndex.value = activeImageIndex.value - THUMB_WINDOW + 1
+  }
+}
+
+const stepThumbs = (direction: number) => {
+  const maxStart = Math.max(galleryImages.value.length - THUMB_WINDOW, 0)
+  thumbStartIndex.value = Math.min(
+    Math.max(thumbStartIndex.value + direction, 0),
+    maxStart,
+  )
 }
 
 const close = () => {
@@ -335,6 +389,7 @@ watch(
 )
 
 watch(galleryImages, syncActiveImage)
+watch(activeImage, ensureActiveThumbVisible)
 
 onMounted(() => {
   if (process.client) {
@@ -365,7 +420,7 @@ onBeforeUnmount(() => {
 
 .modal-shell {
   position: relative;
-  width: min(1280px, 100%);
+  width: min(1180px, 100%);
   max-height: min(860px, calc(100vh - 48px));
   overflow: auto;
   border-radius: 28px;
@@ -405,28 +460,34 @@ onBeforeUnmount(() => {
 
 .modal-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
+  grid-template-columns: minmax(0, 0.84fr) minmax(420px, 1.16fr);
   min-height: 680px;
 }
 
 .gallery-panel {
-  padding: 36px;
+  padding: 28px;
   border-right: 1px solid #ececec;
   background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .main-image-wrap {
   position: relative;
+  width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 24px;
   overflow: hidden;
-  background: #fff;
+  background: linear-gradient(180deg, #fcfcfc 0%, #f3f4f6 100%);
+  max-width: 520px;
 }
 
 .main-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 24px;
 }
 
 .gallery-controls {
@@ -460,15 +521,48 @@ onBeforeUnmount(() => {
   height: 16px;
 }
 
-.gallery-nav__icon.rotate {
-  transform: rotate(180deg);
-}
-
 .gallery-count {
   min-width: 52px;
   text-align: center;
   font-size: 12px;
   font-weight: 700;
+}
+
+.thumbs-shell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  max-width: 404px;
+  width: 100%;
+}
+
+.thumbs-viewport {
+  width: 100%;
+  overflow: hidden;
+}
+
+.thumb-stepper {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.thumb-stepper:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.thumb-stepper__icon {
+  width: 16px;
+  height: 16px;
 }
 
 .tags-left {
@@ -523,10 +617,9 @@ onBeforeUnmount(() => {
 }
 
 .thumbs-list {
-  margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(74px, 74px));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .thumb-btn {
@@ -545,7 +638,7 @@ onBeforeUnmount(() => {
 .thumb-btn img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 10px;
 }
 
@@ -788,6 +881,11 @@ onBeforeUnmount(() => {
   .gallery-panel {
     border-right: none;
     border-bottom: 1px solid #ececec;
+  }
+
+  .main-image-wrap,
+  .thumbs-shell {
+    max-width: 100%;
   }
 }
 

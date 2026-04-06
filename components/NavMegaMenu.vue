@@ -147,6 +147,7 @@
 
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { mergeProductImages } from '~/utils/productMedia'
 
 const props = defineProps<{
   menuData: Record<string, any>
@@ -233,13 +234,8 @@ const hasSpringSale = (product: Record<string, any>) =>
   (Array.isArray(product.tags) ? product.tags : []).some((tag) => String(tag).toLowerCase().includes('spring sale'))
 
 const displayImages = (product: Record<string, any>) => {
-  if (Array.isArray(product.images) && product.images.length) {
-    return product.images
-  }
-  if (product.pic) {
-    return [product.pic]
-  }
-  return ['https://via.placeholder.com/640x640?text=isinwheel']
+  const images = mergeProductImages(product.images, product.pic).slice(0, 3)
+  return images.length ? images : ['https://via.placeholder.com/640x640?text=isinwheel']
 }
 
 const activeImageIndex = (productId: number) => activeImageIndices.value[productId] || 0
@@ -532,7 +528,7 @@ onUnmounted(() => {
 
 .image-wrapper {
   position: relative;
-  background: #fff;
+  background: linear-gradient(180deg, #fff 0%, #f7f7f7 100%);
   border-radius: 12px;
   border: 1px solid transparent;
   padding-top: 100%;
@@ -603,7 +599,8 @@ onUnmounted(() => {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 14px;
   opacity: 0;
   transition: opacity 0.4s ease, transform 0.4s ease;
 
