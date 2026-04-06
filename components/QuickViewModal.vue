@@ -35,6 +35,16 @@
               </div>
 
               <img :src="activeImage" :alt="productDetail.title" class="main-image" />
+
+              <div v-if="galleryImages.length > 1" class="gallery-controls">
+                <button type="button" class="gallery-nav" @click="cycleImage(-1)">
+                  <MinusIcon class="gallery-nav__icon rotate" />
+                </button>
+                <span class="gallery-count">{{ activeImageIndex + 1 }} / {{ galleryImages.length }}</span>
+                <button type="button" class="gallery-nav" @click="cycleImage(1)">
+                  <PlusIcon class="gallery-nav__icon" />
+                </button>
+              </div>
             </div>
 
             <div v-if="galleryImages.length > 1" class="thumbs-list">
@@ -145,6 +155,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ArrowRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon } from 'lucide-vue-next'
 import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
+import { mergeProductImages } from '~/utils/productMedia'
 
 const props = defineProps<{
   isOpen: boolean
@@ -177,15 +188,16 @@ const selectedPrice = computed(() => selectedSku.value?.price || productDetail.v
 const selectedCompareAtPrice = computed(() => selectedSku.value?.compareAtPrice || productDetail.value?.compareAtPrice || 0)
 const reviewCount = computed(() => Math.max(Number(productDetail.value?.reviewCount || 0), 61))
 const galleryImages = computed(() => {
-  const selectedImages = Array.isArray(selectedSku.value?.images) ? selectedSku.value.images : []
-  if (selectedImages.length) {
-    return selectedImages
-  }
-  const productImages = Array.isArray(productDetail.value?.images) ? productDetail.value.images : []
-  if (productImages.length) {
-    return productImages
-  }
-  return [productDetail.value?.pic].filter(Boolean)
+  return mergeProductImages(
+    selectedSku.value?.images,
+    selectedSku.value?.pic,
+    productDetail.value?.images,
+    productDetail.value?.pic,
+  )
+})
+const activeImageIndex = computed(() => {
+  const index = galleryImages.value.indexOf(activeImage.value)
+  return index >= 0 ? index : 0
 })
 const leftTags = computed(() =>
   (Array.isArray(productDetail.value?.tags) ? productDetail.value.tags : []).filter((tag: string) =>
@@ -215,11 +227,23 @@ const formatAttributeKey = (value: string) =>
 const optionThumbnail = (attributeKey: string, option: string) => {
   const skuList = Array.isArray(productDetail.value?.skuList) ? productDetail.value.skuList : []
   const matched = skuList.find((sku: any) => sku.attributes?.[attributeKey] === option)
-  return matched?.images?.[0] || matched?.pic || productDetail.value?.pic
+  return (
+    mergeProductImages(matched?.images, matched?.pic, productDetail.value?.images, productDetail.value?.pic)[0] ||
+    productDetail.value?.pic
+  )
 }
 
 const isSelectable = (attributeKey: string, option: string) =>
   isOptionSelectable(productDetail.value?.skuList || [], selection, attributeKey, option)
+
+const cycleImage = (step: number) => {
+  if (!galleryImages.value.length) {
+    return
+  }
+  const nextIndex =
+    (activeImageIndex.value + step + galleryImages.value.length) % galleryImages.value.length
+  activeImage.value = galleryImages.value[nextIndex]
+}
 
 const close = () => {
   emit('close')
@@ -403,6 +427,48 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.gallery-controls {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.72);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+
+.gallery-nav {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+.gallery-nav__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.gallery-nav__icon.rotate {
+  transform: rotate(180deg);
+}
+
+.gallery-count {
+  min-width: 52px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .tags-left {

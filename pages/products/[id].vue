@@ -13,9 +13,19 @@
               </div>
             </div>
             <img :src="activeImage" :alt="product.title" class="main-image" />
+
+            <div v-if="galleryImages.length > 1" class="gallery-controls">
+              <button type="button" class="gallery-nav" @click="cycleImage(-1)">
+                <ChevronLeftIcon class="gallery-nav-icon" />
+              </button>
+              <span class="gallery-count">{{ activeImageIndex + 1 }} / {{ galleryImages.length }}</span>
+              <button type="button" class="gallery-nav" @click="cycleImage(1)">
+                <ChevronRightIcon class="gallery-nav-icon" />
+              </button>
+            </div>
           </div>
 
-          <div class="thumbnails">
+          <div v-if="galleryImages.length > 1" class="thumbnails">
             <button type="button" class="nav-btn" @click="cycleImage(-1)"><ChevronLeftIcon /></button>
             <div class="thumbs-list">
               <button
@@ -243,6 +253,7 @@ import {
   ZapIcon,
 } from 'lucide-vue-next'
 import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
+import { mergeProductImages } from '~/utils/productMedia'
 
 const route = useRoute()
 const { lang, t } = useShopLocale()
@@ -262,16 +273,35 @@ const iconMap = { ZapIcon, NavigationIcon, ActivityIcon, BatteryIcon } as const
 
 const copy = computed(() =>
   lang.value === 'zh'
-    ? { badgePrimary: '骑行好价', badgeSecondary: '新品上架', installmentPrefix: '支持分期，单期约', installmentSuffix: '/ 4 期', quickKnow: '快速了解', addonTitle: '附加服务' }
-    : { badgePrimary: 'Ride Deals', badgeSecondary: 'Fresh Rides, Fresh Start', installmentPrefix: '4 interest-free installments from', installmentSuffix: 'with flexible payment options', quickKnow: 'Quick Know', addonTitle: 'Spring Sale Add-ons' },
+    ? {
+        badgePrimary: '\u9a91\u884c\u597d\u4ef7',
+        badgeSecondary: '\u65b0\u54c1\u4e0a\u67b6',
+        installmentPrefix: '\u652f\u6301\u5206\u671f\uff0c\u5355\u671f\u7ea6',
+        installmentSuffix: '/ 4 \u671f',
+        quickKnow: '\u5feb\u901f\u4e86\u89e3',
+        addonTitle: '\u9644\u52a0\u670d\u52a1',
+      }
+    : {
+        badgePrimary: 'Ride Deals',
+        badgeSecondary: 'Fresh Rides, Fresh Start',
+        installmentPrefix: '4 interest-free installments from',
+        installmentSuffix: 'with flexible payment options',
+        quickKnow: 'Quick Know',
+        addonTitle: 'Spring Sale Add-ons',
+      },
 )
 
 const galleryImages = computed(() => {
-  const selectedImages = Array.isArray(selectedSku.value?.images) ? selectedSku.value.images : []
-  if (selectedImages.length) return selectedImages
-  const productImages = Array.isArray(product.value?.images) ? product.value.images : []
-  if (productImages.length) return productImages
-  return [product.value?.pic].filter(Boolean)
+  return mergeProductImages(
+    selectedSku.value?.images,
+    selectedSku.value?.pic,
+    product.value?.images,
+    product.value?.pic,
+  )
+})
+const activeImageIndex = computed(() => {
+  const index = galleryImages.value.indexOf(activeImage.value)
+  return index >= 0 ? index : 0
 })
 
 const resolvedSpecs = computed(() =>
@@ -333,12 +363,15 @@ const formatAttributeKey = (value: string) => ({ color: 'Color', bundle: 'Bundle
 const optionThumbnail = (attributeKey: string, option: string) => {
   const skuList = Array.isArray(product.value?.skuList) ? product.value.skuList : []
   const matched = skuList.find((sku: any) => sku.attributes?.[attributeKey] === option)
-  return matched?.images?.[0] || matched?.pic || product.value?.pic
+  return (
+    mergeProductImages(matched?.images, matched?.pic, product.value?.images, product.value?.pic)[0] ||
+    product.value?.pic
+  )
 }
 
 const cycleImage = (step: number) => {
   if (!galleryImages.value.length) return
-  const currentIndex = galleryImages.value.indexOf(activeImage.value)
+  const currentIndex = activeImageIndex.value
   const nextIndex = (currentIndex + step + galleryImages.value.length) % galleryImages.value.length
   activeImage.value = galleryImages.value[nextIndex]
 }
@@ -378,6 +411,10 @@ onMounted(async () => {
 .main-image-container { position: relative; border-radius: 20px; background: #fff; border: 1px solid #f0f0f0; overflow: hidden; aspect-ratio: 1/1; }
 .main-image { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
 .main-image:hover { transform: scale(1.05); }
+.gallery-controls { position: absolute; right: 16px; bottom: 16px; z-index: 3; display: inline-flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 999px; background: rgba(17, 24, 39, .72); color: #fff; backdrop-filter: blur(10px); }
+.gallery-nav { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .08); display: flex; align-items: center; justify-content: center; color: inherit; }
+.gallery-nav-icon { width: 18px; height: 18px; }
+.gallery-count { min-width: 56px; text-align: center; font-size: 12px; font-weight: 700; }
 .tags-left { position: absolute; top: 0; left: 0; z-index: 2; }
 .tag-label { display: inline-block; color: #fff; font-size: 12px; padding: 6px 12px; font-weight: 700; border-radius: 0 0 12px 0; }
 .tag-label.new { background: #e62332; }
