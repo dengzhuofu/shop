@@ -151,6 +151,24 @@ jobs:
           cd "$PROJECT_DIR"
           if docker compose version >/dev/null 2>&1; then
             docker compose -f compose.prod.yml ps
+            curl -fsS --max-time 20 http://127.0.0.1/ >/dev/null
+            curl -fsS --max-time 20 http://127.0.0.1/api/category/tree >/dev/null
           else
             docker-compose -f compose.prod.yml ps
+            curl -fsS --max-time 20 http://127.0.0.1/ >/dev/null
+            curl -fsS --max-time 20 http://127.0.0.1/api/category/tree >/dev/null
+          fi
+
+      - name: Dump container diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          PROJECT_DIR="${PROD_PROJECT_DIR:-/opt/shop}"
+          cd "$PROJECT_DIR"
+          if docker compose version >/dev/null 2>&1; then
+            docker compose -f compose.prod.yml ps || true
+            docker compose -f compose.prod.yml logs --tail=200 nginx frontend backend db || true
+          else
+            docker-compose -f compose.prod.yml ps || true
+            docker-compose -f compose.prod.yml logs --tail=200 nginx frontend backend db || true
           fi
