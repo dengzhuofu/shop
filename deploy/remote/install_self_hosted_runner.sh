@@ -10,7 +10,7 @@ REPO_URL="${1:?GitHub repository URL is required, e.g. https://github.com/dengzh
 RUNNER_TOKEN="${2:?Runner registration token is required}"
 RUNNER_USER="${RUNNER_USER:-deploy}"
 RUNNER_HOME="${RUNNER_HOME:-/opt/actions-runner}"
-RUNNER_VERSION="${RUNNER_VERSION:-2.330.0}"
+RUNNER_VERSION="${RUNNER_VERSION:-2.333.1}"
 RUNNER_ARCHIVE="actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz"
 RUNNER_DOWNLOAD_URL="https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/${RUNNER_ARCHIVE}"
 RUNNER_NAME="${RUNNER_NAME:-$(hostname)-shop-prod}"
@@ -18,7 +18,7 @@ RUNNER_LABELS="${RUNNER_LABELS:-shop-prod}"
 
 install_packages() {
   apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get install -y curl tar gzip jq ca-certificates
+  DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget tar gzip jq ca-certificates
 }
 
 ensure_user() {
@@ -30,6 +30,16 @@ ensure_user() {
   fi
 }
 
+download_runner_archive() {
+  local destination="$1"
+
+  if command -v wget >/dev/null 2>&1; then
+    wget -c --tries=20 --timeout=30 --waitretry=5 -O "$destination" "$RUNNER_DOWNLOAD_URL" && return 0
+  fi
+
+  curl --http1.1 --retry 20 --retry-delay 5 --retry-all-errors -fL "$RUNNER_DOWNLOAD_URL" -o "$destination"
+}
+
 install_packages
 ensure_user
 
@@ -38,7 +48,8 @@ chown -R "$RUNNER_USER:$RUNNER_USER" "$RUNNER_HOME"
 
 if [ ! -f "$RUNNER_HOME/config.sh" ]; then
   tmp_archive="/tmp/${RUNNER_ARCHIVE}"
-  curl -fL "$RUNNER_DOWNLOAD_URL" -o "$tmp_archive"
+  rm -f "$tmp_archive"
+  download_runner_archive "$tmp_archive"
   tar -xzf "$tmp_archive" -C "$RUNNER_HOME"
   rm -f "$tmp_archive"
   chown -R "$RUNNER_USER:$RUNNER_USER" "$RUNNER_HOME"
