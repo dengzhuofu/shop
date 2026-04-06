@@ -4,11 +4,13 @@
 
 Push to `main` and let GitHub Actions:
 
-1. build frontend and backend images
+1. build frontend and backend images on GitHub-hosted runners
 2. push them to GHCR
-3. SSH into the server
-4. pull immutable image digests
+3. hand off deployment to a self-hosted runner running on the production server
+4. pull immutable image digests locally on the server
 5. update the running stack with Docker Compose
+
+This avoids the unstable `ssh/scp` hop from GitHub-hosted runners to the server.
 
 The workflow file is `.github/workflows/deploy-production.yml`.
 
@@ -16,77 +18,65 @@ The workflow file is `.github/workflows/deploy-production.yml`.
 
 - CI builds images in GitHub, not on the server
 - server deploys immutable image digests, not mutable tags
+- deployment runs on a self-hosted runner on the production server
 - database data stays in the persistent Docker volume `pg_data`
-- runtime server only needs Docker, Compose, Nginx config, schema init file, and `.env`
 
 ## Required GitHub Secrets
 
 Create these repository secrets in GitHub:
 
-- `PROD_SERVER_HOST`
-  Example: `101.200.239.103`
-- `PROD_SERVER_PORT`
-  Example: `22`
-- `PROD_SERVER_USER`
-  Example: `deploy`
 - `PROD_PROJECT_DIR`
   Example: `/opt/shop`
-- `PROD_SSH_PRIVATE_KEY`
-  Private key used by GitHub Actions to SSH into the server
 - `PROD_GHCR_USERNAME`
-  GitHub username or machine user that can read GHCR packages
+  Example: `dengzhuofu`
 - `PROD_GHCR_READ_TOKEN`
   Token with at least `read:packages`
 
+The old SSH secrets are no longer used by the workflow.
+
 ## One-Time Server Setup
 
-Add the matching SSH public key to the server user:
+### 1. Install the self-hosted runner on the server
+
+Get a one-time runner registration token from GitHub:
+
+1. Open repository `Settings`
+2. Open `Actions`
+3. Open `Runners`
+4. Click `New self-hosted runner`
+5. Copy the registration token
+
+Then run on the server:
 
 ```bash
-mkdir -p /home/deploy/.ssh
-chmod 700 /home/deploy/.ssh
-cat >> /home/deploy/.ssh/authorized_keys <<'EOF'
-<your-github-actions-public-key>
-EOF
-chmod 600 /home/deploy/.ssh/authorized_keys
-chown -R deploy:deploy /home/deploy/.ssh
+cd /opt/shop
+chmod +x deploy/remote/install_self_hosted_runner.sh
+sudo bash deploy/remote/install_self_hosted_runner.sh \
+  "https://github.com/dengzhuofu/shop" \
+  "<runner-registration-token>"
 ```
 
-The first successful workflow run will upload the deploy bundle and bootstrap Docker automatically.
+The script installs a runner with label `shop-prod`.
 
-You can also use the helper script in this repo to write all GitHub repository secrets in one shot:
+### 2. Make sure the runner user can deploy
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\deploy\remote\set-github-secrets.ps1 `
-  -Repo "dengzhuofu/shop" `
-  -ServerHost "101.200.239.103" `
-  -ServerPort "22" `
-  -ServerUser "deploy" `
-  -ProjectDir "/opt/shop" `
-  -SshPrivateKeyPath "C:\path\to\github_actions_key" `
-  -GhcrUsername "<your-github-username>" `
-  -GhcrReadToken "<your-ghcr-read-token>"
-```
+The install script defaults to user `deploy`, which should:
 
-## GHCR Notes
-
-The workflow pushes images to:
-
-- `ghcr.io/<owner>/<repo>-backend`
-- `ghcr.io/<owner>/<repo>-frontend`
-
-Best practice is to keep package read access scoped to a dedicated token instead of using a broad personal token.
+- exist on the server
+- belong to the `docker` group
+- have write access to `/opt/shop`
 
 ## What Happens On Each Push
 
-1. GitHub Actions builds and pushes both images.
-2. The workflow uploads a small deploy bundle to the server.
-3. The server updates `.env` with:
+1. GitHub-hosted runner builds and pushes both images to GHCR.
+2. GitHub uploads a small deploy bundle as a workflow artifact.
+3. The self-hosted runner on the server downloads that artifact.
+4. The server updates `.env` with:
    - `BACKEND_IMAGE`
    - `FRONTEND_IMAGE`
    - `DEPLOY_SHA`
-4. The server runs `docker-compose -f compose.prod.yml pull`.
-5. The server runs `docker-compose -f compose.prod.yml up -d --remove-orphans`.
+5. The server runs `deploy_registry.sh`.
+6. `deploy_registry.sh` pulls images and runs `docker compose -f compose.prod.yml up -d`.
 
 ## Rollback
 
@@ -102,7 +92,7 @@ After a deployment:
 
 ```bash
 cd /opt/shop
-docker-compose -f compose.prod.yml ps
+docker compose -f compose.prod.yml ps
 curl -I http://127.0.0.1
 curl http://127.0.0.1/api/category/tree
 ```
