@@ -129,7 +129,10 @@ if [ "$DEPLOY_MODE" = "images" ]; then
     $COMPOSE_CMD -f compose.prod.yml up -d db backend frontend nginx
   else
     $COMPOSE_CMD -f compose.prod.yml pull
-    $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans
+    $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans db backend frontend
+    # Recreate nginx after upstream containers may have changed IPs, so it re-resolves
+    # Docker service names instead of proxying to stale container addresses.
+    $COMPOSE_CMD -f compose.prod.yml up -d --force-recreate nginx
   fi
   exit 0
 fi
