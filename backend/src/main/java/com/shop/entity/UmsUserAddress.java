@@ -24,6 +24,8 @@ public class UmsUserAddress {
   private String state;
   private String zipCode;
   private Boolean isDefault;
+  // private LocalDateTime createTime;
   private LocalDateTime createTime;
+
   private LocalDateTime updateTime;
 }
