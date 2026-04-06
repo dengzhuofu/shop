@@ -88,42 +88,16 @@ jobs:
       - name: Prepare SSH key
         shell: bash
         env:
-          PROD_SERVER_HOST: ${{ secrets.PROD_SERVER_HOST }}
-          PROD_SERVER_PORT: ${{ secrets.PROD_SERVER_PORT }}
           PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           install -m 700 -d ~/.ssh
-          : "${PROD_SERVER_HOST:?PROD_SERVER_HOST is required}"
-          : "${PROD_SERVER_PORT:?PROD_SERVER_PORT is required}"
           : "${PROD_SSH_PRIVATE_KEY:?PROD_SSH_PRIVATE_KEY is required}"
 
           printf '%s\n' "$PROD_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
-
-          for attempt in 1 2 3; do
-            if timeout 10 bash -c "</dev/tcp/${PROD_SERVER_HOST}/${PROD_SERVER_PORT}" 2>/dev/null; then
-              break
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "Server ${PROD_SERVER_HOST}:${PROD_SERVER_PORT} is unreachable from GitHub Actions." >&2
-              exit 1
-            fi
-            sleep 5
-          done
-
-          : > ~/.ssh/known_hosts
-          for attempt in 1 2 3; do
-            if ssh-keyscan -T 15 -p "$PROD_SERVER_PORT" -H "$PROD_SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
-              break
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "Unable to fetch SSH host key from ${PROD_SERVER_HOST}:${PROD_SERVER_PORT}." >&2
-              exit 1
-            fi
-            sleep 5
-          done
+          install -m 600 deploy/remote/known_hosts.production ~/.ssh/known_hosts
 
       - name: Build deploy bundle
         shell: bash
@@ -142,7 +116,7 @@ jobs:
           PROD_SERVER_PORT: ${{ secrets.PROD_SERVER_PORT }}
           PROD_SERVER_USER: ${{ secrets.PROD_SERVER_USER }}
         run: |
-          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -P "$PROD_SERVER_PORT" "${{ steps.vars.outputs.deploy_bundle }}" \
+          scp -o ConnectTimeout=30 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -P "$PROD_SERVER_PORT" "${{ steps.vars.outputs.deploy_bundle }}" \
             "${PROD_SERVER_USER}@${PROD_SERVER_HOST}:/tmp/${{ steps.vars.outputs.deploy_bundle }}"
 
       - name: Deploy on server
@@ -157,11 +131,11 @@ jobs:
           PROD_SERVER_USER: ${{ secrets.PROD_SERVER_USER }}
           PROD_PROJECT_DIR: ${{ secrets.PROD_PROJECT_DIR }}
         run: |
-          ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+          ssh -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
             "mkdir -p '$PROD_PROJECT_DIR' && tar -xzf '/tmp/${{ steps.vars.outputs.deploy_bundle }}' -C '$PROD_PROJECT_DIR' && rm -f '/tmp/${{ steps.vars.outputs.deploy_bundle }}'"
-          ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+          ssh -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
             "cd '$PROD_PROJECT_DIR' && chmod +x deploy/remote/bootstrap-server.sh deploy/remote/deploy_registry.sh"
-          ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+          ssh -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
             "export GHCR_USERNAME='$GHCR_USERNAME' GHCR_TOKEN='$GHCR_TOKEN'; \
             bash '$PROD_PROJECT_DIR/deploy/remote/deploy_registry.sh' '$PROD_PROJECT_DIR' '$BACKEND_IMAGE' '$FRONTEND_IMAGE' '${{ github.sha }}'"
 
@@ -173,5 +147,5 @@ jobs:
           PROD_SERVER_USER: ${{ secrets.PROD_SERVER_USER }}
           PROD_PROJECT_DIR: ${{ secrets.PROD_PROJECT_DIR }}
         run: |
-          ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
+          ssh -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PROD_SERVER_PORT" "$PROD_SERVER_USER@$PROD_SERVER_HOST" \
             "cd '$PROD_PROJECT_DIR' && if docker compose version >/dev/null 2>&1; then docker compose -f compose.prod.yml ps; else docker-compose -f compose.prod.yml ps; fi"
