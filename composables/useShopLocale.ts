@@ -128,7 +128,7 @@ const messages = {
     brandTagline: '骑得更远，也更聪明。',
     homeHeroTitle: '用真实续航穿行城市。',
     homeHeroDesc:
-      '我们正在把 isinwheel 商城重构为真实商品、购物车、订单、优惠券和支付占位链路。',
+      '我们正在将 isinwheel 商城完善为包含真实商品、购物车、订单、优惠券和支付占位流程的完整体验。',
     shopNow: '立即选购',
     exploreCatalog: '浏览商品',
     featuredProducts: '精选商品',
@@ -174,22 +174,22 @@ const messages = {
     coupon: '优惠券',
     claim: '领取',
     claimed: '已领取',
-    applyCoupon: '在预览中应用优惠券',
+    applyCoupon: '在预览中使用优惠券',
     previewOrder: '预览订单',
     createOrder: '创建订单',
-    paymentStep: '支付占位层',
+    paymentStep: '支付占位流程',
     completeMockPayment: '完成模拟支付',
     orderPreview: '订单预览',
     paymentMethod: '支付方式',
     paymentPending: '待支付',
-    paymentReady: '支付意图已创建',
+    paymentReady: '支付意图已就绪',
     orderCreated: '订单已创建',
     addressTitle: '收货地址',
     saveAddress: '保存地址',
     defaultAddress: '默认地址',
     noAddress: '还没有保存地址，你也可以直接填写下方表单。',
     city: '城市',
-    state: '州',
+    state: '州/省',
     zipCode: '邮编',
     country: '国家',
     phone: '电话',
@@ -240,8 +240,9 @@ const messages = {
     whatsInTheBox: '包装清单',
     faq: '常见问题',
     previewRequired: '创建订单前必须先完成预览。',
-    orderSuccess: '订单与支付占位流程已成功完成。',
-    footerNote: '第一阶段优先打通真实数据、双语目录、购物车、结算、优惠券和支付意图占位。',
+    orderSuccess: '订单与模拟支付流程已成功完成。',
+    footerNote:
+      '当前阶段优先打通真实数据、双语目录、购物车、结算、优惠券和支付占位流程。',
     refreshData: '刷新数据',
   },
 } as const
@@ -271,7 +272,8 @@ export function useShopLocale() {
     langCookie.value = value
   }
 
-  const t = (key: keyof typeof messages.en) => messages[lang.value][key] || messages.en[key]
+  const t = (key: keyof typeof messages.en) =>
+    messages[lang.value][key] || messages.en[key]
 
   return {
     lang,

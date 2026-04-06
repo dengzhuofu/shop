@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @RestController
@@ -34,6 +35,17 @@ public class AddressController {
   @PostMapping
   public Result<AddressVO> create(@RequestBody AddressCreateDTO dto) {
     Long userId = StpUtil.getLoginIdAsLong();
+    UmsUserAddress duplicate = findDuplicate(userId, dto);
+    if (duplicate != null) {
+      if (Boolean.TRUE.equals(dto.getIsDefault()) && !Boolean.TRUE.equals(duplicate.getIsDefault())) {
+        clearDefault(userId);
+        duplicate.setIsDefault(true);
+        duplicate.setUpdateTime(LocalDateTime.now());
+        userAddressService.updateById(duplicate);
+      }
+      return Result.success(AddressVO.from(duplicate));
+    }
+
     UmsUserAddress address = new UmsUserAddress();
     BeanUtils.copyProperties(dto, address);
     address.setUserId(userId);
@@ -98,5 +110,47 @@ public class AddressController {
         userAddressService.updateById(item);
       }
     }
+  }
+
+  private UmsUserAddress findDuplicate(Long userId, AddressCreateDTO dto) {
+    String targetSignature = buildAddressSignature(dto);
+    if (targetSignature.isBlank()) {
+      return null;
+    }
+
+    return userAddressService.list(new QueryWrapper<UmsUserAddress>().eq("user_id", userId)).stream()
+        .filter(item -> buildAddressSignature(item).equals(targetSignature))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private String buildAddressSignature(AddressCreateDTO dto) {
+    return String.join("|",
+        normalize(dto.getCountry()),
+        normalize(dto.getFirstName()),
+        normalize(dto.getLastName()),
+        normalize(dto.getPhone()),
+        normalize(dto.getAddressLine1()),
+        normalize(dto.getAddressLine2()),
+        normalize(dto.getCity()),
+        normalize(dto.getState()),
+        normalize(dto.getZipCode()));
+  }
+
+  private String buildAddressSignature(UmsUserAddress address) {
+    return String.join("|",
+        normalize(address.getCountry()),
+        normalize(address.getFirstName()),
+        normalize(address.getLastName()),
+        normalize(address.getPhone()),
+        normalize(address.getAddressLine1()),
+        normalize(address.getAddressLine2()),
+        normalize(address.getCity()),
+        normalize(address.getState()),
+        normalize(address.getZipCode()));
+  }
+
+  private String normalize(String value) {
+    return value == null ? "" : value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
   }
 }

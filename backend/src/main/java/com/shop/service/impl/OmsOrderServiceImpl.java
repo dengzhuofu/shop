@@ -338,6 +338,7 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     if (resolvedSnapshot == null) {
       throw new RuntimeException("Address is required");
     }
+    validateAddressSnapshot(resolvedSnapshot);
 
     order.setReceiverCountry(resolvedSnapshot.getCountry());
     order.setReceiverFirstName(resolvedSnapshot.getFirstName());
@@ -355,6 +356,18 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
         nullToEmpty(resolvedSnapshot.getCity()),
         nullToEmpty(resolvedSnapshot.getState()),
         nullToEmpty(resolvedSnapshot.getZipCode())));
+  }
+
+  private void validateAddressSnapshot(OrderCreateDTO.AddressSnapshot addressSnapshot) {
+    if (isBlank(addressSnapshot.getCountry())
+        || isBlank(addressSnapshot.getFirstName())
+        || isBlank(addressSnapshot.getLastName())
+        || isBlank(addressSnapshot.getAddressLine1())
+        || isBlank(addressSnapshot.getCity())
+        || isBlank(addressSnapshot.getState())
+        || isBlank(addressSnapshot.getZipCode())) {
+      throw new RuntimeException("Incomplete shipping address");
+    }
   }
 
   private OrderVO toOrderVO(OmsOrder order) {
@@ -445,6 +458,10 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
 
   private String nullToEmpty(String value) {
     return value == null ? "" : value;
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 
   @Data

@@ -36,9 +36,27 @@ export function useShopFormat() {
     }
   }
 
+  const dateTime = (value: string | null | undefined) => {
+    if (!value) {
+      return '--'
+    }
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      return value
+    }
+    return new Intl.DateTimeFormat(lang.value === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsed)
+  }
+
   return {
     money,
     attributeText,
     statusText,
+    dateTime,
   }
 }

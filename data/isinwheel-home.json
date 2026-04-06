@@ -1,5 +1,9 @@
 {
   "source": "https://www.isinwheel.com/",
+  "siteMeta": {
+    "title": "isinwheel Electric Scooter & Bike – iSinwheel Official Store",
+    "description": "isinwheel electric scooter and e bike every terrain from urban avenues to rugged trails, e scooter and electric bike delivering an electrifying journey wherever you roam."
+  },
   "heroSlides": [
     {
       "index": 0,
@@ -50,6 +54,12 @@
   "featureVideo": {
     "poster": "https://www.isinwheel.com/cdn/shop/files/ytbtu_maxresdefault-1744783793.jpg?v=1744783807&width=1280",
     "embedUrl": "https://www.youtube.com/embed/MpI2CyE9zm8?playsinline=1&controls=1&autoplay=1&mute=1&loop=1&playlist=MpI2CyE9zm8&enablejsapi=1&rel=0&modestbranding=1&origin=https%3A%2F%2Fwww.isinwheel.com"
+  },
+  "reviewSummary": {
+    "title": "What The People Say About Isinwheel",
+    "rating": "4.85",
+    "reviewCount": "5880",
+    "countText": "from 5880 reviews"
   },
   "customerReviews": [
     {
@@ -114,5 +124,32 @@
       "date": "Mar 26, 2026",
       "comments": "0 comments"
     }
-  ]
+  ],
+  "socialLinks": [
+    {
+      "platform": "Facebook",
+      "title": "iSinwheel Official Store on Facebook",
+      "url": "https://www.facebook.com/isinwheel.fans?ref=rfrliuqg"
+    },
+    {
+      "platform": "Instagram",
+      "title": "iSinwheel Official Store on Instagram",
+      "url": "https://www.instagram.com/isinwheel_global/"
+    },
+    {
+      "platform": "YouTube",
+      "title": "iSinwheel Official Store on YouTube",
+      "url": "https://www.youtube.com/channel/UCSB6-vcjy-AfL3F3fcfCV8A?ref=rfrliuqg"
+    },
+    {
+      "platform": "TikTok",
+      "title": "iSinwheel Official Store on TikTok",
+      "url": "https://www.tiktok.com/@isinwheelglobal"
+    }
+  ],
+  "supportContact": {
+    "hours": "Mon-Fri: 10AM-6PM(PDT)",
+    "phone": "+1(888)293-5788",
+    "email": "support@isinwheel.com"
+  }
 }

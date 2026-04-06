@@ -9,7 +9,7 @@
               <h2>{{ session.user.value?.email || '--' }}</h2>
             </div>
             <button type="button" class="ghost-btn" @click="toggleLang">
-              {{ lang.value === 'zh' ? 'EN' : '中文' }}
+              {{ lang.value === 'zh' ? 'EN' : 'ZH' }}
             </button>
           </div>
         </section>
@@ -20,22 +20,35 @@
               <p class="step-label">{{ t('addressTitle') }}</p>
               <h2>{{ checkoutCopy.shippingAddress }}</h2>
             </div>
-            <button type="button" class="ghost-btn" @click="saveAddressFromForm">{{ t('saveAddress') }}</button>
+            <button type="button" class="ghost-btn" @click="saveAddressFromForm">
+              {{ t('saveAddress') }}
+            </button>
           </div>
 
-          <div v-if="addresses.length" class="saved-addresses">
-            <label v-for="item in addresses" :key="item.id" class="saved-address">
-              <input v-model="selectedAddressId" :value="item.id" type="radio" />
-              <span>
-                <strong>{{ item.firstName }} {{ item.lastName }}</strong>
+          <div class="saved-addresses">
+            <label
+              v-for="item in addresses"
+              :key="item.id"
+              class="saved-address"
+              :class="{ 'is-selected': selectedAddressId === String(item.id) }"
+            >
+              <input v-model="selectedAddressId" :value="String(item.id)" type="radio" />
+              <span class="saved-address__body">
+                <span class="saved-address__header">
+                  <strong>{{ item.firstName }} {{ item.lastName }}</strong>
+                  <em v-if="item.isDefault">{{ checkoutCopy.defaultAddress }}</em>
+                </span>
                 <small>{{ item.addressLine1 }}, {{ item.city }}, {{ item.state }} {{ item.zipCode }}</small>
               </span>
             </label>
-            <label class="saved-address">
+
+            <label class="saved-address" :class="{ 'is-selected': selectedAddressId === 'manual' }">
               <input v-model="selectedAddressId" value="manual" type="radio" />
-              <span>
-                <strong>{{ t('useManualAddress') }}</strong>
-                <small>{{ t('noAddress') }}</small>
+              <span class="saved-address__body">
+                <span class="saved-address__header">
+                  <strong>{{ checkoutCopy.manualAddress }}</strong>
+                </span>
+                <small>{{ addresses.length ? checkoutCopy.manualAddressHint : t('noAddress') }}</small>
               </span>
             </label>
           </div>
@@ -43,50 +56,54 @@
           <form class="address-form" @submit.prevent>
             <div class="form-group">
               <label>{{ t('country') }}</label>
-              <input v-model="addressForm.country" type="text" />
+              <input v-model="addressForm.country" type="text" autocomplete="country-name" />
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label>{{ t('firstName') }}</label>
-                <input v-model="addressForm.firstName" type="text" />
+                <input v-model="addressForm.firstName" type="text" autocomplete="given-name" />
               </div>
               <div class="form-group">
                 <label>{{ t('lastName') }}</label>
-                <input v-model="addressForm.lastName" type="text" />
+                <input v-model="addressForm.lastName" type="text" autocomplete="family-name" />
               </div>
             </div>
 
             <div class="form-group">
               <label>{{ t('addressLine1') }}</label>
-              <input v-model="addressForm.addressLine1" type="text" />
+              <input v-model="addressForm.addressLine1" type="text" autocomplete="address-line1" />
             </div>
 
             <div class="form-group">
               <label>{{ t('addressLine2') }}</label>
-              <input v-model="addressForm.addressLine2" type="text" />
+              <input v-model="addressForm.addressLine2" type="text" autocomplete="address-line2" />
             </div>
 
             <div class="form-row three-cols">
               <div class="form-group">
                 <label>{{ t('city') }}</label>
-                <input v-model="addressForm.city" type="text" />
+                <input v-model="addressForm.city" type="text" autocomplete="address-level2" />
               </div>
               <div class="form-group">
                 <label>{{ t('state') }}</label>
-                <input v-model="addressForm.state" type="text" />
+                <input v-model="addressForm.state" type="text" autocomplete="address-level1" />
               </div>
               <div class="form-group">
                 <label>{{ t('zipCode') }}</label>
-                <input v-model="addressForm.zipCode" type="text" />
+                <input v-model="addressForm.zipCode" type="text" autocomplete="postal-code" />
               </div>
             </div>
 
             <div class="form-group">
               <label>{{ t('phone') }}</label>
-              <input v-model="addressForm.phone" type="tel" />
+              <input v-model="addressForm.phone" type="tel" autocomplete="tel" />
             </div>
           </form>
+
+          <p class="address-help" :class="{ ready: canPreviewAddress }">
+            {{ canPreviewAddress ? checkoutCopy.addressReady : checkoutCopy.addressIncomplete }}
+          </p>
         </section>
 
         <section class="checkout-section">
@@ -96,7 +113,7 @@
               <h2>{{ checkoutCopy.shippingMethod }}</h2>
             </div>
           </div>
-          <div class="info-box">UPS Ground/FedEx Home Delivery(2-5 Business Days)</div>
+          <div class="info-box">{{ shippingMethod }}</div>
         </section>
 
         <section class="checkout-section">
@@ -216,7 +233,7 @@
                 class="claim-btn"
                 @click="claimCoupon(coupon.couponId)"
               >
-                {{ coupon.code }} · {{ t('claim') }}
+                {{ coupon.code }} - {{ t('claim') }}
               </button>
             </div>
           </div>
@@ -252,7 +269,7 @@
 
           <div v-if="paymentIntent" class="payment-state">
             <strong>{{ t('paymentStep') }}</strong>
-            <p>{{ paymentIntent.methodCode }} · {{ t('paymentReady') }}</p>
+            <p>{{ paymentIntent.methodCode }} - {{ t('paymentReady') }}</p>
           </div>
         </div>
       </aside>
@@ -262,10 +279,19 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import {
+  addressesMatch,
+  createEmptyAddressDraft,
+  getAddressSignature,
+  isAddressDraftComplete,
+  toAddressDraft,
+} from '~/utils/addressBook'
 
 definePageMeta({
-  layout: 'account',
+  layout: 'checkout',
 })
+
+const shippingMethod = 'UPS Ground/FedEx Home Delivery(2-5 Business Days)'
 
 const { lang, setLang, t } = useShopLocale()
 const { money, attributeText } = useShopFormat()
@@ -275,7 +301,7 @@ const session = useShopSession()
 const addresses = ref<any[]>([])
 const availableCoupons = ref<any[]>([])
 const claimableCoupons = ref<any[]>([])
-const selectedAddressId = ref<number | 'manual' | null>(null)
+const selectedAddressId = ref<string>('manual')
 const selectedCouponUserId = ref<number | null>(null)
 const preview = ref<Record<string, any>>({})
 const paymentIntent = ref<Record<string, any> | null>(null)
@@ -288,22 +314,30 @@ const completingPayment = ref(false)
 const checkoutCopy = computed(() =>
   lang.value === 'zh'
     ? {
-        contact: '联系邮箱',
-        shippingAddress: '配送地址',
+        contact: '联系方式',
+        shippingAddress: '收货地址',
         shippingMethod: '配送方式',
         paymentTitle: '支付',
-        secure: '支付层已保留，当前为模拟支付流程。',
-        cardNumber: '银行卡号',
+        secure: '当前保留支付层，先以模拟流程完成联调与验收。',
+        cardNumber: '卡号',
         expiry: '有效期',
         cvc: '安全码',
         nameOnCard: '持卡人姓名',
-        pointsTitle: '完成支付后将获得积分',
-        pointsSubtitle: '积分能力后续可接入会员体系。',
+        pointsTitle: '完成本次下单后可获得积分',
+        pointsSubtitle: '积分逻辑后续会与会员系统打通。',
         noCoupon: '暂不使用优惠券',
         previewReady: '订单预览已生成',
-        payNow: '支付并创建订单',
-        processing: '处理中...',
+        payNow: '立即支付',
+        processing: '支付处理中...',
         completing: '完成中...',
+        defaultAddress: '默认',
+        manualAddress: '使用手动填写地址',
+        manualAddressHint: '选择此项后，可直接编辑下方表单且不会重复保存相同地址。',
+        addressReady: '当前地址信息完整，可以继续预览与结算。',
+        addressIncomplete: '请补全国家、姓名、地址 1、城市、州/省和邮编后继续。',
+        addressSaved: '地址已保存。',
+        addressAlreadySaved: '该地址已存在，已自动为你选中。',
+        addressRequired: '请先完善收货地址。',
       }
     : {
         contact: 'Contact',
@@ -322,65 +356,53 @@ const checkoutCopy = computed(() =>
         payNow: 'Pay now',
         processing: 'Processing...',
         completing: 'Completing...',
+        defaultAddress: 'Default',
+        manualAddress: 'Use manual address',
+        manualAddressHint: 'Select this to edit the form below without creating a duplicate saved address.',
+        addressReady: 'This address is ready for preview and checkout.',
+        addressIncomplete: 'Fill in country, name, address line 1, city, state, and ZIP code to continue.',
+        addressSaved: 'Address saved.',
+        addressAlreadySaved: 'This address is already saved.',
+        addressRequired: 'Complete the shipping address before continuing.',
       },
 )
 
-const addressForm = reactive({
-  country: 'United States',
-  firstName: '',
-  lastName: '',
-  phone: '',
-  addressLine1: '',
-  addressLine2: '',
-  city: '',
-  state: '',
-  zipCode: '',
-})
+const addressForm = reactive(createEmptyAddressDraft())
 
 const cartSignature = computed(() =>
   cart.items.value.map((item) => `${item.cartItemId}:${item.quantity}:${(item.addons || []).join('|')}`).join(';'),
 )
-
-const isPayDisabled = computed(() => !preview.value.previewToken || !cart.items.value.length)
+const selectedSavedAddress = computed(
+  () => addresses.value.find((item) => String(item.id) === selectedAddressId.value) || null,
+)
+const canPreviewAddress = computed(
+  () => Boolean(selectedSavedAddress.value) || isAddressDraftComplete(addressForm),
+)
+const isPayDisabled = computed(
+  () => !preview.value.previewToken || !cart.items.value.length || !canPreviewAddress.value,
+)
 
 const applyAddress = (address: any) => {
-  if (!address) return
-  addressForm.country = address.country || 'United States'
-  addressForm.firstName = address.firstName || ''
-  addressForm.lastName = address.lastName || ''
-  addressForm.phone = address.phone || ''
-  addressForm.addressLine1 = address.addressLine1 || ''
-  addressForm.addressLine2 = address.addressLine2 || ''
-  addressForm.city = address.city || ''
-  addressForm.state = address.state || ''
-  addressForm.zipCode = address.zipCode || ''
+  Object.assign(addressForm, toAddressDraft(address))
 }
-
-watch(selectedAddressId, (value) => {
-  if (value === 'manual') {
-    return
-  }
-  const matched = addresses.value.find((item) => item.id === value)
-  if (matched) {
-    applyAddress(matched)
-  }
-})
-
-watch([selectedAddressId, selectedCouponUserId, cartSignature], async () => {
-  if (!bootstrapped.value) {
-    return
-  }
-  paymentIntent.value = null
-  await previewOrder()
-})
 
 const fetchAddresses = async () => {
   const res = await useHttp('/api/address/list')
   addresses.value = res?.code === 200 ? res.data || [] : []
-  if (addresses.value.length && !selectedAddressId.value) {
-    selectedAddressId.value = addresses.value[0].id
-    applyAddress(addresses.value[0])
+
+  const currentExists = addresses.value.some((item) => String(item.id) === selectedAddressId.value)
+  if (currentExists && selectedSavedAddress.value) {
+    applyAddress(selectedSavedAddress.value)
+    return
   }
+
+  if (addresses.value.length) {
+    selectedAddressId.value = String(addresses.value[0].id)
+    applyAddress(addresses.value[0])
+    return
+  }
+
+  selectedAddressId.value = 'manual'
 }
 
 const refreshCoupons = async () => {
@@ -395,31 +417,48 @@ const claimCoupon = async (couponId: number) => {
   await refreshCoupons()
 }
 
+const findExistingAddress = () => addresses.value.find((item) => addressesMatch(item, addressForm)) || null
+
 const saveAddressFromForm = async () => {
+  if (!isAddressDraftComplete(addressForm)) {
+    message.value = checkoutCopy.value.addressRequired
+    return
+  }
+
+  const existing = findExistingAddress()
+  if (existing) {
+    selectedAddressId.value = String(existing.id)
+    applyAddress(existing)
+    message.value = checkoutCopy.value.addressAlreadySaved
+    return
+  }
+
   const res = await useHttp('/api/address', {
     method: 'POST',
     body: {
-      ...addressForm,
+      ...toAddressDraft(addressForm),
       isDefault: !addresses.value.length,
     },
   })
+
   if (res?.code === 200) {
     await fetchAddresses()
-    selectedAddressId.value = res.data.id
-    message.value = t('saveAddress')
+    selectedAddressId.value = String(res.data.id)
+    message.value = checkoutCopy.value.addressSaved
   }
 }
 
 const buildPreviewPayload = () => ({
   source: 'cart',
   cartItemIds: cart.items.value.map((item) => item.cartItemId),
-  addressId: typeof selectedAddressId.value === 'number' ? selectedAddressId.value : undefined,
-  shippingMethod: 'UPS Ground/FedEx Home Delivery(2-5 Business Days)',
+  addressId: selectedSavedAddress.value?.id,
+  shippingMethod,
   couponUserId: selectedCouponUserId.value || undefined,
 })
 
 const previewOrder = async () => {
-  if (previewing.value || !cart.items.value.length || typeof selectedAddressId.value !== 'number') {
+  if (previewing.value || !cart.items.value.length || !canPreviewAddress.value) {
+    preview.value = {}
     return
   }
 
@@ -429,6 +468,7 @@ const previewOrder = async () => {
       method: 'POST',
       body: buildPreviewPayload(),
     })
+
     if (res?.code === 200) {
       preview.value = res.data
       message.value = t('paymentPending')
@@ -439,6 +479,11 @@ const previewOrder = async () => {
 }
 
 const startPayment = async () => {
+  if (!canPreviewAddress.value) {
+    message.value = checkoutCopy.value.addressRequired
+    return
+  }
+
   if (!preview.value.previewToken) {
     await previewOrder()
   }
@@ -454,7 +499,7 @@ const startPayment = async () => {
       body: {
         ...buildPreviewPayload(),
         previewToken: preview.value.previewToken,
-        addressSnapshot: typeof selectedAddressId.value === 'number' ? undefined : addressForm,
+        addressSnapshot: selectedSavedAddress.value ? undefined : toAddressDraft(addressForm),
         remark: 'Checkout creates order on pay action',
       },
     })
@@ -467,10 +512,12 @@ const startPayment = async () => {
           paymentMethod: 'credit_card',
         },
       })
+
       if (intentRes?.code === 200) {
         paymentIntent.value = intentRes.data
         message.value = t('paymentReady')
       }
+
       await cart.refreshCart()
     }
   } finally {
@@ -480,6 +527,7 @@ const startPayment = async () => {
 
 const completePayment = async () => {
   if (!paymentIntent.value?.id) return
+
   completingPayment.value = true
   try {
     const res = await useHttp('/api/payment/mock/complete', {
@@ -489,6 +537,7 @@ const completePayment = async () => {
         mockResult: 'success',
       },
     })
+
     if (res?.code === 200) {
       paymentIntent.value = res.data
       message.value = t('orderSuccess')
@@ -507,6 +556,39 @@ const toggleLang = () => {
   }
 }
 
+watch(selectedAddressId, (value) => {
+  if (value === 'manual') {
+    return
+  }
+
+  const matched = addresses.value.find((item) => String(item.id) === value)
+  if (matched) {
+    applyAddress(matched)
+  }
+})
+
+watch([selectedAddressId, selectedCouponUserId, cartSignature], async () => {
+  if (!bootstrapped.value) {
+    return
+  }
+
+  paymentIntent.value = null
+  await previewOrder()
+})
+
+watch(
+  () => getAddressSignature(addressForm),
+  () => {
+    if (!bootstrapped.value || !selectedSavedAddress.value) {
+      return
+    }
+
+    if (!addressesMatch(selectedSavedAddress.value, addressForm)) {
+      selectedAddressId.value = 'manual'
+    }
+  },
+)
+
 onMounted(async () => {
   await session.fetchMe()
   if (!session.isLoggedIn.value) {
@@ -522,35 +604,44 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .checkout-page {
-  min-height: calc(100vh - 176px);
+  min-height: calc(100vh - 88px);
 }
 
 .checkout-container {
-  max-width: 1420px;
+  max-width: 1460px;
   margin: 0 auto;
+  padding: 32px 24px 56px;
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
-  gap: 0;
+  gap: 24px;
+}
+
+.checkout-main,
+.checkout-sidebar {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
 }
 
 .checkout-main {
-  padding: 42px 48px 56px;
-  background: #fff;
+  padding: 36px;
 }
 
 .checkout-sidebar {
-  padding: 42px 40px 56px;
-  background: #faf9f5;
-  border-left: 1px solid #ececec;
+  padding: 32px;
+  background:
+    radial-gradient(circle at top, rgba(88, 204, 2, 0.08), transparent 34%),
+    #fafaf7;
 }
 
 .sidebar-inner {
   position: sticky;
-  top: 120px;
+  top: 112px;
 }
 
-.checkout-section {
-  margin-bottom: 34px;
+.checkout-section + .checkout-section {
+  margin-top: 32px;
 }
 
 .section-head {
@@ -562,9 +653,9 @@ onMounted(async () => {
 
   h2 {
     margin: 6px 0 0;
-    font-size: 24px;
-    line-height: 1.15;
-    color: #111;
+    font-size: 28px;
+    line-height: 1.1;
+    color: #111827;
   }
 
   &.compact h2 {
@@ -574,43 +665,93 @@ onMounted(async () => {
 
 .step-label {
   margin: 0;
-  color: #7b7b7b;
-  font-size: 13px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .ghost-btn {
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid #d9d9d9;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #d0d5dd;
   border-radius: 999px;
   background: #fff;
+  color: #111827;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .saved-addresses {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 18px;
 }
 
 .saved-address {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid #e3e3e3;
-  border-radius: 16px;
-  background: #fafafa;
+  align-items: start;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid #e4e7ec;
+  border-radius: 20px;
+  background: #fbfbfb;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  input {
+    margin-top: 3px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: #111827;
+  }
+
+  &.is-selected {
+    border-color: #111827;
+    background: #f7fdf2;
+    box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.04);
+  }
 
   small {
+    margin-top: 6px;
     display: block;
-    margin-top: 5px;
-    color: #717171;
-    line-height: 1.45;
+    color: #667085;
+    line-height: 1.5;
   }
+}
+
+.saved-address__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  strong {
+    color: #111827;
+    font-size: 15px;
+  }
+
+  em {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #111827;
+    color: #fff;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+  }
+}
+
+.saved-address__body {
+  min-width: 0;
 }
 
 .address-form,
@@ -636,48 +777,67 @@ onMounted(async () => {
   gap: 8px;
 
   label {
-    color: #4c4c4c;
+    color: #344054;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
   }
 
   input,
   select {
-    min-height: 48px;
+    min-height: 50px;
     padding: 0 14px;
-    border: 1px solid #d9d9d9;
-    border-radius: 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 16px;
     background: #fff;
     font-size: 14px;
+    color: #111827;
     outline: none;
+  }
+
+  input:focus,
+  select:focus {
+    border-color: #111827;
+    box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.08);
+  }
+}
+
+.address-help {
+  margin: 14px 0 0;
+  color: #b54708;
+  font-size: 13px;
+  line-height: 1.6;
+
+  &.ready {
+    color: #027a48;
   }
 }
 
 .info-box {
-  min-height: 56px;
+  min-height: 58px;
   display: flex;
   align-items: center;
   padding: 0 18px;
-  border-radius: 16px;
-  background: #f6f6f6;
-  color: #666;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  color: #475467;
 }
 
 .payment-methods {
-  border: 1px solid #d9d9d9;
-  border-radius: 20px;
+  border: 1px solid #d0d5dd;
+  border-radius: 24px;
   overflow: hidden;
+  background: #fff;
 }
 
 .payment-option {
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #eaecf0;
 
   &:last-child {
     border-bottom: none;
   }
 
   &.disabled {
-    opacity: 0.55;
+    opacity: 0.5;
   }
 }
 
@@ -691,7 +851,7 @@ onMounted(async () => {
 .radio-wrap {
   width: 18px;
   height: 18px;
-  border: 1px solid #cfcfcf;
+  border: 1px solid #cfd4dc;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -702,12 +862,13 @@ onMounted(async () => {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: #111;
+  background: #111827;
 }
 
 .option-name {
   flex: 1;
-  font-weight: 600;
+  font-weight: 700;
+  color: #111827;
 }
 
 .card-icons {
@@ -716,12 +877,12 @@ onMounted(async () => {
 }
 
 .card-icon {
-  padding: 2px 6px;
-  border: 1px solid #ececec;
-  border-radius: 6px;
+  padding: 3px 7px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
   background: #fff;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .brand-text {
@@ -738,12 +899,12 @@ onMounted(async () => {
 
 .option-body {
   padding: 0 18px 18px;
-  background: #fcfcfc;
+  background: #fcfcfd;
 }
 
 .payment-note {
   margin: 0 0 14px;
-  color: #666;
+  color: #667085;
   font-size: 14px;
 }
 
@@ -754,13 +915,13 @@ onMounted(async () => {
 }
 
 .pay-now-btn {
-  min-height: 52px;
+  min-height: 54px;
   border: none;
   border-radius: 999px;
-  background: #111;
+  background: #111827;
   color: #fff;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
 
   &:disabled {
@@ -769,22 +930,23 @@ onMounted(async () => {
   }
 
   &.ghost {
-    background: #f0f0f0;
-    color: #111;
+    background: #eef2f6;
+    color: #111827;
   }
 }
 
 .status-message {
   margin: 12px 0 0;
-  color: #666;
+  color: #475467;
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .cart-items {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .cart-item {
@@ -796,11 +958,11 @@ onMounted(async () => {
 
 .item-img-wrapper {
   position: relative;
-  width: 70px;
-  height: 70px;
+  width: 72px;
+  height: 72px;
   padding: 4px;
-  border-radius: 16px;
-  border: 1px solid #e7e7e7;
+  border-radius: 18px;
+  border: 1px solid #e4e7ec;
   background: #fff;
 }
 
@@ -808,7 +970,7 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .item-qty {
@@ -821,43 +983,45 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #727272;
+  background: #6b7280;
   color: #fff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .item-title {
   margin: 0 0 4px;
   font-size: 14px;
   font-weight: 700;
+  color: #111827;
 }
 
 .item-variant {
   margin: 0;
-  color: #696969;
+  color: #667085;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .item-price {
-  font-weight: 700;
+  font-weight: 800;
+  color: #111827;
 }
 
 .points-banner,
 .preview-state,
 .payment-state {
   padding: 16px 18px;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #fff;
-  border: 1px solid #e7e7e7;
-  margin-bottom: 20px;
+  border: 1px solid #e4e7ec;
+  margin-bottom: 18px;
 
   p {
     margin: 6px 0 0;
-    color: #666;
+    color: #667085;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.55;
     word-break: break-all;
   }
 }
@@ -865,15 +1029,15 @@ onMounted(async () => {
 .discount-section {
   padding-bottom: 20px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid #dde3ea;
 }
 
 .discount-input select {
   width: 100%;
   min-height: 48px;
   padding: 0 14px;
-  border: 1px solid #d9d9d9;
-  border-radius: 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 16px;
   background: #fff;
   font-size: 14px;
 }
@@ -886,10 +1050,11 @@ onMounted(async () => {
 }
 
 .claim-btn {
-  border: 1px solid #111;
+  border: 1px solid #111827;
   border-radius: 999px;
   background: #fff;
   padding: 8px 12px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -899,7 +1064,7 @@ onMounted(async () => {
   gap: 10px;
   padding-bottom: 20px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid #dde3ea;
 }
 
 .line,
@@ -907,6 +1072,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+}
+
+.line {
+  color: #475467;
 }
 
 .line.discount {
@@ -914,18 +1084,14 @@ onMounted(async () => {
 }
 
 .total-line {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
+  color: #111827;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1100px) {
   .checkout-container {
     grid-template-columns: 1fr;
-  }
-
-  .checkout-sidebar {
-    border-left: none;
-    border-top: 1px solid #ececec;
   }
 
   .sidebar-inner {
@@ -934,22 +1100,33 @@ onMounted(async () => {
 }
 
 @media (max-width: 720px) {
+  .checkout-container {
+    padding: 20px 16px 36px;
+  }
+
   .checkout-main,
   .checkout-sidebar {
-    padding: 26px 18px 34px;
+    padding: 22px 18px;
+    border-radius: 24px;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+
+    h2 {
+      font-size: 24px;
+    }
   }
 
   .form-row,
-  .form-row.three-cols {
+  .form-row.three-cols,
+  .cart-item {
     grid-template-columns: 1fr;
   }
 
-  .cart-item {
-    grid-template-columns: auto 1fr;
-  }
-
   .item-price {
-    grid-column: 2;
+    justify-self: start;
   }
 }
 </style>

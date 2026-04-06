@@ -9,7 +9,7 @@ from pathlib import Path
 
 SITE_URL = "https://www.isinwheel.com/"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; isinwheel-home-sync/1.0; +https://www.isinwheel.com)",
+    "User-Agent": "Mozilla/5.0 (compatible; isinwheel-home-sync/2.0; +https://www.isinwheel.com)",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
@@ -37,6 +37,15 @@ def clean_text(value: str | None) -> str:
     text = re.sub(r"<[^>]+>", " ", unescape(value))
     text = re.sub(r"\s+", " ", text)
     return text.strip()
+
+
+def parse_site_meta(html: str) -> dict:
+    title_match = re.search(r"<title>(.*?)</title>", html, re.S | re.I)
+    description_match = re.search(r'<meta name="description" content="([^"]*)"', html, re.I)
+    return {
+        "title": clean_text(title_match.group(1) if title_match else ""),
+        "description": clean_text(description_match.group(1) if description_match else ""),
+    }
 
 
 def parse_hero_slides(html: str) -> list[dict]:
@@ -82,8 +91,8 @@ def parse_hero_slides(html: str) -> list[dict]:
     for index in range(total):
         banner = banners[index] if index < len(banners) else {}
         body = word_blocks.get(index, "")
-        title_match = re.search(r'video_title.*?>(.*?)</split-words>', body, re.S)
-        subtitle_match = re.search(r'video_tips.*?>(.*?)</split-words>', body, re.S)
+        title_match = re.search(r"video_title.*?>(.*?)</split-words>", body, re.S)
+        subtitle_match = re.search(r"video_tips.*?>(.*?)</split-words>", body, re.S)
         cta_match = re.search(r'<a class="button[^"]*" href="([^"]+)".*?<span[^>]*>(.*?)</span>', body, re.S)
         title = clean_text(title_match.group(1) if title_match else "")
         subtitle = clean_text(subtitle_match.group(1) if subtitle_match else "")
@@ -149,6 +158,23 @@ def parse_reviews(html: str) -> list[dict]:
     return reviews
 
 
+def parse_review_summary(html: str) -> dict:
+    rating_match = re.search(r"data-score='([^']+)'[^>]*class='jdgm-all-reviews-rating'", html)
+    count_match = re.search(r"class='jdgm-carousel-number-of-reviews'[^>]*data-number-of-reviews='([^']+)'", html)
+    title_match = re.search(r"featured_carousel_title\":\"([^\"]+)\"", html)
+    count_text_match = re.search(
+        r"class='jdgm-carousel-number-of-reviews'[^>]*>\s*([^<]+)\s*<",
+        html,
+        re.S,
+    )
+    return {
+        "title": clean_text(title_match.group(1) if title_match else ""),
+        "rating": clean_text(rating_match.group(1) if rating_match else ""),
+        "reviewCount": clean_text(count_match.group(1) if count_match else ""),
+        "countText": clean_text(count_text_match.group(1) if count_text_match else ""),
+    }
+
+
 def parse_blog_cards(html: str) -> list[dict]:
     cards = []
     section_match = re.search(
@@ -184,6 +210,40 @@ def parse_blog_cards(html: str) -> list[dict]:
     return cards
 
 
+def parse_social_links(html: str) -> list[dict]:
+    seen = set()
+    links = []
+    for match in re.finditer(
+        r'<a href="(https://[^"]+)" class="social_platform[^"]*"[^>]*title="([^"]+ on ([^"]+))"',
+        html,
+        re.I,
+    ):
+        url = absolute_url(match.group(1))
+        platform = clean_text(match.group(3))
+        if url in seen:
+            continue
+        seen.add(url)
+        links.append(
+            {
+                "platform": platform,
+                "title": clean_text(match.group(2)),
+                "url": url,
+            }
+        )
+    return links
+
+
+def parse_support_contact(html: str) -> dict:
+    hours_match = re.search(r"(Mon-Fri:\s*10AM-6PM\(PDT\))", html, re.I)
+    phone_match = re.search(r'href="tel:([^"]+)"', html)
+    email_match = re.search(r'href="mailto:([^"]+)"', html)
+    return {
+        "hours": clean_text(hours_match.group(1) if hours_match else ""),
+        "phone": clean_text(phone_match.group(1) if phone_match else ""),
+        "email": clean_text(email_match.group(1) if email_match else ""),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Scrape homepage content from isinwheel.")
     parser.add_argument(
@@ -196,21 +256,32 @@ def main() -> int:
     html = fetch_html()
     payload = {
         "source": SITE_URL,
+        "siteMeta": parse_site_meta(html),
         "heroSlides": parse_hero_slides(html),
         "featureVideo": parse_feature_video(html),
+        "reviewSummary": parse_review_summary(html),
         "customerReviews": parse_reviews(html),
         "blogCards": parse_blog_cards(html),
+        "socialLinks": parse_social_links(html),
+        "supportContact": parse_support_contact(html),
     }
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({
-        "heroSlides": len(payload["heroSlides"]),
-        "customerReviews": len(payload["customerReviews"]),
-        "blogCards": len(payload["blogCards"]),
-        "output": str(output_path),
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "heroSlides": len(payload["heroSlides"]),
+                "customerReviews": len(payload["customerReviews"]),
+                "blogCards": len(payload["blogCards"]),
+                "socialLinks": len(payload["socialLinks"]),
+                "output": str(output_path),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 

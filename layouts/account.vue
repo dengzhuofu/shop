@@ -10,7 +10,6 @@
         <nav class="account-nav">
           <NuxtLink to="/account/orders" active-class="active">{{ t('orders') }}</NuxtLink>
           <NuxtLink to="/account/profile" active-class="active">{{ t('profile') }}</NuxtLink>
-          <NuxtLink to="/checkout" active-class="active">{{ t('checkout') }}</NuxtLink>
         </nav>
 
         <div ref="accountMenuRef" class="account-user">
@@ -40,7 +39,6 @@
             </button>
             <button type="button" class="dropdown-item" @click="goTo('/account/profile')">{{ t('profile') }}</button>
             <button type="button" class="dropdown-item" @click="goTo('/account/orders')">{{ t('orders') }}</button>
-            <button type="button" class="dropdown-item" @click="goTo('/checkout')">{{ t('checkout') }}</button>
             <div class="dropdown-divider" />
             <button type="button" class="dropdown-item logout" @click="handleLogout">
               {{ t('logout') }}

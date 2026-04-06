@@ -741,20 +741,23 @@ watch([sortBy, stockFilter, priceFilter, selectedChildSlug], async () => {
 .sort-overlay {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 160;
   display: flex;
+  backdrop-filter: blur(10px);
 }
 
 .panel-overlay {
-  background: rgba(16, 24, 40, 0.34);
+  background: rgba(15, 23, 42, 0.36);
   justify-content: flex-start;
+  align-items: flex-start;
+  padding: 104px 24px 24px;
 }
 
 .sort-overlay {
-  background: rgba(16, 16, 16, 0.42);
+  background: rgba(15, 23, 42, 0.3);
   justify-content: flex-end;
   align-items: flex-start;
-  padding: 18px;
+  padding: 104px 24px 24px;
 }
 
 .filter-panel,
@@ -763,20 +766,23 @@ watch([sortBy, stockFilter, priceFilter, selectedChildSlug], async () => {
 }
 
 .filter-panel {
-  width: min(420px, 100%);
-  height: 100%;
+  width: min(420px, calc(100vw - 48px));
+  max-height: calc(100vh - 128px);
   background: #fff;
   padding: 26px 24px 28px;
   display: flex;
   flex-direction: column;
+  border-radius: 32px;
 }
 
 .sort-panel {
   width: min(390px, calc(100vw - 24px));
+  max-height: calc(100vh - 128px);
   border-radius: 30px;
   background: #171717;
   color: #fff;
   padding: 22px 22px 26px;
+  overflow-y: auto;
 }
 
 .panel-head,
@@ -1045,17 +1051,23 @@ watch([sortBy, stockFilter, priceFilter, selectedChildSlug], async () => {
   }
 
   .sort-overlay {
-    padding: 12px;
+    padding: 88px 12px 12px;
     align-items: flex-end;
   }
 
   .sort-panel {
     width: 100%;
     border-radius: 28px;
+    max-height: calc(100vh - 104px);
   }
 
   .filter-panel {
     width: 100%;
+    max-height: calc(100vh - 104px);
+  }
+
+  .panel-overlay {
+    padding: 88px 12px 12px;
   }
 }
 </style>

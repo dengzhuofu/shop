@@ -161,43 +161,44 @@
 
     <section class="influencer-section container">
       <div class="influencer-grid">
-        <div
-          v-for="video in influencerVideos"
-          :key="video.id"
-          class="video-card"
+        <a
+          v-for="card in socialCards"
+          :key="card.platform"
+          class="video-card social-card"
+          :href="card.url"
+          target="_blank"
+          rel="noreferrer"
         >
           <div
             class="bg-image"
-            :style="{ backgroundImage: `url(${video.bgImage})` }"
+            :style="{ backgroundImage: `url(${card.image})` }"
           />
           <div class="overlay" />
-          <div class="play-btn"><PlayIcon class="icon" /></div>
+          <div class="play-btn"><ArrowRightIcon class="icon" /></div>
           <div class="card-content">
             <div class="user-info">
-              <img :src="video.avatar" alt="Avatar" class="avatar" /><span
-                class="username"
-                >{{ video.username }}</span
-              >
+              <span class="avatar">{{ card.shortLabel }}</span>
+              <span class="username">{{ card.platform }}</span>
             </div>
-            <p class="quote">"{{ video.quote }}"</p>
+            <p class="quote">{{ card.title }}</p>
             <div class="tags">
-              <span v-for="tag in video.tags" :key="tag" class="tag">{{
+              <span v-for="tag in card.tags" :key="tag" class="tag">{{
                 tag
               }}</span>
             </div>
           </div>
-        </div>
+        </a>
       </div>
     </section>
 
     <section class="media-review-section">
       <div class="media-bg"><div class="overlay" /></div>
       <div class="container media-content">
-        <div class="quote-icon">“</div>
-        <h2 class="review-title">{{ copy.mediaReviewTitle }}</h2>
+        <div class="quote-icon">{{ reviewSummary.rating || '4.8' }}</div>
+        <h2 class="review-title">{{ reviewSummary.title || copy.mediaReviewTitle }}</h2>
         <div class="media-logo">
-          <span class="logo-circle">CNET</span
-          ><span class="logo-text">— CNET</span>
+          <span class="logo-circle">REV</span
+          ><span class="logo-text">{{ reviewSummary.countText || copy.customerReviewsSubtitle }}</span>
         </div>
         <div class="pagination-dots">
           <span class="dot active" /><span
@@ -217,8 +218,21 @@
         </div>
         <div class="text-content">
           <h2 class="section-title">{{ copy.whyChooseTitle }}</h2>
-          <p class="description">{{ copy.whyChooseDesc }}</p>
-          <NuxtLink to="/collections/electric-scooters" class="btn-brand-story"
+          <p class="description">{{ whyChooseDescription }}</p>
+          <div class="why-choose-meta">
+            <span v-if="supportContact.hours">{{ supportContact.hours }}</span>
+            <span v-if="supportContact.phone">{{ supportContact.phone }}</span>
+            <span v-if="supportContact.email">{{ supportContact.email }}</span>
+          </div>
+          <a
+            v-if="primarySocialLink"
+            :href="primarySocialLink.url"
+            target="_blank"
+            rel="noreferrer"
+            class="btn-brand-story"
+            >{{ copy.brandStory }} <ArrowRightIcon class="icon-right"
+          /></a>
+          <NuxtLink v-else to="/collections/electric-scooters" class="btn-brand-story"
             >{{ copy.brandStory }} <ArrowRightIcon class="icon-right"
           /></NuxtLink>
         </div>
@@ -228,7 +242,7 @@
     <section class="customer-reviews-section container">
       <div class="section-header text-center">
         <h2 class="section-title">{{ copy.customerReviewsTitle }}</h2>
-        <p class="subtitle">{{ copy.customerReviewsSubtitle }}</p>
+        <p class="subtitle">{{ customerReviewsSubtitle }}</p>
       </div>
       <div class="reviews-carousel">
         <div class="nav-btn prev"><ChevronLeftIcon /></div>
@@ -376,7 +390,7 @@ const categoryVisuals = {
     image:
       'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1400',
     description: {
-      zh: '轻松通勤，城市与周末骑行都能兼顾。',
+      zh: '\u8f7b\u677e\u901a\u52e4\uff0c\u57ce\u5e02\u4e0e\u5468\u672b\u9a91\u884c\u90fd\u80fd\u517c\u987e\u3002',
       en: 'Foldable freedom for your daily commute and weekend rides.',
     },
   },
@@ -384,7 +398,7 @@ const categoryVisuals = {
     image:
       'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1400',
     description: {
-      zh: '长距离与复杂路况都能更轻松拿下。',
+      zh: '\u957f\u8ddd\u79bb\u4e0e\u590d\u6742\u8def\u51b5\u4e5f\u80fd\u66f4\u4ece\u5bb9\u62ff\u4e0b\u3002',
       en: 'Conquer hills and long-distance routes with confidence.',
     },
   },
@@ -392,7 +406,7 @@ const categoryVisuals = {
     image:
       'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=1400',
     description: {
-      zh: '顺滑 carving 和速度感兼备的轻快出行。',
+      zh: '\u517c\u987e\u987a\u6ed1\u64cd\u63a7\u4e0e\u901f\u5ea6\u611f\u7684\u8f7b\u5feb\u51fa\u884c\u3002',
       en: 'Electrify every carve with smooth control and speed.',
     },
   },
@@ -400,7 +414,7 @@ const categoryVisuals = {
     image:
       'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1400',
     description: {
-      zh: '升级、保护和个性化你的每一段骑行。',
+      zh: '\u5347\u7ea7\u3001\u4fdd\u62a4\u5e76\u4e2a\u6027\u5316\u4f60\u7684\u6bcf\u4e00\u6bb5\u9a91\u884c\u3002',
       en: 'Upgrade, protect, and personalize every ride.',
     },
   },
@@ -409,23 +423,23 @@ const categoryVisuals = {
 const copy = computed(() =>
   lang.value === 'zh'
     ? {
-        heroLine1: '探索无界',
-        heroLine2: '智能骑行',
-        bestSellers: '热卖产品',
-        viewAllCurrent: '查看当前分类',
+        heroLine1: '\u63a2\u7d22\u66f4\u8fdc',
+        heroLine2: '\u667a\u80fd\u9a91\u884c',
+        bestSellers: '\u70ed\u9500\u4ea7\u54c1',
+        viewAllCurrent: '\u67e5\u770b\u5f53\u524d\u5206\u7c7b',
         mediaReviewTitle:
-          'isinwheel S10Max 评测：兼顾便携与性能的最后一公里电动滑板车',
-        whyChooseTitle: '为什么选择 isinwheel',
+          'isinwheel S10Max \u8bc4\u6d4b\uff1a\u517c\u987e\u4fbf\u643a\u4e0e\u6027\u80fd\u7684\u6700\u540e\u4e00\u516c\u91cc\u6ed1\u677f\u8f66',
+        whyChooseTitle: '\u4e3a\u4ec0\u4e48\u9009\u62e9 isinwheel',
         whyChooseDesc:
-          '我们希望把值得信赖的电动出行产品带到更多真实场景里，让通勤、短途出游和日常代步都更轻松、更有趣，也更接近你真正想去的地方。',
-        brandStory: '品牌故事',
-        customerReviewsTitle: '大家如何评价 isinwheel',
-        customerReviewsSubtitle: '来自 5870 条真实评价',
-        verified: '已验证',
-        blogTitle: 'isinwheel 博客',
-        viewAll: '查看全部',
-        readMore: '阅读更多',
-        videoAlt: 'isinwheel 首页视频封面',
+          '\u6211\u4eec\u5e0c\u671b\u628a\u503c\u5f97\u4fe1\u8d56\u7684\u7535\u52a8\u51fa\u884c\u4ea7\u54c1\u5e26\u5230\u66f4\u591a\u771f\u5b9e\u573a\u666f\u91cc\uff0c\u8ba9\u901a\u52e4\u3001\u77ed\u9014\u51fa\u6e38\u548c\u65e5\u5e38\u4ee3\u6b65\u90fd\u66f4\u8f7b\u677e\u3001\u66f4\u6709\u8da3\u3002',
+        brandStory: '\u54c1\u724c\u6545\u4e8b',
+        customerReviewsTitle: '\u5927\u5bb6\u5982\u4f55\u8bc4\u4ef7 isinwheel',
+        customerReviewsSubtitle: '\u6765\u81ea 5870 \u6761\u771f\u5b9e\u8bc4\u4ef7',
+        verified: '\u5df2\u9a8c\u8bc1',
+        blogTitle: 'isinwheel \u535a\u5ba2',
+        viewAll: '\u67e5\u770b\u5168\u90e8',
+        readMore: '\u9605\u8bfb\u66f4\u591a',
+        videoAlt: 'isinwheel \u9996\u9875\u89c6\u9891\u5c01\u9762',
       }
     : {
         heroLine1: 'Explore Beyond',
@@ -571,90 +585,49 @@ const featureImage = computed(
     heroSlides.value[0]?.image ||
     categoryVisuals['electric-scooters'].image,
 )
-
-const influencerVideos = computed(() =>
-  lang.value === 'zh'
-    ? [
-        {
-          id: 1,
-          bgImage:
-            'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=11',
-          username: '@ride_master',
-          quote: '目前最喜欢的一台通勤滑板车，起步和刹车都很顺。',
-          tags: ['#电动滑板车', '#城市通勤'],
-        },
-        {
-          id: 2,
-          bgImage:
-            'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=12',
-          username: '@urban_explorer',
-          quote: '每天上下班都在骑，续航和稳定性都很放心。',
-          tags: ['#电动自行车', '#长续航'],
-        },
-        {
-          id: 3,
-          bgImage:
-            'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=13',
-          username: '@skate_pro',
-          quote: '板子的响应很干脆，速度上来之后也依然稳。',
-          tags: ['#电动滑板', '#骑行乐趣'],
-        },
-        {
-          id: 4,
-          bgImage:
-            'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=14',
-          username: '@eco_traveler',
-          quote: '短途出行几乎都被它替代了，轻松又环保。',
-          tags: ['#绿色出行', '#周末骑行'],
-        },
-      ]
-    : [
-        {
-          id: 1,
-          bgImage:
-            'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=11',
-          username: '@ride_master',
-          quote:
-            'My favorite commuter scooter right now. Smooth pickup and braking.',
-          tags: ['#escooter', '#commute'],
-        },
-        {
-          id: 2,
-          bgImage:
-            'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=12',
-          username: '@urban_explorer',
-          quote:
-            'I ride it to work every day. Range and stability both feel reliable.',
-          tags: ['#ebike', '#range'],
-        },
-        {
-          id: 3,
-          bgImage:
-            'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=13',
-          username: '@skate_pro',
-          quote:
-            'Responsive underfoot and still stable once you really pick up speed.',
-          tags: ['#eskate', '#ride'],
-        },
-        {
-          id: 4,
-          bgImage:
-            'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=400&h=700',
-          avatar: 'https://i.pravatar.cc/150?u=14',
-          username: '@eco_traveler',
-          quote:
-            'It has replaced most of my short trips. Easy, fun, and greener.',
-          tags: ['#eco', '#weekend'],
-        },
-      ],
+const siteMeta = computed(() => homeContent.value?.siteMeta || {})
+const reviewSummary = computed(() => homeContent.value?.reviewSummary || {})
+const supportContact = computed(() => homeContent.value?.supportContact || {})
+const customerReviewsSubtitle = computed(
+  () => reviewSummary.value?.countText || copy.value.customerReviewsSubtitle,
 )
+const whyChooseDescription = computed(
+  () => siteMeta.value?.description || copy.value.whyChooseDesc,
+)
+const socialCards = computed(() => {
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=800',
+  ]
+  const links = Array.isArray(homeContent.value?.socialLinks)
+    ? homeContent.value.socialLinks
+    : []
+  if (!links.length) {
+    return []
+  }
+  return links.slice(0, 4).map((item: any, index: number) => ({
+    platform: item.platform || `Social ${index + 1}`,
+    title: item.title || item.platform || `Social ${index + 1}`,
+    url: item.url || '#',
+    image: fallbackImages[index % fallbackImages.length],
+    shortLabel: String(item.platform || `S${index + 1}`)
+      .slice(0, 2)
+      .toUpperCase(),
+    tags: [
+      `#${String(item.platform || 'social').toLowerCase().replace(/\s+/g, '')}`,
+      reviewSummary.value?.reviewCount
+        ? lang.value === 'zh'
+          ? `${reviewSummary.value.reviewCount}\u6761\u8bc4\u4ef7`
+          : `${reviewSummary.value.reviewCount} reviews`
+        : lang.value === 'zh'
+          ? '\u5b98\u65b9\u8d26\u53f7'
+          : 'official',
+    ],
+  }))
+})
+const primarySocialLink = computed(() => socialCards.value[0] || null)
 
 const fallbackCustomerReviews = computed(() =>
   lang.value === 'zh'
@@ -665,7 +638,7 @@ const fallbackCustomerReviews = computed(() =>
             'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
           name: 'Andrew',
           verified: false,
-          text: '一开始我觉得减震偏硬，调了一下之后明显更顺了。现在通勤每天都在骑，整体很满意。',
+          text: '\u51cf\u9707\u521d\u4e0a\u624b\u65f6\u504f\u786c\uff0c\u7a0d\u5fae\u8c03\u6821\u4e4b\u540e\u901a\u52e4\u4f53\u9a8c\u987a\u4e86\u5f88\u591a\uff0c\u73b0\u5728\u6bcf\u5929\u90fd\u5728\u9a91\u3002',
         },
         {
           id: 2,
@@ -673,7 +646,7 @@ const fallbackCustomerReviews = computed(() =>
             'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=400',
           name: 'Joseph P.',
           verified: true,
-          text: '参数和描述基本一致，动力输出很直接，整车做工也比我预期更扎实。',
+          text: '\u53c2\u6570\u548c\u63cf\u8ff0\u57fa\u672c\u4e00\u81f4\uff0c\u52a8\u529b\u8f93\u51fa\u5f88\u76f4\u63a5\uff0c\u6574\u8f66\u505a\u5de5\u4e5f\u6bd4\u9884\u671f\u66f4\u624e\u5b9e\u3002',
         },
         {
           id: 3,
@@ -681,7 +654,7 @@ const fallbackCustomerReviews = computed(() =>
             'https://images.unsplash.com/photo-1563215886-35cb172776fc?auto=format&fit=crop&q=80&w=400',
           name: 'Pamela',
           verified: false,
-          text: '安装很快，半小时内就能搞定。第一次上路就能感受到它的稳定和易上手。',
+          text: '\u5b89\u88c5\u5f88\u5feb\uff0c\u7b2c\u4e00\u6b21\u4e0a\u8def\u5c31\u80fd\u611f\u53d7\u5230\u5b83\u7684\u7a33\u5b9a\u548c\u6613\u4e0a\u624b\u3002',
         },
         {
           id: 4,
@@ -689,7 +662,7 @@ const fallbackCustomerReviews = computed(() =>
             'https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=400',
           name: 'Chad S.',
           verified: false,
-          text: '如果你想找一台速度和续航比较均衡的车，这台确实很有竞争力。',
+          text: '\u5982\u679c\u4f60\u60f3\u627e\u4e00\u53f0\u901f\u5ea6\u548c\u7eed\u822a\u6bd4\u8f83\u5747\u8861\u7684\u8f66\uff0c\u8fd9\u53f0\u786e\u5b9e\u5f88\u6709\u7ade\u4e89\u529b\u3002',
         },
       ]
     : [
@@ -735,25 +708,25 @@ const fallbackBlogCards = computed(() =>
           id: 1,
           image:
             'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
-          title: '越野电动滑板车的悬挂到底该怎么选',
+          title: '\u9ad8\u6027\u4ef7\u6bd4\u8d8a\u91ce\u7535\u52a8\u6ed1\u677f\u8f66\u7684\u60ac\u6302\u5230\u5e95\u8be5\u600e\u4e48\u9009',
           date: '2026-03-26',
-          comments: '0 条评论',
+          comments: '0 \u6761\u8bc4\u8bba',
         },
         {
           id: 2,
           image:
             'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=400',
-          title: '预算有限时，如何挑一台适合日常通勤的电动滑板车',
+          title: '\u9884\u7b97\u6709\u9650\u65f6\uff0c\u5982\u4f55\u6311\u4e00\u53f0\u9002\u5408\u65e5\u5e38\u901a\u52e4\u7684\u7535\u52a8\u6ed1\u677f\u8f66',
           date: '2026-03-17',
-          comments: '0 条评论',
+          comments: '0 \u6761\u8bc4\u8bba',
         },
         {
           id: 3,
           image:
             'https://images.unsplash.com/photo-1593950315186-76a92975b60c?auto=format&fit=crop&q=80&w=400',
-          title: '家庭短途代步，500 美元以内有哪些更合适的选择',
+          title: '\u5bb6\u5ead\u77ed\u9014\u4ee3\u6b65\uff0c500 \u7f8e\u5143\u4ee5\u5185\u6709\u54ea\u4e9b\u66f4\u5408\u9002\u7684\u9009\u62e9',
           date: '2026-03-11',
-          comments: '0 条评论',
+          comments: '0 \u6761\u8bc4\u8bba',
         },
       ]
     : [
@@ -1315,6 +1288,9 @@ onUnmounted(() => {
   transform: translate(-50%, -50%) scale(1.1);
   background: rgba(255, 255, 255, 0.3);
 }
+.social-card {
+  text-decoration: none;
+}
 .video-card .bg-image,
 .review-img,
 .blog-main .bg-img {
@@ -1381,6 +1357,15 @@ onUnmounted(() => {
   border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   object-fit: cover;
+}
+.social-card .avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
 }
 .username {
   font-size: 14px;
@@ -1546,6 +1531,21 @@ onUnmounted(() => {
   color: $text-light;
   font-size: 16px;
   line-height: 1.8;
+}
+.why-choose-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+
+  span {
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 600;
+  }
 }
 .btn-brand-story {
   padding: 12px 32px;
