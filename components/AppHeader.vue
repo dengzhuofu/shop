@@ -152,245 +152,31 @@ const fallbackCategories = computed(() => [
   { slug: 'accessories', name: t('accessories') },
 ])
 
-const fallbackMegaMenus = computed(() => [
-  {
-    slug: 'electric-scooters',
-    name: t('electricScooters'),
-    banner: {
-      tag: 'Save $20',
-      trustpilot: '4.4',
-      linkUrl: '/collections/electric-scooters',
-      linkText: 'All Electric Scooter (3)',
-    },
-    children: [
-      {
-        id: 11,
-        slug: 'commuter-city-ride',
-        name: 'Commuter Scooter',
-        allLinkUrl: '/collections/electric-scooters',
-        allLinkText: 'All Commuter Scooter (3)',
-        products: [
-          {
-            id: 1,
-            slug: 'isinwheel-s9-pro-pneumatic-tire-electric-scooter',
-            title: 'isinwheel S9 Pro Pneumatic Tire Electric Scooter',
-            price: 269.99,
-            compareAtPrice: 399.99,
-            pic: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200',
-              'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['Spring Sale'],
-            skuList: [{ price: 269.99, stock: 12, status: 'ACTIVE' }],
-          },
-          {
-            id: 2,
-            slug: 's-nova-pro-commuting-electric-scooter',
-            title: 'S Nova Pro Commuting Electric Scooter',
-            price: 489.99,
-            compareAtPrice: 599.99,
-            pic: 'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200',
-              'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['NEW', 'Spring Sale'],
-            skuList: [{ price: 489.99, stock: 8, status: 'ACTIVE' }],
-          },
-          {
-            id: 9,
-            slug: 'isinwheel-u1-folding-electric-scooter',
-            title: 'isinwheel U1 Folding Electric Scooter',
-            price: 219.99,
-            compareAtPrice: 329.99,
-            pic: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['HOT'],
-            skuList: [{ price: 219.99, stock: 10, status: 'ACTIVE' }],
-          },
-        ],
-      },
-      {
-        id: 12,
-        slug: 'performance-all-terrain-scooters',
-        name: 'Off Road Scooter',
-        allLinkUrl: '/collections/electric-scooters',
-        allLinkText: 'All Off Road Scooter',
-        products: [],
-      },
-      {
-        id: 18,
-        slug: 'kids-scooter',
-        name: 'Scooter for Kids',
-        allLinkUrl: '/collections/electric-scooters',
-        allLinkText: 'All Scooter for Kids',
-        products: [],
-      },
-    ],
-  },
-  {
-    slug: 'electric-bike',
-    name: t('electricBike'),
-    banner: {
-      tag: 'Save $20',
-      trustpilot: '4.4',
-      linkUrl: '/collections/electric-bike',
-      linkText: 'All Electric Bike (2)',
-    },
-    children: [
-      {
-        id: 13,
-        slug: 'commuter-city-road',
-        name: 'Commuter & City Road',
-        allLinkUrl: '/collections/electric-bike',
-        allLinkText: 'All Commuter & City Road (2)',
-        products: [
-          {
-            id: 3,
-            slug: 'isinwheel-u8-electric-bike-for-adults',
-            title: 'isinwheel U8 Electric Bike for Adults',
-            price: 799.99,
-            compareAtPrice: 999.99,
-            pic: 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200',
-              'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['HOT'],
-            skuList: [{ price: 799.99, stock: 5, status: 'ACTIVE' }],
-          },
-          {
-            id: 4,
-            slug: 'isinwheel-m50-mountain-ebike',
-            title: 'isinwheel M50 Mountain Ebike',
-            price: 1199.99,
-            compareAtPrice: 1399.99,
-            pic: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['Spring Sale'],
-            skuList: [{ price: 1199.99, stock: 6, status: 'ACTIVE' }],
-          },
-        ],
-      },
-      {
-        id: 14,
-        slug: 'off-road-all-terrain',
-        name: 'Off Road & All Terrain',
-        allLinkUrl: '/collections/electric-bike',
-        allLinkText: 'All Off Road & All Terrain',
-        products: [],
-      },
-    ],
-  },
-  {
-    slug: 'electric-skateboard',
-    name: t('electricSkateboard'),
-    banner: {
-      tag: 'Save $20',
-      trustpilot: '4.4',
-      linkUrl: '/collections/electric-skateboard',
-      linkText: 'All Electric Skateboard (2)',
-    },
-    children: [
-      {
-        id: 15,
-        slug: 'street-carving',
-        name: 'Street & Carving',
-        allLinkUrl: '/collections/electric-skateboard',
-        allLinkText: 'All Street & Carving',
-        products: [
-          {
-            id: 5,
-            slug: 'isinwheel-v8-electric-skateboard-with-remote',
-            title: 'isinwheel V8 Electric Skateboard with Remote',
-            price: 329.99,
-            compareAtPrice: 429.99,
-            pic: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['Spring Sale'],
-            skuList: [{ price: 329.99, stock: 7, status: 'ACTIVE' }],
-          },
-        ],
-      },
-      {
-        id: 16,
-        slug: 'off-road-terrain-boards',
-        name: 'Off Road & Terrain',
-        allLinkUrl: '/collections/electric-skateboard',
-        allLinkText: 'All Off Road & Terrain',
-        products: [
-          {
-            id: 6,
-            slug: 'isinwheel-v10-off-road-electric-skateboard',
-            title: 'isinwheel V10 Off Road Electric Skateboard',
-            price: 499.99,
-            compareAtPrice: 629.99,
-            pic: 'https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['NEW'],
-            skuList: [{ price: 499.99, stock: 4, status: 'ACTIVE' }],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'accessories',
-    name: t('accessories'),
-    banner: {
-      tag: 'Save $20',
-      trustpilot: '4.4',
-      linkUrl: '/collections/accessories',
-      linkText: 'All Accessories (2)',
-    },
-    children: [
-      {
-        id: 17,
-        slug: 'safety-gear',
-        name: 'Safety Gear',
-        allLinkUrl: '/collections/accessories',
-        allLinkText: 'All Safety Gear',
-        products: [
-          {
-            id: 8,
-            slug: 'adult-riding-helmet',
-            title: 'Adult Riding Helmet',
-            price: 49.99,
-            compareAtPrice: 69.99,
-            pic: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['HOT'],
-            skuList: [{ price: 49.99, stock: 15, status: 'ACTIVE' }],
-          },
-          {
-            id: 7,
-            slug: 'electric-bike-cable-lock',
-            title: 'Electric Bike Cable Lock',
-            price: 29.99,
-            compareAtPrice: 39.99,
-            pic: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200',
-            images: [
-              'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200',
-            ],
-            tags: ['Spring Sale'],
-            skuList: [{ price: 29.99, stock: 18, status: 'ACTIVE' }],
-          },
-        ],
-      },
-    ],
-  },
-])
+const normalizeMenuProducts = (products: unknown) =>
+  Array.isArray(products) ? products.slice(0, 4) : []
+
+const normalizeMenuGroups = (groups: unknown, rootSlug: string) =>
+  (Array.isArray(groups) ? groups : [])
+    .map((group: any) => ({
+      ...group,
+      allLinkUrl: group?.allLinkUrl || `/collections/${group?.slug || rootSlug}`,
+      allLinkText:
+        group?.allLinkText ||
+        `All ${group?.name || ''}${group?.productCount ? ` (${group.productCount})` : ''}`.trim(),
+      products: normalizeMenuProducts(group?.products),
+    }))
+    .filter((group: any) => group?.name)
+
+const normalizeMenuItem = (item: any) => ({
+  ...item,
+  banner: item?.banner
+    ? {
+        ...item.banner,
+        linkUrl: item.banner.linkUrl || `/collections/${item.slug}`,
+      }
+    : null,
+  children: normalizeMenuGroups(item?.children, item?.slug),
+})
 
 const fallbackActivity = computed(() => ({
   title: lang.value === 'zh' ? '复活节促销' : 'Easter Sale',
@@ -409,15 +195,15 @@ const fallbackActivity = computed(() => ({
 const resolvedActivity = computed(
   () => activity.value || fallbackActivity.value,
 )
-const hasUsableMenuData = computed(() =>
-  categoryMenu.value.some(
+const hasUsableMenuData = computed(() => categoryMenu.value.length > 0)
+const navItems = computed(() =>
+  hasUsableMenuData.value ? categoryMenu.value : fallbackCategories.value,
+)
+const megaMenuItems = computed(() =>
+  categoryMenu.value.filter(
     (item) => Array.isArray(item?.children) && item.children.length > 0,
   ),
 )
-const menuItems = computed(() =>
-  hasUsableMenuData.value ? categoryMenu.value : fallbackMegaMenus.value,
-)
-const navItems = computed(() => menuItems.value)
 const visibleMenuSlug = computed(
   () =>
     hoverMenuSlug.value ||
@@ -425,7 +211,7 @@ const visibleMenuSlug = computed(
 )
 const activeMenu = computed(
   () =>
-    menuItems.value.find((item: any) => item.slug === visibleMenuSlug.value) ||
+    megaMenuItems.value.find((item: any) => item.slug === visibleMenuSlug.value) ||
     null,
 )
 
@@ -504,8 +290,15 @@ const handleScroll = () => {
 
 const fetchCategoryMenu = async () => {
   try {
-    const res = await useHttp('/api/category/menu')
-    categoryMenu.value = res?.code === 200 ? res.data || [] : []
+    const res = await useHttp('/api/category/menu', {
+      query: {
+        productLimit: 4,
+      },
+    })
+    categoryMenu.value =
+      res?.code === 200
+        ? (Array.isArray(res.data) ? res.data : []).map(normalizeMenuItem)
+        : []
   } catch {
     categoryMenu.value = []
   }

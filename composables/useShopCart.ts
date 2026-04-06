@@ -6,6 +6,9 @@ export function useShopCart() {
   const loading = useState('shop-cart-loading', () => false)
   const session = useShopSession()
 
+  const normalizeQuantity = (value: unknown) =>
+    Math.max(1, Number.parseInt(String(value ?? 1), 10) || 1)
+
   const refreshCart = async () => {
     if (!session.token.value) {
       items.value = []
@@ -30,9 +33,13 @@ export function useShopCart() {
   }
 
   const addToCart = async (payload: Record<string, any>) => {
+    const body = {
+      ...payload,
+      quantity: normalizeQuantity(payload?.quantity),
+    }
     const res = await useHttp('/api/cart/add', {
       method: 'POST',
-      body: payload,
+      body,
     })
     await refreshCart()
     return res

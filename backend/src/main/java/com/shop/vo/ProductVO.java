@@ -38,6 +38,7 @@ public class ProductVO {
   private Object skuAttributeOptions;
   private Object skuAttributeDisplayOptions;
   private List<SkuVO> skuList;
+  private Boolean hasOptions;
 
   public static ProductVO from(PmsProduct product, List<com.shop.entity.PmsSku> skus) {
     ProductVO vo = new ProductVO();
@@ -68,8 +69,10 @@ public class ProductVO {
       vo.setSkuList(skus.stream().map(SkuVO::from).collect(Collectors.toList()));
       vo.setSkuAttributeOptions(buildSkuAttributeOptions(vo.getSkuList()));
       vo.setSkuAttributeDisplayOptions(buildSkuAttributeDisplayOptions(vo.getSkuList()));
+      vo.setHasOptions(hasSelectableOptions(vo.getSkuList()));
     } else {
       vo.setSkuList(new ArrayList<>());
+      vo.setHasOptions(false);
     }
     return vo;
   }
@@ -114,5 +117,13 @@ public class ProductVO {
       }
     }
     return options;
+  }
+
+  public static boolean hasSelectableOptions(List<SkuVO> skuList) {
+    if (skuList == null || skuList.isEmpty()) {
+      return false;
+    }
+    Map<String, List<String>> options = buildSkuAttributeOptions(skuList);
+    return options.values().stream().anyMatch(values -> values.size() > 1);
   }
 }

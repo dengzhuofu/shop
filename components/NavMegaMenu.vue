@@ -104,7 +104,7 @@
                 class="app-preview-img"
               />
 
-              <div class="hover-actions" :class="{ 'is-visible': hoveredProductId === product.id || isSoldOut(product) }">
+              <div class="hover-actions" :class="{ 'is-visible': hoveredProductId === product.id }">
                 <button
                   v-if="!isSoldOut(product)"
                   type="button"

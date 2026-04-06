@@ -7,17 +7,36 @@ export function useProductQuickActions() {
   const getProductIdentifier = (product: Record<string, any> | null | undefined) =>
     product?.slug || product?.id || null
 
-  const productHasOptions = (product: Record<string, any> | null | undefined) => {
+  const normalizeVariantAttributes = (product: Record<string, any> | null | undefined) => {
     const attributeOptions = product?.skuAttributeOptions || {}
-    const hasMultipleAttributeOptions = Object.values(attributeOptions).some(
-      (options) => Array.isArray(options) && options.length > 1,
-    )
-    if (hasMultipleAttributeOptions) {
+    return Object.values(attributeOptions).filter((options) => Array.isArray(options) && options.length > 1)
+  }
+
+  const productHasOptions = (product: Record<string, any> | null | undefined) => {
+    if (normalizeVariantAttributes(product).length > 0) {
       return true
     }
 
     const skuList = Array.isArray(product?.skuList) ? product.skuList : []
-    return skuList.length > 1 || product?.hasOptions === true
+    if (skuList.length) {
+      const optionMap = new Map<string, Set<string>>()
+      for (const sku of skuList) {
+        const attributes = sku?.attributes || {}
+        for (const [key, value] of Object.entries(attributes)) {
+          const normalized = String(value || '').trim()
+          if (!normalized) {
+            continue
+          }
+          if (!optionMap.has(key)) {
+            optionMap.set(key, new Set())
+          }
+          optionMap.get(key)?.add(normalized)
+        }
+      }
+      return [...optionMap.values()].some((values) => values.size > 1)
+    }
+
+    return product?.hasOptions === true
   }
 
   const fetchProductDetail = async (product: Record<string, any> | null | undefined) => {
@@ -65,7 +84,10 @@ export function useProductQuickActions() {
       skuId: selectedSku.id,
       quantity,
     })
-    cart.openCart()
+    if (res?.code === 200) {
+      cart.openCart()
+      await cart.refreshCart()
+    }
 
     return {
       success: res?.code === 200,

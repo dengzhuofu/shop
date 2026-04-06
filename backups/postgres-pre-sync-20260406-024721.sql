@@ -1,0 +1,1379 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 2dPxtr7ZaAmycEo3LP8NKNYJd8WLVpbbfznTU6ezyMp2olGZkYp4DmgWbtDHp4v
+
+-- Dumped from database version 17.9
+-- Dumped by pg_dump version 17.9
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: pgagent; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA pgagent;
+
+
+ALTER SCHEMA pgagent OWNER TO postgres;
+
+--
+-- Name: SCHEMA pgagent; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA pgagent IS 'pgAgent system tables';
+
+
+--
+-- Name: pgagent; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgagent WITH SCHEMA pgagent;
+
+
+--
+-- Name: EXTENSION pgagent; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pgagent IS 'A PostgreSQL job scheduler';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: cms_promotion_activity; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cms_promotion_activity (
+    id bigint NOT NULL,
+    code character varying(64) NOT NULL,
+    title text NOT NULL,
+    subtitle text,
+    tag text,
+    countdown_end_at timestamp without time zone,
+    desktop_bg character varying(255),
+    mobile_bg character varying(255),
+    link_url character varying(255),
+    lang character varying(16) DEFAULT 'all'::character varying NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.cms_promotion_activity OWNER TO postgres;
+
+--
+-- Name: cms_promotion_activity_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.cms_promotion_activity_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.cms_promotion_activity_id_seq OWNER TO postgres;
+
+--
+-- Name: cms_promotion_activity_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.cms_promotion_activity_id_seq OWNED BY public.cms_promotion_activity.id;
+
+
+--
+-- Name: oms_cart_item; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oms_cart_item (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    product_id bigint NOT NULL,
+    sku_id bigint NOT NULL,
+    quantity integer DEFAULT 1 NOT NULL,
+    selected_attributes_snapshot text,
+    selected_addons_snapshot text,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.oms_cart_item OWNER TO postgres;
+
+--
+-- Name: oms_cart_item_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oms_cart_item_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oms_cart_item_id_seq OWNER TO postgres;
+
+--
+-- Name: oms_cart_item_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oms_cart_item_id_seq OWNED BY public.oms_cart_item.id;
+
+
+--
+-- Name: oms_order; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oms_order (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    order_sn character varying(64) NOT NULL,
+    subtotal_amount numeric(10,2) NOT NULL,
+    tax_amount numeric(10,2) DEFAULT 0 NOT NULL,
+    total_amount numeric(10,2) NOT NULL,
+    status character varying(32) DEFAULT 'PENDING_PAYMENT'::character varying NOT NULL,
+    payment_status character varying(32) DEFAULT 'PENDING'::character varying NOT NULL,
+    currency character varying(16) DEFAULT 'USD'::character varying NOT NULL,
+    country character varying(16) DEFAULT 'US'::character varying NOT NULL,
+    preview_token character varying(128),
+    coupon_code character varying(64),
+    coupon_user_id bigint,
+    coupon_discount_amount numeric(10,2) DEFAULT 0 NOT NULL,
+    payment_intent_id bigint,
+    receiver_name character varying(100),
+    receiver_phone character varying(32),
+    receiver_address character varying(255),
+    receiver_country character varying(64),
+    receiver_first_name character varying(64),
+    receiver_last_name character varying(64),
+    receiver_address_line1 character varying(255),
+    receiver_address_line2 character varying(255),
+    receiver_city character varying(64),
+    receiver_state character varying(64),
+    receiver_zip_code character varying(32),
+    payment_method character varying(32),
+    pay_txn_no character varying(64),
+    checkout_source character varying(16) DEFAULT 'cart'::character varying,
+    shipping_method character varying(128),
+    shipping_amount numeric(10,2) DEFAULT 0,
+    discount_amount numeric(10,2) DEFAULT 0,
+    remark character varying(255),
+    pay_time timestamp without time zone,
+    delivery_company character varying(64),
+    delivery_sn character varying(64),
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.oms_order OWNER TO postgres;
+
+--
+-- Name: oms_order_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oms_order_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oms_order_id_seq OWNER TO postgres;
+
+--
+-- Name: oms_order_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oms_order_id_seq OWNED BY public.oms_order.id;
+
+
+--
+-- Name: oms_order_item; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oms_order_item (
+    id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    product_id bigint NOT NULL,
+    sku_id bigint NOT NULL,
+    product_name text NOT NULL,
+    product_pic character varying(255),
+    sku_code character varying(100),
+    sku_attributes_snapshot text,
+    addons_snapshot text,
+    quantity integer DEFAULT 1 NOT NULL,
+    unit_price numeric(10,2) NOT NULL,
+    line_amount numeric(10,2) NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.oms_order_item OWNER TO postgres;
+
+--
+-- Name: oms_order_item_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oms_order_item_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oms_order_item_id_seq OWNER TO postgres;
+
+--
+-- Name: oms_order_item_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oms_order_item_id_seq OWNED BY public.oms_order_item.id;
+
+
+--
+-- Name: pay_payment_intent; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pay_payment_intent (
+    id bigint NOT NULL,
+    intent_no character varying(64) NOT NULL,
+    order_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    amount numeric(10,2) NOT NULL,
+    currency character varying(16) DEFAULT 'USD'::character varying NOT NULL,
+    method_code character varying(32) NOT NULL,
+    provider_key character varying(32) DEFAULT 'mock'::character varying NOT NULL,
+    status character varying(32) DEFAULT 'CREATED'::character varying NOT NULL,
+    client_secret character varying(128),
+    mock_result character varying(32) DEFAULT 'pending'::character varying,
+    paid_time timestamp without time zone,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.pay_payment_intent OWNER TO postgres;
+
+--
+-- Name: pay_payment_intent_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pay_payment_intent_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pay_payment_intent_id_seq OWNER TO postgres;
+
+--
+-- Name: pay_payment_intent_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pay_payment_intent_id_seq OWNED BY public.pay_payment_intent.id;
+
+
+--
+-- Name: pms_category; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pms_category (
+    id bigint NOT NULL,
+    parent_id bigint,
+    slug character varying(128) NOT NULL,
+    name text NOT NULL,
+    description text,
+    hero_image character varying(255),
+    menu_image character varying(255),
+    sort_order integer DEFAULT 0 NOT NULL,
+    published boolean DEFAULT true NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.pms_category OWNER TO postgres;
+
+--
+-- Name: pms_category_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pms_category_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pms_category_id_seq OWNER TO postgres;
+
+--
+-- Name: pms_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pms_category_id_seq OWNED BY public.pms_category.id;
+
+
+--
+-- Name: pms_product; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pms_product (
+    id bigint NOT NULL,
+    category_id bigint NOT NULL,
+    slug character varying(180) NOT NULL,
+    name text NOT NULL,
+    subtitle text,
+    description text,
+    price numeric(10,2) NOT NULL,
+    compare_at_price numeric(10,2),
+    stock integer DEFAULT 0 NOT NULL,
+    pic character varying(255),
+    is_new boolean DEFAULT false NOT NULL,
+    tags text,
+    images text,
+    app_image character varying(255),
+    specs text,
+    quick_know text,
+    upsells text,
+    spec_table text,
+    box_items text,
+    faqs text,
+    published boolean DEFAULT true NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.pms_product OWNER TO postgres;
+
+--
+-- Name: pms_product_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pms_product_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pms_product_id_seq OWNER TO postgres;
+
+--
+-- Name: pms_product_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pms_product_id_seq OWNED BY public.pms_product.id;
+
+
+--
+-- Name: pms_review; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pms_review (
+    id bigint NOT NULL,
+    product_id bigint NOT NULL,
+    user_id bigint,
+    user_name character varying(50) NOT NULL,
+    rating integer NOT NULL,
+    title character varying(255),
+    content text,
+    images text,
+    verified_purchase boolean DEFAULT true,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pms_review_rating_check CHECK (((rating >= 1) AND (rating <= 5)))
+);
+
+
+ALTER TABLE public.pms_review OWNER TO postgres;
+
+--
+-- Name: pms_review_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pms_review_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pms_review_id_seq OWNER TO postgres;
+
+--
+-- Name: pms_review_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pms_review_id_seq OWNED BY public.pms_review.id;
+
+
+--
+-- Name: pms_sku; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pms_sku (
+    id bigint NOT NULL,
+    product_id bigint NOT NULL,
+    sku_code character varying(100) NOT NULL,
+    price numeric(10,2) NOT NULL,
+    compare_at_price numeric(10,2),
+    stock integer DEFAULT 0 NOT NULL,
+    pic character varying(255),
+    images text,
+    description text,
+    specs text,
+    status character varying(32) DEFAULT 'ACTIVE'::character varying NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.pms_sku OWNER TO postgres;
+
+--
+-- Name: pms_sku_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pms_sku_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pms_sku_id_seq OWNER TO postgres;
+
+--
+-- Name: pms_sku_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pms_sku_id_seq OWNED BY public.pms_sku.id;
+
+
+--
+-- Name: sms_coupon; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sms_coupon (
+    id bigint NOT NULL,
+    code character varying(64) NOT NULL,
+    title text NOT NULL,
+    description text,
+    threshold_amount numeric(10,2) DEFAULT 0 NOT NULL,
+    discount_amount numeric(10,2) NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.sms_coupon OWNER TO postgres;
+
+--
+-- Name: sms_coupon_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.sms_coupon_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sms_coupon_id_seq OWNER TO postgres;
+
+--
+-- Name: sms_coupon_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.sms_coupon_id_seq OWNED BY public.sms_coupon.id;
+
+
+--
+-- Name: sms_coupon_user; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sms_coupon_user (
+    id bigint NOT NULL,
+    coupon_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    status character varying(32) DEFAULT 'CLAIMED'::character varying NOT NULL,
+    claimed_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.sms_coupon_user OWNER TO postgres;
+
+--
+-- Name: sms_coupon_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.sms_coupon_user_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sms_coupon_user_id_seq OWNER TO postgres;
+
+--
+-- Name: sms_coupon_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.sms_coupon_user_id_seq OWNED BY public.sms_coupon_user.id;
+
+
+--
+-- Name: sys_user; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sys_user (
+    id bigint NOT NULL,
+    email character varying(128) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    first_name character varying(64) NOT NULL,
+    last_name character varying(64) NOT NULL,
+    nickname character varying(64),
+    email_verified boolean DEFAULT false NOT NULL,
+    status character varying(32) DEFAULT 'ACTIVE'::character varying NOT NULL,
+    last_login_time timestamp without time zone,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.sys_user OWNER TO postgres;
+
+--
+-- Name: sys_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.sys_user_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sys_user_id_seq OWNER TO postgres;
+
+--
+-- Name: sys_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.sys_user_id_seq OWNED BY public.sys_user.id;
+
+
+--
+-- Name: ums_user_address; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ums_user_address (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    country character varying(64) DEFAULT 'United States'::character varying NOT NULL,
+    first_name character varying(64),
+    last_name character varying(64),
+    phone character varying(32),
+    address_line1 character varying(255) NOT NULL,
+    address_line2 character varying(255),
+    city character varying(64),
+    state character varying(64),
+    zip_code character varying(32),
+    is_default boolean DEFAULT false NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.ums_user_address OWNER TO postgres;
+
+--
+-- Name: ums_user_address_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ums_user_address_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ums_user_address_id_seq OWNER TO postgres;
+
+--
+-- Name: ums_user_address_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ums_user_address_id_seq OWNED BY public.ums_user_address.id;
+
+
+--
+-- Name: cms_promotion_activity id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cms_promotion_activity ALTER COLUMN id SET DEFAULT nextval('public.cms_promotion_activity_id_seq'::regclass);
+
+
+--
+-- Name: oms_cart_item id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_cart_item ALTER COLUMN id SET DEFAULT nextval('public.oms_cart_item_id_seq'::regclass);
+
+
+--
+-- Name: oms_order id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order ALTER COLUMN id SET DEFAULT nextval('public.oms_order_id_seq'::regclass);
+
+
+--
+-- Name: oms_order_item id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order_item ALTER COLUMN id SET DEFAULT nextval('public.oms_order_item_id_seq'::regclass);
+
+
+--
+-- Name: pay_payment_intent id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pay_payment_intent ALTER COLUMN id SET DEFAULT nextval('public.pay_payment_intent_id_seq'::regclass);
+
+
+--
+-- Name: pms_category id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_category ALTER COLUMN id SET DEFAULT nextval('public.pms_category_id_seq'::regclass);
+
+
+--
+-- Name: pms_product id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_product ALTER COLUMN id SET DEFAULT nextval('public.pms_product_id_seq'::regclass);
+
+
+--
+-- Name: pms_review id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_review ALTER COLUMN id SET DEFAULT nextval('public.pms_review_id_seq'::regclass);
+
+
+--
+-- Name: pms_sku id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_sku ALTER COLUMN id SET DEFAULT nextval('public.pms_sku_id_seq'::regclass);
+
+
+--
+-- Name: sms_coupon id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon ALTER COLUMN id SET DEFAULT nextval('public.sms_coupon_id_seq'::regclass);
+
+
+--
+-- Name: sms_coupon_user id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon_user ALTER COLUMN id SET DEFAULT nextval('public.sms_coupon_user_id_seq'::regclass);
+
+
+--
+-- Name: sys_user id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sys_user ALTER COLUMN id SET DEFAULT nextval('public.sys_user_id_seq'::regclass);
+
+
+--
+-- Name: ums_user_address id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ums_user_address ALTER COLUMN id SET DEFAULT nextval('public.ums_user_address_id_seq'::regclass);
+
+
+--
+-- Data for Name: pga_jobagent; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_jobagent (jagpid, jaglogintime, jagstation) FROM stdin;
+9984	2026-04-05 16:25:36.559024+08	LAPTOP-M4D61SL9
+\.
+
+
+--
+-- Data for Name: pga_jobclass; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_jobclass (jclid, jclname) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pga_job; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_job (jobid, jobjclid, jobname, jobdesc, jobhostagent, jobenabled, jobcreated, jobchanged, jobagentid, jobnextrun, joblastrun) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pga_schedule; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_schedule (jscid, jscjobid, jscname, jscdesc, jscenabled, jscstart, jscend, jscminutes, jschours, jscweekdays, jscmonthdays, jscmonths) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pga_exception; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_exception (jexid, jexscid, jexdate, jextime) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pga_joblog; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_joblog (jlgid, jlgjobid, jlgstatus, jlgstart, jlgduration) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pga_jobstep; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_jobstep (jstid, jstjobid, jstname, jstdesc, jstenabled, jstkind, jstcode, jstconnstr, jstdbname, jstonerror, jscnextrun) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pga_jobsteplog; Type: TABLE DATA; Schema: pgagent; Owner: postgres
+--
+
+COPY pgagent.pga_jobsteplog (jslid, jsljlgid, jsljstid, jslstatus, jslresult, jslstart, jslduration, jsloutput) FROM stdin;
+\.
+
+
+--
+-- Data for Name: cms_promotion_activity; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cms_promotion_activity (id, code, title, subtitle, tag, countdown_end_at, desktop_bg, mobile_bg, link_url, lang, enabled, sort_order, create_time, update_time) FROM stdin;
+1	spring-ride-festival	{"en":"Easter Sale","zh":"复活节促销"}	{"en":"Save on this week's hottest rides","zh":"本周热卖车型限时优惠"}	{"en":"Save $20","zh":"立减 20 美元"}	2026-04-13 02:47:23.83875	https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994	https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994	/collections/electric-bike	all	t	1	2026-04-06 02:47:23.83875	2026-04-06 02:47:23.83875
+2	commuter-weekend-drop	{"en":"Weekend Ride Deals","zh":"周末骑行优惠"}	{"en":"Featured gear and commuter bundles refreshed weekly","zh":"每周更新精选通勤与骑行组合优惠"}	{"en":"Hot","zh":"热卖"}	2026-04-20 02:47:23.83875	https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=900	/collections/electric-scooters	all	f	2	2026-04-06 02:47:23.83875	2026-04-06 02:47:23.83875
+\.
+
+
+--
+-- Data for Name: oms_cart_item; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.oms_cart_item (id, user_id, product_id, sku_id, quantity, selected_attributes_snapshot, selected_addons_snapshot, create_time, update_time) FROM stdin;
+\.
+
+
+--
+-- Data for Name: oms_order; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.oms_order (id, user_id, order_sn, subtotal_amount, tax_amount, total_amount, status, payment_status, currency, country, preview_token, coupon_code, coupon_user_id, coupon_discount_amount, payment_intent_id, receiver_name, receiver_phone, receiver_address, receiver_country, receiver_first_name, receiver_last_name, receiver_address_line1, receiver_address_line2, receiver_city, receiver_state, receiver_zip_code, payment_method, pay_txn_no, checkout_source, shipping_method, shipping_amount, discount_amount, remark, pay_time, delivery_company, delivery_sn, create_time, update_time) FROM stdin;
+1	1	ORD202604050001SEED	489.99	39.60	519.59	PAID	PAID	USD	US	seed-preview-token	WELCOME10	1	10.00	1	Admin User	4155550123	100 Market Street, San Francisco, CA, 94105	United States	Admin	User	100 Market Street	Suite 8	San Francisco	CA	94105	credit_card	MOCK_TXN_SEED01	cart	UPS Ground/FedEx Home Delivery(2-5 Business Days)	0.00	10.00	Seed paid order	2026-04-06 02:47:23.904131	\N	\N	2026-04-06 02:47:23.904131	2026-04-06 02:47:23.904131
+\.
+
+
+--
+-- Data for Name: oms_order_item; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.oms_order_item (id, order_id, product_id, sku_id, product_name, product_pic, sku_code, sku_attributes_snapshot, addons_snapshot, quantity, unit_price, line_amount, create_time, update_time) FROM stdin;
+1	1	2	3	{"en":"S Nova Pro Commuting Electric Scooter","zh":"S Nova Pro 通勤电动滑板车"}	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200	SNOVA-BLK-STD	{"attributes":{"color":"Graphite Black","bundle":"Standard","style":"Pro"},"attributeDisplay":{"color":"Graphite Black","bundle":"Standard","style":"Pro"},"lang":"en"}	[]	1	489.99	489.99	2026-04-06 02:47:23.909799	2026-04-06 02:47:23.909799
+\.
+
+
+--
+-- Data for Name: pay_payment_intent; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.pay_payment_intent (id, intent_no, order_id, user_id, amount, currency, method_code, provider_key, status, client_secret, mock_result, paid_time, create_time, update_time) FROM stdin;
+1	PI_SEED_0001	1	1	519.59	USD	credit_card	mock	SUCCEEDED	mock_secret_seed_0001	success	2026-04-06 02:47:23.914121	2026-04-06 02:47:23.914121	2026-04-06 02:47:23.914121
+\.
+
+
+--
+-- Data for Name: pms_category; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.pms_category (id, parent_id, slug, name, description, hero_image, menu_image, sort_order, published, create_time, update_time) FROM stdin;
+1	\N	electric-scooters	{"en":"Electric Scooter","zh":"电动滑板车"}	{"en":"Portable commuter scooters built for the city.","zh":"为城市通勤打造的便携式电动滑板车。"}	https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=600	1	t	2026-04-06 02:47:23.846766	2026-04-06 02:47:23.846766
+2	\N	electric-bike	{"en":"Electric Bike","zh":"电动自行车"}	{"en":"Powerful ebikes for commuting and weekend adventures.","zh":"适合通勤与周末骑行的高性能电动自行车。"}	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=600	2	t	2026-04-06 02:47:23.846766	2026-04-06 02:47:23.846766
+3	\N	electric-skateboard	{"en":"Electric Skateboard","zh":"电动滑板"}	{"en":"Responsive boards tuned for carving and speed.","zh":"为 carving 与速度感打造的高响应电动滑板。"}	https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600	3	t	2026-04-06 02:47:23.846766	2026-04-06 02:47:23.846766
+4	\N	accessories	{"en":"Accessories","zh":"配件"}	{"en":"Ride-ready add-ons and replacement parts.","zh":"骑行必备附加配件与替换件。"}	https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&q=80&w=600	4	t	2026-04-06 02:47:23.846766	2026-04-06 02:47:23.846766
+11	1	commuter-city-ride	{"en":"Commuter & City Ride","zh":"城市通勤"}	{"en":"Foldable scooters tuned for everyday city miles.","zh":"适合城市日常通勤的可折叠滑板车。"}	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=600	1	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+12	1	performance-all-terrain-scooters	{"en":"Performance & All Terrain","zh":"性能越野"}	{"en":"Long-range scooters with more power and larger setups.","zh":"更强动力与更长续航的性能滑板车。"}	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=600	2	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+13	2	commuter-city-road	{"en":"Commuter & City Road","zh":"城市通勤"}	{"en":"Step-through ebikes built for practical city riding.","zh":"适合城市通勤的低跨点电助力车型。"}	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=600	1	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+14	2	off-road-all-terrain	{"en":"Off Road & All Terrain","zh":"越野全地形"}	{"en":"Fat-tire builds ready for rougher paths and weekend adventures.","zh":"适合复杂路况与周末出游的全地形电助力车型。"}	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=600	2	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+15	3	street-carving	{"en":"Street & Carving","zh":"街道 carving"}	{"en":"Stable boards for smooth carving and neighborhood rides.","zh":"适合平路 carving 与日常滑行的稳定板型。"}	https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600	1	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+16	3	off-road-terrain-boards	{"en":"Off Road & Terrain","zh":"越野地形"}	{"en":"All-terrain boards built for rougher surfaces.","zh":"适合更复杂地形的全地形电动滑板。"}	https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=600	2	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+17	4	safety-gear	{"en":"Safety Gear","zh":"安全装备"}	{"en":"Helmets and everyday rider protection essentials.","zh":"头盔与日常骑行安全防护装备。"}	https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600	1	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+18	4	locks-storage	{"en":"Locks & Storage","zh":"锁具收纳"}	{"en":"Secure your ride and carry more gear.","zh":"保护你的车辆并扩展日常收纳能力。"}	https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1600	https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=600	2	t	2026-04-06 02:47:23.852002	2026-04-06 02:47:23.852002
+\.
+
+
+--
+-- Data for Name: pms_product; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.pms_product (id, category_id, slug, name, subtitle, description, price, compare_at_price, stock, pic, is_new, tags, images, app_image, specs, quick_know, upsells, spec_table, box_items, faqs, published, sort_order, create_time, update_time) FROM stdin;
+2	12	s-nova-pro-commuting-electric-scooter	{"en":"S Nova Pro Commuting Electric Scooter","zh":"S Nova Pro 通勤电动滑板车"}	{"en":"Long-range city performance","zh":"长续航城市性能款"}	{"en":"<p>S Nova Pro balances power, comfort, and range for daily commuting and weekend rides.</p>","zh":"<p>S Nova Pro 平衡了动力、舒适性与续航，适合日常通勤与周末骑行。</p>"}	489.99	599.99	120	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200	t	{"en":["NEW","Spring Sale"],"zh":["新品","春季促销"]}	["https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200","https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Max Power","value":"1000W","icon":"ZapIcon"},{"label":"Max Range","value":"38 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"28 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"48V 13Ah","icon":"BatteryIcon"}],"zh":[{"label":"最大功率","value":"1000W","icon":"ZapIcon"},{"label":"最长续航","value":"38 英里","icon":"NavigationIcon"},{"label":"最高时速","value":"28 MPH","icon":"ActivityIcon"},{"label":"电池","value":"48V 13Ah","icon":"BatteryIcon"}]}	{"en":["1000W peak output for hill starts","Dual suspension for city comfort","Integrated lighting for commuting"],"zh":["1000W 峰值输出，轻松起步爬坡","双重减震提升城市舒适性","集成灯组适合日常通勤"]}	{"en":[{"code":"warranty-2y","name":"2-Year Extended Warranty","description":"Add two extra years of coverage.","price":99.99,"compareAtPrice":129.99,"image":"https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"warranty-2y","name":"2年延保","description":"额外增加两年保障。","price":99.99,"compareAtPrice":129.99,"image":"https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Motor","value":"1000W"},{"label":"Range","value":"38 Miles"},{"label":"Top Speed","value":"28 MPH"},{"label":"Battery","value":"48V 13Ah"}],"zh":[{"label":"电机","value":"1000W"},{"label":"续航","value":"38 英里"},{"label":"最高时速","value":"28 MPH"},{"label":"电池","value":"48V 13Ah"}]}	{"en":["Scooter body","Charger","Toolkit","Manual"],"zh":["车身","充电器","工具包","说明书"]}	{"en":[{"question":"Is it suitable for commuting?","answer":"Yes, this model is tuned for everyday urban commuting."}],"zh":[{"question":"适合通勤吗？","answer":"适合，这款车型就是为日常城市通勤调校的。"}]}	t	2	2026-04-06 02:47:23.853114	2026-04-06 02:47:23.853114
+3	13	isinwheel-u8-electric-bike-for-adults	{"en":"isinwheel U8 Electric Bike for Adults","zh":"isinwheel U8 成人电动自行车"}	{"en":"Compact daily ebike","zh":"紧凑型日常电助力自行车"}	{"en":"<p>U8 is a step-through commuter ebike built for easy city riding and weekend park loops.</p>","zh":"<p>U8 是一款低跨点通勤电助力自行车，适合城市通勤与周末轻松骑行。</p>"}	799.99	999.99	80	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	f	{"en":["Best Seller"],"zh":["热卖"]}	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200","https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Motor","value":"750W","icon":"ZapIcon"},{"label":"Range","value":"55 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"20 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"48V 15Ah","icon":"BatteryIcon"}],"zh":[{"label":"电机","value":"750W","icon":"ZapIcon"},{"label":"续航","value":"55 英里","icon":"NavigationIcon"},{"label":"最高时速","value":"20 MPH","icon":"ActivityIcon"},{"label":"电池","value":"48V 15Ah","icon":"BatteryIcon"}]}	{"en":["Step-through frame for comfortable starts and stops","Rear rack included for errands and commuting","Front suspension improves rough-road comfort"],"zh":["低跨点车架，上下车更轻松","自带后货架，适合通勤与采购","前叉减震提升复杂路面舒适性"]}	{"en":[{"code":"rear-basket","name":"Rear Basket","description":"Add extra storage for groceries or gear.","price":49.99,"compareAtPrice":69.99,"image":"https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"rear-basket","name":"后置车篮","description":"增加买菜或日常载物空间。","price":49.99,"compareAtPrice":69.99,"image":"https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Battery","value":"48V 15Ah"},{"label":"Motor","value":"750W"},{"label":"Frame","value":"Step-through aluminum"},{"label":"Brakes","value":"Mechanical disc"}],"zh":[{"label":"电池","value":"48V 15Ah"},{"label":"电机","value":"750W"},{"label":"车架","value":"铝合金低跨点车架"},{"label":"刹车","value":"机械碟刹"}]}	{"en":["Bike frame","Battery","Charger","Pedals","Toolkit"],"zh":["车身","电池","充电器","脚踏","工具包"]}	{"en":[{"question":"Can I remove the battery?","answer":"Yes, the battery is removable for charging indoors."}],"zh":[{"question":"电池可以拆下来吗？","answer":"可以，支持拆卸后在室内充电。"}]}	t	3	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+4	14	isinwheel-m50-mountain-ebike	{"en":"isinwheel M50 Mountain Ebike","zh":"isinwheel M50 山地电助力自行车"}	{"en":"Trail-ready adventure ebike","zh":"适合越野探索的电助力车型"}	{"en":"<p>M50 is built for mixed terrain with fat tires, confident power delivery, and a rugged frame.</p>","zh":"<p>M50 配备宽胎与强劲动力输出，适合多地形探索与通勤兼顾。</p>"}	1199.99	1399.99	50	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	f	{"en":["Adventure"],"zh":["越野"]}	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200","https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Motor","value":"1000W","icon":"ZapIcon"},{"label":"Range","value":"65 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"28 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"48V 20Ah","icon":"BatteryIcon"}],"zh":[{"label":"电机","value":"1000W","icon":"ZapIcon"},{"label":"续航","value":"65 英里","icon":"NavigationIcon"},{"label":"最高时速","value":"28 MPH","icon":"ActivityIcon"},{"label":"电池","value":"48V 20Ah","icon":"BatteryIcon"}]}	{"en":["Fat tires for all-terrain stability","Hydraulic disc brakes for controlled descents","Integrated display keeps ride data within view"],"zh":["宽胎设计提升全地形稳定性","液压碟刹让下坡更可控","集成仪表让骑行信息一目了然"]}	{"en":[{"code":"phone-mount","name":"Handlebar Phone Mount","description":"Keep navigation within view.","price":24.99,"compareAtPrice":34.99,"image":"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"phone-mount","name":"车把手机支架","description":"让导航始终保持在视线范围内。","price":24.99,"compareAtPrice":34.99,"image":"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Battery","value":"48V 20Ah"},{"label":"Motor","value":"1000W"},{"label":"Top Speed","value":"28 MPH"},{"label":"Tire","value":"26 x 4.0 inch"}],"zh":[{"label":"电池","value":"48V 20Ah"},{"label":"电机","value":"1000W"},{"label":"最高时速","value":"28 MPH"},{"label":"轮胎","value":"26 x 4.0 英寸"}]}	{"en":["Bike frame","Battery","Charger","Pedals","Toolkit"],"zh":["车身","电池","充电器","脚踏","工具包"]}	{"en":[{"question":"Is the M50 suitable for trails?","answer":"Yes, it is tuned for gravel paths, city roads, and light trails."}],"zh":[{"question":"M50 适合越野路况吗？","answer":"适合碎石路、城市道路以及轻度山地场景。"}]}	t	4	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+6	16	isinwheel-v10-off-road-electric-skateboard	{"en":"isinwheel V10 Off Road Electric Skateboard","zh":"isinwheel V10 越野电动滑板"}	{"en":"Bigger wheels for rougher terrain","zh":"更大的轮组，更适合复杂地形"}	{"en":"<p>V10 adds all-terrain wheels and stronger output for riders who want more confidence outside smooth pavement.</p>","zh":"<p>V10 通过全地形轮组和更强动力输出，为复杂路面提供更强通过性与稳定感。</p>"}	499.99	629.99	40	https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200	f	{"en":["Off Road"],"zh":["越野"]}	["https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Max Power","value":"1200W","icon":"ZapIcon"},{"label":"Range","value":"18 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"24 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"36V 7Ah","icon":"BatteryIcon"}],"zh":[{"label":"最大功率","value":"1200W","icon":"ZapIcon"},{"label":"续航","value":"18 英里","icon":"NavigationIcon"},{"label":"最高时速","value":"24 MPH","icon":"ActivityIcon"},{"label":"电池","value":"36V 7Ah","icon":"BatteryIcon"}]}	{"en":["All-terrain wheels tackle imperfect surfaces","Strong acceleration for experienced riders","Wide deck improves high-speed stability"],"zh":["全地形轮组适应不平整路面","更强加速适合进阶玩家","更宽板面提升高速稳定性"]}	{"en":[{"code":"helmet-addon","name":"Rider Helmet","description":"Essential protection for higher-speed rides.","price":39.99,"compareAtPrice":59.99,"image":"https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"helmet-addon","name":"骑行头盔","description":"高速骑行场景下的基础保护。","price":39.99,"compareAtPrice":59.99,"image":"https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Battery","value":"36V 7Ah"},{"label":"Motor","value":"1200W"},{"label":"Wheel","value":"All-terrain"},{"label":"Deck","value":"Wide maple composite"}],"zh":[{"label":"电池","value":"36V 7Ah"},{"label":"电机","value":"1200W"},{"label":"轮组","value":"全地形轮"},{"label":"板面","value":"宽版复合枫木"}]}	{"en":["Board","Remote","Charger","Toolkit"],"zh":["板身","遥控器","充电器","工具包"]}	{"en":[{"question":"Can it handle uneven pavement?","answer":"Yes, the off-road wheels are tuned for rougher surfaces."}],"zh":[{"question":"能应对颠簸路面吗？","answer":"可以，越野轮组就是为更复杂的地面场景准备的。"}]}	t	6	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+8	17	adult-riding-helmet	{"en":"Adult Riding Helmet","zh":"成人骑行头盔"}	{"en":"Daily protection with lightweight comfort","zh":"轻量舒适的日常防护"}	{"en":"<p>A lightweight helmet for scooter, ebike, and skateboard commuting.</p>","zh":"<p>适用于滑板车、电助力自行车和电动滑板通勤的轻量头盔。</p>"}	49.99	69.99	140	https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200	f	{"en":["Safety"],"zh":["安全装备"]}	["https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Weight","value":"320 g","icon":"BatteryIcon"},{"label":"Fit","value":"54-61 cm","icon":"NavigationIcon"}],"zh":[{"label":"重量","value":"320 克","icon":"BatteryIcon"},{"label":"头围","value":"54-61 厘米","icon":"NavigationIcon"}]}	{"en":["Adjustable dial fit system","Ventilated shell for daily comfort"],"zh":["旋钮调节头围系统","多孔通风结构提升舒适性"]}	{"en":[],"zh":[]}	{"en":[{"label":"Weight","value":"320 g"},{"label":"Shell","value":"PC + EPS"}],"zh":[{"label":"重量","value":"320 克"},{"label":"外壳","value":"PC + EPS"}]}	{"en":["Helmet","Padding set","Manual"],"zh":["头盔","内衬套装","说明书"]}	{"en":[{"question":"Is it suitable for scooters and skateboards?","answer":"Yes, it is designed for everyday personal mobility use."}],"zh":[{"question":"适用于滑板车和滑板吗？","answer":"适用，面向日常个人出行防护场景设计。"}]}	t	8	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+9	11	isinwheel-u1-folding-electric-scooter	{"en":"isinwheel U1 Folding Electric Scooter","zh":"isinwheel U1 折叠电动滑板车"}	{"en":"Compact city ride with app dashboard","zh":"带智能仪表的轻巧城市代步款"}	{"en":"<p>U1 is a lightweight folding scooter designed for quick city hops, apartment living, and everyday convenience.</p>","zh":"<p>U1 是一款轻量可折叠电动滑板车，适合城市短途出行、公寓通勤与日常代步。</p>"}	459.99	569.99	96	https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200	t	{"en":["NEW"],"zh":["新品"]}	["https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black2.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200"]	https://www.isinwheel.com/cdn/shop/files/20250114-110928.png?v=1736824216&width=400	{"en":[{"label":"Motor Capacity","value":"500W","icon":"ZapIcon"},{"label":"Max Range","value":"25 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"21 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"48V 10Ah","icon":"BatteryIcon"}],"zh":[{"label":"最大功率","value":"500W","icon":"ZapIcon"},{"label":"最大里程","value":"25 英里","icon":"NavigationIcon"},{"label":"最高速度","value":"21 MPH","icon":"ActivityIcon"},{"label":"电池容量","value":"48V 10Ah","icon":"BatteryIcon"}]}	{"en":["500W rear motor for quicker city acceleration","Three-image gallery tuned for hover preview","Foldable chassis built for apartment and trunk storage"],"zh":["500W 后驱电机，城市起步更轻快","三图画廊适合首页悬停预览","可折叠车身，便于公寓与后备箱收纳"]}	{"en":[{"code":"helmet-kit","name":"Helmet Kit","description":"Pair your new scooter with a matching helmet.","price":39.99,"compareAtPrice":49.99,"image":"https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"helmet-kit","name":"骑行头盔套装","description":"为你的新滑板车搭配一顶头盔。","price":39.99,"compareAtPrice":49.99,"image":"https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Motor","value":"500W"},{"label":"Range","value":"25 Miles"},{"label":"Top Speed","value":"21 MPH"},{"label":"Battery","value":"48V 10Ah"},{"label":"Weight","value":"44 lbs"}],"zh":[{"label":"电机","value":"500W"},{"label":"续航","value":"25 英里"},{"label":"最高速度","value":"21 MPH"},{"label":"电池","value":"48V 10Ah"},{"label":"车重","value":"44 磅"}]}	{"en":["Scooter body","Charger","Toolkit","User manual"],"zh":["车身","充电器","工具包","用户手册"]}	{"en":[{"question":"Is U1 beginner friendly?","answer":"Yes, the lighter frame and moderate top speed make it a good first city scooter."}],"zh":[{"question":"U1 适合新手吗？","answer":"适合，较轻的车身和适中的速度很适合作为第一台城市滑板车。"}]}	t	0	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+1	11	isinwheel-s9-pro-pneumatic-tire-electric-scooter	{"en":"isinwheel S9 Pro Pneumatic Tire Electric Scooter","zh":"isinwheel S9 Pro 气动轮胎电动滑板车"}	{"en":"Urban-ready commuter scooter","zh":"适合城市通勤的轻便滑板车"}	{"en":"<p>The S9 Pro is built for last-mile commuting with a foldable frame, pneumatic tires, and stable everyday performance.</p>","zh":"<p>S9 Pro 采用可折叠车架与气动轮胎，适合最后一公里通勤与日常出行。</p>"}	269.99	399.99	160	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200	f	{"en":["Spring Sale"],"zh":["春季促销"]}	["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200","https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200","https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Motor Capacity","value":"350W","icon":"ZapIcon"},{"label":"Max Range","value":"19 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"19 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"36V 7.5Ah","icon":"BatteryIcon"}],"zh":[{"label":"电机功率","value":"350W","icon":"ZapIcon"},{"label":"最长续航","value":"19 英里","icon":"NavigationIcon"},{"label":"最高时速","value":"19 MPH","icon":"ActivityIcon"},{"label":"电池","value":"36V 7.5Ah","icon":"BatteryIcon"}]}	{"en":["350W motor tuned for city commuting","10-inch pneumatic tires smooth out cracked pavement","Fold-and-go frame for apartment and office life"],"zh":["350W 电机适合城市通勤","10 英寸气动轮胎提升舒适性","可折叠车架，适合公寓与办公室场景"]}	{"en":[{"code":"warranty-1y","name":"1-Year Extended Warranty","description":"Add one extra year of coverage.","price":79.99,"compareAtPrice":99.99,"image":"https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&q=80&w=600"},{"code":"cable-lock","name":"Scooter Cable Lock","description":"Protect your scooter while parking.","price":29.99,"compareAtPrice":39.99,"image":"https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"warranty-1y","name":"1年延保","description":"额外增加一年保障。","price":79.99,"compareAtPrice":99.99,"image":"https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&q=80&w=600"},{"code":"cable-lock","name":"滑板车钢缆锁","description":"停车时保护你的滑板车。","price":29.99,"compareAtPrice":39.99,"image":"https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Battery","value":"36V 7.5Ah"},{"label":"Motor","value":"350W"},{"label":"Range","value":"19 Miles"},{"label":"Top Speed","value":"19 MPH"},{"label":"Tires","value":"10 inch pneumatic"}],"zh":[{"label":"电池","value":"36V 7.5Ah"},{"label":"电机","value":"350W"},{"label":"续航","value":"19 英里"},{"label":"最高时速","value":"19 MPH"},{"label":"轮胎","value":"10 英寸气动轮胎"}]}	{"en":["Scooter body","Charger","Toolkit","Manual"],"zh":["车身","充电器","工具包","说明书"]}	{"en":[{"question":"Is the scooter waterproof?","answer":"It is splash resistant for daily commuting, but should not be submerged."},{"question":"Can I carry it on public transit?","answer":"Yes, the folding frame is designed for mixed commute scenarios."}],"zh":[{"question":"这款滑板车防水吗？","answer":"它具备日常通勤防泼溅能力，但不能浸水。"},{"question":"能带上公共交通吗？","answer":"可以，可折叠车架适合混合通勤场景。"}]}	t	1	2026-04-06 02:47:23.853114	2026-04-06 02:47:23.853114
+5	15	isinwheel-v8-electric-skateboard-with-remote	{"en":"isinwheel V8 Electric Skateboard with Remote","zh":"isinwheel V8 遥控电动滑板"}	{"en":"Stable carving for everyday fun","zh":"稳定好控，适合日常玩乐"}	{"en":"<p>V8 delivers a confidence-inspiring ride with simple controls and a comfortable deck flex.</p>","zh":"<p>V8 提供易上手的控制体验与舒适板面弹性，适合日常通勤与休闲滑行。</p>"}	329.99	429.99	90	https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200	f	{"en":["Carving"],"zh":["灵活转向"]}	["https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Max Power","value":"700W","icon":"ZapIcon"},{"label":"Range","value":"12 Miles","icon":"NavigationIcon"},{"label":"Top Speed","value":"22 MPH","icon":"ActivityIcon"},{"label":"Battery","value":"36V 4Ah","icon":"BatteryIcon"}],"zh":[{"label":"最大功率","value":"700W","icon":"ZapIcon"},{"label":"续航","value":"12 英里","icon":"NavigationIcon"},{"label":"最高时速","value":"22 MPH","icon":"ActivityIcon"},{"label":"电池","value":"36V 4Ah","icon":"BatteryIcon"}]}	{"en":["Wireless remote for intuitive acceleration and braking","Flexible deck keeps the ride smooth","Compact size is easy to carry indoors"],"zh":["无线遥控器让加速与制动更直观","板面弹性带来更平顺的骑行感受","紧凑尺寸便于携带进室内"]}	{"en":[{"code":"wrist-guard","name":"Protective Wrist Guard Set","description":"Extra confidence for new riders.","price":19.99,"compareAtPrice":29.99,"image":"https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"wrist-guard","name":"护腕套装","description":"为新手提供更多安全感。","price":19.99,"compareAtPrice":29.99,"image":"https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&q=80&w=600"}]}	{"en":[{"label":"Battery","value":"36V 4Ah"},{"label":"Motor","value":"700W"},{"label":"Deck","value":"8-layer maple"},{"label":"Remote","value":"2.4G wireless"}],"zh":[{"label":"电池","value":"36V 4Ah"},{"label":"电机","value":"700W"},{"label":"板面","value":"8层枫木"},{"label":"遥控","value":"2.4G 无线"}]}	{"en":["Board","Remote","Charger","Toolkit"],"zh":["板身","遥控器","充电器","工具包"]}	{"en":[{"question":"Is this a good first electric skateboard?","answer":"Yes, the V8 is designed to be approachable for new riders."}],"zh":[{"question":"适合作为第一块电动滑板吗？","answer":"适合，V8 的调校对新手很友好。"}]}	t	5	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+7	18	electric-bike-cable-lock	{"en":"Electric Bike Cable Lock","zh":"电动自行车钢缆锁"}	{"en":"Simple daily anti-theft essential","zh":"日常防盗必备"}	{"en":"<p>A durable cable lock sized for bikes, scooters, and rack parking.</p>","zh":"<p>适用于自行车、滑板车和车架停放场景的耐用钢缆锁。</p>"}	29.99	39.99	180	https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200	f	{"en":["Accessory"],"zh":["配件"]}	["https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200"]		{"en":[{"label":"Length","value":"120 cm","icon":"NavigationIcon"},{"label":"Material","value":"Steel cable","icon":"ZapIcon"}],"zh":[{"label":"长度","value":"120 厘米","icon":"NavigationIcon"},{"label":"材质","value":"钢缆","icon":"ZapIcon"}]}	{"en":["Coated steel cable protects paint","Easy twist-lock operation"],"zh":["包胶钢缆减少刮蹭","旋钮锁止，操作简单"]}	{"en":[],"zh":[]}	{"en":[{"label":"Length","value":"120 cm"},{"label":"Core","value":"Steel cable"}],"zh":[{"label":"长度","value":"120 厘米"},{"label":"内芯","value":"钢缆"}]}	{"en":["Cable lock","Keys"],"zh":["钢缆锁","钥匙"]}	{"en":[{"question":"Can it lock two bikes together?","answer":"It works best for a single bike or scooter frame-to-rack lock."}],"zh":[{"question":"可以同时锁两辆车吗？","answer":"更适合单车或滑板车与固定架的锁定场景。"}]}	t	7	2026-04-06 02:47:23.861189	2026-04-06 02:47:23.861189
+\.
+
+
+--
+-- Data for Name: pms_review; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.pms_review (id, product_id, user_id, user_name, rating, title, content, images, verified_purchase, create_time) FROM stdin;
+1	1	1	Admin User	5	Great commuter scooter	Smooth ride and easy to fold for office storage.	[]	t	2026-04-06 02:47:23.884164
+2	2	2	Sarah Miller	5	Perfect for daily commute	The range is enough for my full work week recharges.	[]	t	2026-04-06 02:47:23.884164
+3	3	2	Sarah Miller	4	Comfortable city ebike	Step-through frame makes downtown riding stress-free.	[]	t	2026-04-06 02:47:23.884164
+4	5	1	Admin User	5	Fun first electric skateboard	Stable enough for casual carving and neighborhood rides.	[]	t	2026-04-06 02:47:23.884164
+\.
+
+
+--
+-- Data for Name: pms_sku; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.pms_sku (id, product_id, sku_code, price, compare_at_price, stock, pic, images, description, specs, status, create_time, update_time) FROM stdin;
+1	1	S9PRO-BLK-STD	269.99	399.99	90	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]	{"en":"Midnight black commuter build","zh":"午夜黑通勤版"}	{"en":{"color":"Midnight Black","bundle":"Standard","style":"Commuter"},"zh":{"颜色":"午夜黑","套餐":"标准版","款式":"通勤版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+2	1	S9PRO-WHT-ACC	299.99	429.99	0	https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]	{"en":"Pearl white city bundle","zh":"珍珠白城市礼包版"}	{"en":{"color":"Pearl White","bundle":"City Kit","style":"Commuter"},"zh":{"颜色":"珍珠白","套餐":"城市礼包","款式":"通勤版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+3	2	SNOVA-BLK-STD	489.99	599.99	60	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black long-range setup","zh":"黑色长续航版本"}	{"en":{"color":"Graphite Black","bundle":"Standard","style":"Pro"},"zh":{"颜色":"石墨黑","套餐":"标准版","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+4	2	SNOVA-GRY-COM	529.99	649.99	30	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]	{"en":"Grey commuter plus kit","zh":"灰色通勤增强版"}	{"en":{"color":"Storm Grey","bundle":"Commuter Plus","style":"Pro"},"zh":{"颜色":"风暴灰","套餐":"通勤增强版","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+5	3	U8-BLK-STD	799.99	999.99	35	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black commuter configuration","zh":"黑色通勤配置"}	{"en":{"color":"Matte Black","bundle":"Standard","style":"Step-through"},"zh":{"颜色":"磨砂黑","套餐":"标准版","款式":"低跨版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+6	3	U8-BLU-ACC	849.99	1049.99	22	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]	{"en":"Blue city accessory bundle","zh":"蓝色城市配件套装"}	{"en":{"color":"Ocean Blue","bundle":"Accessory Kit","style":"Step-through"},"zh":{"颜色":"海洋蓝","套餐":"配件套装","款式":"低跨版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+7	4	M50-GRN-STD	1199.99	1399.99	18	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]	{"en":"Forest green standard build","zh":"森林绿标准版"}	{"en":{"color":"Forest Green","bundle":"Standard","style":"Mountain"},"zh":{"颜色":"森林绿","套餐":"标准版","款式":"山地版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+8	4	M50-SND-PRO	1299.99	1499.99	12	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]	{"en":"Sand adventure bundle","zh":"沙岩色越野套装"}	{"en":{"color":"Sand","bundle":"Adventure Kit","style":"Mountain"},"zh":{"颜色":"沙岩色","套餐":"越野套装","款式":"山地版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+9	5	V8-BLK-STD	329.99	429.99	48	https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=1200"]	{"en":"Standard black carve setup","zh":"标准黑色 carving 版本"}	{"en":{"color":"Black","bundle":"Standard","style":"Street"},"zh":{"颜色":"黑色","套餐":"标准版","款式":"街道版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+10	6	V10-BLK-OFF	499.99	629.99	20	https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1508979828023-5f79c6b6e81d?auto=format&fit=crop&q=80&w=1200"]	{"en":"Off-road black setup","zh":"黑色越野版本"}	{"en":{"color":"Black","bundle":"Standard","style":"Off Road"},"zh":{"颜色":"黑色","套餐":"标准版","款式":"越野版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+11	7	LOCK-BLK-ONE	29.99	39.99	180	https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=1200"]	{"en":"Single black cable lock","zh":"黑色单只钢缆锁"}	{"en":{"color":"Black","bundle":"Single","style":"Accessory"},"zh":{"颜色":"黑色","套餐":"单只装","款式":"配件"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+12	8	HELMET-M-BLK	49.99	69.99	75	https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200"]	{"en":"Medium black helmet","zh":"中码黑色头盔"}	{"en":{"color":"Black","bundle":"Single","style":"M"},"zh":{"颜色":"黑色","套餐":"单只装","款式":"M 码"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+13	1	S9PRO-BLK-CITY-LITE	279.99	409.99	38	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black city kit lite package","zh":"黑色城市轻装版"}	{"en":{"color":"Midnight Black","bundle":"City Kit","style":"Lite"},"zh":{"颜色":"午夜黑","套餐":"城市礼包","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+14	1	S9PRO-BLK-TRAVEL-PRO	319.99	449.99	12	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black travel pro setup","zh":"黑色旅行 Pro 套装"}	{"en":{"color":"Midnight Black","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"午夜黑","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+15	1	S9PRO-WHT-STD-LITE	289.99	419.99	8	https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]	{"en":"White standard lite setup","zh":"白色标准轻装版"}	{"en":{"color":"Pearl White","bundle":"Standard","style":"Lite"},"zh":{"颜色":"珍珠白","套餐":"标准版","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+16	1	S9PRO-WHT-TRAVEL-PRO	329.99	459.99	0	https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]	{"en":"White travel pro bundle","zh":"白色旅行 Pro 套装"}	{"en":{"color":"Pearl White","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"珍珠白","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+17	2	SNOVA-BLK-TRAVEL-PRO	519.99	629.99	26	https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1587574293340-e0011c4e8ecf?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black travel pro setup","zh":"黑色旅行 Pro 版本"}	{"en":{"color":"Graphite Black","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"石墨黑","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+18	2	SNOVA-BLK-COM-LITE	499.99	609.99	14	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black commuter lite setup","zh":"黑色通勤轻装版"}	{"en":{"color":"Graphite Black","bundle":"Commuter Plus","style":"Lite"},"zh":{"颜色":"石墨黑","套餐":"通勤增强版","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+19	2	SNOVA-GRY-STD-LITE	509.99	619.99	11	https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=1200"]	{"en":"Grey standard lite setup","zh":"灰色标准轻装版"}	{"en":{"color":"Storm Grey","bundle":"Standard","style":"Lite"},"zh":{"颜色":"风暴灰","套餐":"标准版","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+20	2	SNOVA-GRY-TRAVEL-PRO	549.99	669.99	0	https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200"]	{"en":"Grey travel pro bundle","zh":"灰色旅行 Pro 套装"}	{"en":{"color":"Storm Grey","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"风暴灰","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+21	3	U8-BLK-CITY-LITE	789.99	979.99	18	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black city lite commuter bike","zh":"黑色城市轻装通勤版"}	{"en":{"color":"Matte Black","bundle":"City Kit","style":"Lite"},"zh":{"颜色":"磨砂黑","套餐":"城市礼包","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+22	3	U8-BLK-TRAVEL-PRO	869.99	1079.99	7	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]	{"en":"Black travel pro commuter bike","zh":"黑色旅行 Pro 通勤版"}	{"en":{"color":"Matte Black","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"磨砂黑","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+23	3	U8-BLU-STD-LITE	829.99	1019.99	9	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]	{"en":"Blue standard lite commuter bike","zh":"蓝色标准轻装通勤版"}	{"en":{"color":"Ocean Blue","bundle":"Standard","style":"Lite"},"zh":{"颜色":"海洋蓝","套餐":"标准版","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+24	3	U8-BLU-TRAVEL-PRO	889.99	1099.99	0	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]	{"en":"Blue travel pro commuter bike","zh":"蓝色旅行 Pro 通勤版"}	{"en":{"color":"Ocean Blue","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"海洋蓝","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+25	4	M50-GRN-EXP-LITE	1219.99	1429.99	10	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]	{"en":"Green explorer lite build","zh":"绿色探索轻装版"}	{"en":{"color":"Forest Green","bundle":"Explorer Kit","style":"Lite"},"zh":{"颜色":"森林绿","套餐":"探索套装","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+26	4	M50-GRN-ADV-PRO	1329.99	1529.99	6	https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=1200"]	{"en":"Green adventure pro build","zh":"绿色越野 Pro 版"}	{"en":{"color":"Forest Green","bundle":"Adventure Kit","style":"Pro"},"zh":{"颜色":"森林绿","套餐":"越野套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+27	4	M50-SND-STD-LITE	1239.99	1449.99	5	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]	{"en":"Sand standard lite build","zh":"沙岩色标准轻装版"}	{"en":{"color":"Sand","bundle":"Standard","style":"Lite"},"zh":{"颜色":"沙岩色","套餐":"标准版","款式":"轻装版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+28	4	M50-SND-EXP-PRO	1349.99	1549.99	0	https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200	["https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=1200"]	{"en":"Sand explorer pro build","zh":"沙岩色探索 Pro 版"}	{"en":{"color":"Sand","bundle":"Explorer Kit","style":"Pro"},"zh":{"颜色":"沙岩色","套餐":"探索套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+29	9	U1-BLK-STD	459.99	569.99	42	https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200	["https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black2.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200"]	{"en":"Black standard commuter setup","zh":"黑色标准通勤版"}	{"en":{"color":"Midnight Black","bundle":"Standard","style":"Commuter"},"zh":{"颜色":"午夜黑","套餐":"标准版","款式":"通勤版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+30	9	U1-GRY-CITY	479.99	589.99	28	https://www.isinwheel.com/cdn/shop/files/U1black2.jpg?v=1725594261&width=1200	["https://www.isinwheel.com/cdn/shop/files/U1black2.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200"]	{"en":"Grey city comfort setup","zh":"灰色城市舒适版"}	{"en":{"color":"Storm Grey","bundle":"City Comfort","style":"Commuter"},"zh":{"颜色":"风暴灰","套餐":"城市舒适版","款式":"通勤版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+31	9	U1-WHT-TRAVEL	499.99	609.99	11	https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200	["https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black2.jpg?v=1725594261&width=1200"]	{"en":"White travel bundle","zh":"白色旅行套装版"}	{"en":{"color":"Pearl White","bundle":"Travel Kit","style":"Commuter"},"zh":{"颜色":"珍珠白","套餐":"旅行套装","款式":"通勤版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+32	9	U1-WHT-TRAVEL-PRO	519.99	629.99	0	https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200	["https://www.isinwheel.com/cdn/shop/files/U1black3.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black2.jpg?v=1725594261&width=1200","https://www.isinwheel.com/cdn/shop/files/U1black1.jpg?v=1725594261&width=1200"]	{"en":"White travel pro setup","zh":"白色旅行 Pro 套装"}	{"en":{"color":"Pearl White","bundle":"Travel Kit","style":"Pro"},"zh":{"颜色":"珍珠白","套餐":"旅行套装","款式":"Pro 版"}}	ACTIVE	2026-04-06 02:47:23.873944	2026-04-06 02:47:23.873944
+\.
+
+
+--
+-- Data for Name: sms_coupon; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sms_coupon (id, code, title, description, threshold_amount, discount_amount, active, create_time, update_time) FROM stdin;
+1	WELCOME10	{"en":"$10 off your first ride","zh":"首单立减 $10"}	{"en":"No-threshold coupon for your first checkout.","zh":"首单无门槛优惠券。"}	0.00	10.00	t	2026-04-06 02:47:23.893771	2026-04-06 02:47:23.893771
+2	SAVE50	{"en":"$50 off orders over $500","zh":"满 $500 减 $50"}	{"en":"Applies when your order subtotal reaches $500.","zh":"订单小计满 $500 可用。"}	500.00	50.00	t	2026-04-06 02:47:23.893771	2026-04-06 02:47:23.893771
+\.
+
+
+--
+-- Data for Name: sms_coupon_user; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sms_coupon_user (id, coupon_id, user_id, status, claimed_time, create_time, update_time) FROM stdin;
+1	1	1	CLAIMED	2026-04-06 02:47:23.899143	2026-04-06 02:47:23.899143	2026-04-06 02:47:23.899143
+2	2	1	CLAIMED	2026-04-06 02:47:23.899143	2026-04-06 02:47:23.899143	2026-04-06 02:47:23.899143
+3	1	2	CLAIMED	2026-04-06 02:47:23.899143	2026-04-06 02:47:23.899143	2026-04-06 02:47:23.899143
+\.
+
+
+--
+-- Data for Name: sys_user; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sys_user (id, email, password_hash, first_name, last_name, nickname, email_verified, status, last_login_time, create_time, update_time) FROM stdin;
+1	admin@isinwheel.local	123456	Admin	User	Admin User	f	ACTIVE	\N	2026-04-06 02:47:23.832691	2026-04-06 02:47:23.832691
+2	sarah@isinwheel.local	123456	Sarah	Miller	Sarah Miller	f	ACTIVE	\N	2026-04-06 02:47:23.832691	2026-04-06 02:47:23.832691
+\.
+
+
+--
+-- Data for Name: ums_user_address; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.ums_user_address (id, user_id, country, first_name, last_name, phone, address_line1, address_line2, city, state, zip_code, is_default, create_time, update_time) FROM stdin;
+1	1	United States	Admin	User	4155550123	100 Market Street	Suite 8	San Francisco	CA	94105	t	2026-04-06 02:47:23.88953	2026-04-06 02:47:23.88953
+2	2	United States	Sarah	Miller	2065550188	88 Pine Avenue		Seattle	WA	98101	t	2026-04-06 02:47:23.88953	2026-04-06 02:47:23.88953
+\.
+
+
+--
+-- Name: cms_promotion_activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.cms_promotion_activity_id_seq', 2, true);
+
+
+--
+-- Name: oms_cart_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.oms_cart_item_id_seq', 1, true);
+
+
+--
+-- Name: oms_order_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.oms_order_id_seq', 1, true);
+
+
+--
+-- Name: oms_order_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.oms_order_item_id_seq', 1, true);
+
+
+--
+-- Name: pay_payment_intent_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pay_payment_intent_id_seq', 1, true);
+
+
+--
+-- Name: pms_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pms_category_id_seq', 18, true);
+
+
+--
+-- Name: pms_product_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pms_product_id_seq', 9, true);
+
+
+--
+-- Name: pms_review_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pms_review_id_seq', 4, true);
+
+
+--
+-- Name: pms_sku_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pms_sku_id_seq', 32, true);
+
+
+--
+-- Name: sms_coupon_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sms_coupon_id_seq', 2, true);
+
+
+--
+-- Name: sms_coupon_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sms_coupon_user_id_seq', 3, true);
+
+
+--
+-- Name: sys_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sys_user_id_seq', 2, true);
+
+
+--
+-- Name: ums_user_address_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.ums_user_address_id_seq', 2, true);
+
+
+--
+-- Name: cms_promotion_activity cms_promotion_activity_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cms_promotion_activity
+    ADD CONSTRAINT cms_promotion_activity_code_key UNIQUE (code);
+
+
+--
+-- Name: cms_promotion_activity cms_promotion_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cms_promotion_activity
+    ADD CONSTRAINT cms_promotion_activity_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oms_cart_item oms_cart_item_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_cart_item
+    ADD CONSTRAINT oms_cart_item_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oms_order_item oms_order_item_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order_item
+    ADD CONSTRAINT oms_order_item_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oms_order oms_order_order_sn_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order
+    ADD CONSTRAINT oms_order_order_sn_key UNIQUE (order_sn);
+
+
+--
+-- Name: oms_order oms_order_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order
+    ADD CONSTRAINT oms_order_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pay_payment_intent pay_payment_intent_intent_no_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pay_payment_intent
+    ADD CONSTRAINT pay_payment_intent_intent_no_key UNIQUE (intent_no);
+
+
+--
+-- Name: pay_payment_intent pay_payment_intent_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pay_payment_intent
+    ADD CONSTRAINT pay_payment_intent_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pms_category pms_category_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_category
+    ADD CONSTRAINT pms_category_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pms_category pms_category_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_category
+    ADD CONSTRAINT pms_category_slug_key UNIQUE (slug);
+
+
+--
+-- Name: pms_product pms_product_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_product
+    ADD CONSTRAINT pms_product_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pms_product pms_product_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_product
+    ADD CONSTRAINT pms_product_slug_key UNIQUE (slug);
+
+
+--
+-- Name: pms_review pms_review_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_review
+    ADD CONSTRAINT pms_review_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pms_sku pms_sku_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_sku
+    ADD CONSTRAINT pms_sku_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pms_sku pms_sku_sku_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_sku
+    ADD CONSTRAINT pms_sku_sku_code_key UNIQUE (sku_code);
+
+
+--
+-- Name: sms_coupon sms_coupon_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon
+    ADD CONSTRAINT sms_coupon_code_key UNIQUE (code);
+
+
+--
+-- Name: sms_coupon sms_coupon_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon
+    ADD CONSTRAINT sms_coupon_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sms_coupon_user sms_coupon_user_coupon_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon_user
+    ADD CONSTRAINT sms_coupon_user_coupon_id_user_id_key UNIQUE (coupon_id, user_id);
+
+
+--
+-- Name: sms_coupon_user sms_coupon_user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon_user
+    ADD CONSTRAINT sms_coupon_user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sys_user sys_user_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sys_user
+    ADD CONSTRAINT sys_user_email_key UNIQUE (email);
+
+
+--
+-- Name: sys_user sys_user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sys_user
+    ADD CONSTRAINT sys_user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ums_user_address ums_user_address_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ums_user_address
+    ADD CONSTRAINT ums_user_address_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oms_cart_item oms_cart_item_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_cart_item
+    ADD CONSTRAINT oms_cart_item_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.pms_product(id);
+
+
+--
+-- Name: oms_cart_item oms_cart_item_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_cart_item
+    ADD CONSTRAINT oms_cart_item_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.pms_sku(id);
+
+
+--
+-- Name: oms_cart_item oms_cart_item_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_cart_item
+    ADD CONSTRAINT oms_cart_item_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.sys_user(id);
+
+
+--
+-- Name: oms_order oms_order_coupon_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order
+    ADD CONSTRAINT oms_order_coupon_user_id_fkey FOREIGN KEY (coupon_user_id) REFERENCES public.sms_coupon_user(id);
+
+
+--
+-- Name: oms_order_item oms_order_item_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order_item
+    ADD CONSTRAINT oms_order_item_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.oms_order(id);
+
+
+--
+-- Name: oms_order_item oms_order_item_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order_item
+    ADD CONSTRAINT oms_order_item_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.pms_product(id);
+
+
+--
+-- Name: oms_order_item oms_order_item_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order_item
+    ADD CONSTRAINT oms_order_item_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.pms_sku(id);
+
+
+--
+-- Name: oms_order oms_order_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oms_order
+    ADD CONSTRAINT oms_order_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.sys_user(id);
+
+
+--
+-- Name: pay_payment_intent pay_payment_intent_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pay_payment_intent
+    ADD CONSTRAINT pay_payment_intent_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.oms_order(id);
+
+
+--
+-- Name: pay_payment_intent pay_payment_intent_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pay_payment_intent
+    ADD CONSTRAINT pay_payment_intent_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.sys_user(id);
+
+
+--
+-- Name: pms_product pms_product_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_product
+    ADD CONSTRAINT pms_product_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.pms_category(id);
+
+
+--
+-- Name: pms_review pms_review_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_review
+    ADD CONSTRAINT pms_review_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.pms_product(id);
+
+
+--
+-- Name: pms_sku pms_sku_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pms_sku
+    ADD CONSTRAINT pms_sku_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.pms_product(id);
+
+
+--
+-- Name: sms_coupon_user sms_coupon_user_coupon_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon_user
+    ADD CONSTRAINT sms_coupon_user_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES public.sms_coupon(id);
+
+
+--
+-- Name: sms_coupon_user sms_coupon_user_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_coupon_user
+    ADD CONSTRAINT sms_coupon_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.sys_user(id);
+
+
+--
+-- Name: ums_user_address ums_user_address_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ums_user_address
+    ADD CONSTRAINT ums_user_address_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.sys_user(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 2dPxtr7ZaAmycEo3LP8NKNYJd8WLVpbbfznTU6ezyMp2olGZkYp4DmgWbtDHp4v
+

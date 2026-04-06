@@ -291,6 +291,9 @@ const leftTags = computed(() => (Array.isArray(product.value?.tags) ? product.va
 const hasSpringSale = computed(() => (Array.isArray(product.value?.tags) ? product.value.tags : []).some((tag: string) => String(tag).toLowerCase().includes('spring sale')))
 const reviewCount = computed(() => Math.max(Number(product.value?.reviewCount || 0), 61))
 const selectedVariantText = computed(() => attributeText(selection))
+const normalizedQuantity = computed(() =>
+  Math.max(1, Number.parseInt(String(quantity.value || 1), 10) || 1),
+)
 
 const syncActiveImage = () => {
   activeImage.value = galleryImages.value[0] || ''
@@ -341,6 +344,7 @@ const cycleImage = (step: number) => {
 }
 
 const handleAddToCart = async () => {
+  await session.fetchMe()
   if (!session.isLoggedIn.value) {
     await navigateTo('/login')
     return
@@ -348,8 +352,11 @@ const handleAddToCart = async () => {
   if (!selectedSku.value) return
   adding.value = true
   try {
-    await cart.addToCart({ productId: product.value.id, skuId: selectedSku.value.id, quantity: Number(quantity.value), addonCodes: selectedAddonCodes.value })
-    cart.openCart()
+    const res = await cart.addToCart({ productId: product.value.id, skuId: selectedSku.value.id, quantity: normalizedQuantity.value, addonCodes: selectedAddonCodes.value })
+    if (res?.code === 200) {
+      await cart.refreshCart()
+      cart.openCart()
+    }
   } finally {
     adding.value = false
   }

@@ -2,11 +2,14 @@ package com.shop.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shop.common.ProductOptionUtils;
 import com.shop.common.Result;
 import com.shop.entity.PmsCategory;
 import com.shop.entity.PmsProduct;
+import com.shop.entity.PmsSku;
 import com.shop.service.PmsCategoryService;
 import com.shop.service.PmsProductService;
+import com.shop.service.PmsSkuService;
 import com.shop.vo.CategoryMenuBannerVO;
 import com.shop.vo.CategoryMenuGroupVO;
 import com.shop.vo.CategoryMenuVO;
@@ -19,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +37,7 @@ public class CategoryController {
 
   private final PmsCategoryService categoryService;
   private final PmsProductService productService;
+  private final PmsSkuService skuService;
 
   @GetMapping("/tree")
   public Result<List<CategoryVO>> tree() {
@@ -78,7 +84,11 @@ public class CategoryController {
   public Result<Page<ProductVO>> products(@PathVariable String slug,
       @RequestParam(defaultValue = "1") Integer pageNum,
       @RequestParam(defaultValue = "12") Integer pageSize,
-      @RequestParam(required = false) String sort) {
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) String stock,
+      @RequestParam(required = false) BigDecimal minPrice,
+      @RequestParam(required = false) BigDecimal maxPrice,
+      @RequestParam(required = false) String childSlug) {
     List<PmsCategory> categories = publishedCategories();
     Map<Long, List<PmsCategory>> childrenByParent = buildChildrenByParent(categories);
     Map<Long, PmsCategory> categoryById = categories.stream()
@@ -92,18 +102,31 @@ public class CategoryController {
     }
 
     List<Long> categoryIds = collectDescendantIds(category.getId(), childrenByParent);
+    if (childSlug != null && !childSlug.isBlank()) {
+      PmsCategory childCategory = categories.stream()
+          .filter(item -> childSlug.equals(item.getSlug()))
+          .findFirst()
+          .orElse(null);
+      if (childCategory != null && categoryIds.contains(childCategory.getId())) {
+        categoryIds = collectDescendantIds(childCategory.getId(), childrenByParent);
+      }
+    }
+
     QueryWrapper<PmsProduct> wrapper = new QueryWrapper<PmsProduct>()
         .in("category_id", categoryIds)
-        .eq("published", true)
-        .orderByAsc("sort_order")
-        .orderByAsc("id");
-    if ("price-ascending".equalsIgnoreCase(sort)) {
-      wrapper.orderByAsc("price");
-    } else if ("price-descending".equalsIgnoreCase(sort)) {
-      wrapper.orderByDesc("price");
-    } else {
-      wrapper.orderByAsc("sort_order").orderByDesc("id");
+        .eq("published", true);
+    if ("in-stock".equalsIgnoreCase(stock)) {
+      wrapper.gt("stock", 0);
+    } else if ("out-of-stock".equalsIgnoreCase(stock)) {
+      wrapper.le("stock", 0);
     }
+    if (minPrice != null) {
+      wrapper.ge("price", minPrice);
+    }
+    if (maxPrice != null) {
+      wrapper.le("price", maxPrice);
+    }
+    applyProductSort(wrapper, sort);
 
     Page<PmsProduct> page = productService.page(new Page<>(pageNum, pageSize), wrapper);
     Page<ProductVO> voPage = new Page<>(pageNum, pageSize);
@@ -111,9 +134,13 @@ public class CategoryController {
     voPage.setPages(page.getPages());
     voPage.setCurrent(page.getCurrent());
     voPage.setSize(page.getSize());
+    Map<Long, Boolean> hasOptionsByProductId = loadHasOptionsByProductIds(page.getRecords().stream()
+        .map(PmsProduct::getId)
+        .collect(Collectors.toList()));
     voPage.setRecords(page.getRecords().stream().map(product -> {
       ProductVO vo = ProductVO.from(product, null);
       vo.setCategorySlug(resolveRootSlug(product.getCategoryId(), categoryById));
+      vo.setHasOptions(hasOptionsByProductId.getOrDefault(product.getId(), false));
       return vo;
     }).collect(Collectors.toList()));
     return Result.success(voPage);
@@ -173,24 +200,28 @@ public class CategoryController {
     vo.setProductCount(countProductsForCategoryTree(root, childrenByParent));
     vo.setBanner(buildMenuBanner(root, vo.getProductCount()));
     vo.setChildren(menuGroups.stream()
-        .map(group -> toMenuGroupVO(group, root, childrenByParent, categoryById, productLimit))
+        .map(group -> toMenuGroupVO(group, childrenByParent, categoryById, productLimit))
         .collect(Collectors.toList()));
     return vo;
   }
 
-  private CategoryMenuGroupVO toMenuGroupVO(PmsCategory group, PmsCategory root,
+  private CategoryMenuGroupVO toMenuGroupVO(PmsCategory group,
       Map<Long, List<PmsCategory>> childrenByParent, Map<Long, PmsCategory> categoryById, int productLimit) {
     List<Long> categoryIds = collectDescendantIds(group.getId(), childrenByParent);
-    List<ProductVO> products = productService.list(new QueryWrapper<PmsProduct>()
+    List<PmsProduct> productEntities = productService.list(new QueryWrapper<PmsProduct>()
             .in("category_id", categoryIds)
             .eq("published", true)
             .orderByAsc("sort_order")
             .orderByDesc("id")
-            .last("LIMIT " + productLimit))
-        .stream()
+            .last("LIMIT " + productLimit));
+    Map<Long, Boolean> hasOptionsByProductId = loadHasOptionsByProductIds(productEntities.stream()
+        .map(PmsProduct::getId)
+        .collect(Collectors.toList()));
+    List<ProductVO> products = productEntities.stream()
         .map(product -> {
           ProductVO vo = ProductVO.from(product, null);
           vo.setCategorySlug(resolveRootSlug(product.getCategoryId(), categoryById));
+          vo.setHasOptions(hasOptionsByProductId.getOrDefault(product.getId(), false));
           return vo;
         })
         .collect(Collectors.toList());
@@ -203,8 +234,8 @@ public class CategoryController {
     groupVO.setProductCount(productService.count(new QueryWrapper<PmsProduct>()
         .in("category_id", categoryIds)
         .eq("published", true)));
-    groupVO.setAllLinkUrl("/collections/" + root.getSlug());
-    groupVO.setAllLinkText("All " + groupVO.getName());
+    groupVO.setAllLinkUrl("/collections/" + group.getSlug());
+    groupVO.setAllLinkText("All " + groupVO.getName() + " (" + groupVO.getProductCount() + ")");
     groupVO.setProducts(products);
     return groupVO;
   }
@@ -224,5 +255,48 @@ public class CategoryController {
       current = categoryById.get(current.getParentId());
     }
     return current == null ? null : current.getSlug();
+  }
+
+  private Map<Long, Boolean> loadHasOptionsByProductIds(List<Long> productIds) {
+    if (productIds == null || productIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    return ProductOptionUtils.hasSelectableOptionsByProductId(skuService.list(new QueryWrapper<PmsSku>()
+            .in("product_id", productIds)
+            .orderByAsc("product_id")
+            .orderByAsc("id")));
+  }
+
+  private void applyProductSort(QueryWrapper<PmsProduct> wrapper, String sort) {
+    if ("best-selling".equalsIgnoreCase(sort)) {
+      wrapper.orderByDesc("stock").orderByAsc("sort_order").orderByDesc("id");
+      return;
+    }
+    if ("title-ascending".equalsIgnoreCase(sort)) {
+      wrapper.orderByAsc("slug").orderByAsc("id");
+      return;
+    }
+    if ("title-descending".equalsIgnoreCase(sort)) {
+      wrapper.orderByDesc("slug").orderByDesc("id");
+      return;
+    }
+    if ("price-ascending".equalsIgnoreCase(sort)) {
+      wrapper.orderByAsc("price").orderByAsc("sort_order").orderByDesc("id");
+      return;
+    }
+    if ("price-descending".equalsIgnoreCase(sort)) {
+      wrapper.orderByDesc("price").orderByAsc("sort_order").orderByDesc("id");
+      return;
+    }
+    if ("created-ascending".equalsIgnoreCase(sort)) {
+      wrapper.orderByAsc("create_time").orderByAsc("id");
+      return;
+    }
+    if ("created-descending".equalsIgnoreCase(sort)) {
+      wrapper.orderByDesc("create_time").orderByDesc("id");
+      return;
+    }
+    wrapper.orderByAsc("sort_order").orderByDesc("id");
   }
 }

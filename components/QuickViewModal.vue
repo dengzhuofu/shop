@@ -232,6 +232,9 @@ const syncBodyScroll = (locked: boolean) => {
   document.body.style.overflow = locked ? 'hidden' : ''
 }
 
+const normalizedQuantity = () =>
+  Math.max(1, Number.parseInt(String(quantity.value || 1), 10) || 1)
+
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && props.isOpen) {
     close()
@@ -276,14 +279,17 @@ const handleAddToCart = async () => {
 
   adding.value = true
   try {
-    await cart.addToCart({
+    const res = await cart.addToCart({
       productId: productDetail.value.id,
       skuId: selectedSku.value.id,
-      quantity: Number(quantity.value),
+      quantity: normalizedQuantity(),
       addonCodes: [],
     })
-    cart.openCart()
-    close()
+    if (res?.code === 200) {
+      await cart.refreshCart()
+      cart.openCart()
+      close()
+    }
   } finally {
     adding.value = false
   }

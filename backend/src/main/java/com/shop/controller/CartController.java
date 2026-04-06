@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -45,20 +46,34 @@ public class CartController {
     if (product == null || sku == null) {
       return Result.error(404, "Product or SKU not found");
     }
+    if (!Objects.equals(sku.getProductId(), dto.getProductId())) {
+      return Result.error(400, "SKU does not belong to the selected product");
+    }
+    if (!"ACTIVE".equalsIgnoreCase(sku.getStatus()) || sku.getStock() == null || sku.getStock() <= 0) {
+      return Result.error(400, "SKU is out of stock");
+    }
 
-    // Check if item already exists in cart
-    OmsCartItem existingItem = cartItemService.getOne(new QueryWrapper<OmsCartItem>()
+    com.fasterxml.jackson.databind.JsonNode selectedAttributesSnapshot =
+        objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang));
+    com.fasterxml.jackson.databind.JsonNode selectedAddonsSnapshot = objectMapper.valueToTree(
+        ProductAddonUtils.resolveSelectedAddons(product.getUpsells(), dto.getAddonCodes(), lang));
+
+    List<OmsCartItem> existingItems = cartItemService.list(new QueryWrapper<OmsCartItem>()
         .eq("user_id", userId)
         .eq("product_id", dto.getProductId())
         .eq("sku_id", dto.getSkuId()));
+    OmsCartItem existingItem = existingItems.stream()
+        .filter(item -> Objects.equals(
+            normalizeJson(item.getSelectedAddonsSnapshot()),
+            normalizeJson(selectedAddonsSnapshot)))
+        .findFirst()
+        .orElse(null);
 
     if (existingItem != null) {
       existingItem.setQuantity(existingItem.getQuantity() + dto.getQuantity());
       existingItem.setUpdateTime(LocalDateTime.now());
-      existingItem.setSelectedAttributesSnapshot(
-          objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang)));
-      existingItem.setSelectedAddonsSnapshot(objectMapper.valueToTree(
-          ProductAddonUtils.resolveSelectedAddons(product.getUpsells(), dto.getAddonCodes(), lang)));
+      existingItem.setSelectedAttributesSnapshot(selectedAttributesSnapshot);
+      existingItem.setSelectedAddonsSnapshot(selectedAddonsSnapshot);
       cartItemService.updateById(existingItem);
     } else {
       OmsCartItem newItem = new OmsCartItem();
@@ -66,10 +81,8 @@ public class CartController {
       newItem.setProductId(dto.getProductId());
       newItem.setSkuId(dto.getSkuId());
       newItem.setQuantity(dto.getQuantity());
-      newItem.setSelectedAttributesSnapshot(
-          objectMapper.valueToTree(SkuVO.buildSnapshot(sku.getSpecs(), lang)));
-      newItem.setSelectedAddonsSnapshot(objectMapper.valueToTree(
-          ProductAddonUtils.resolveSelectedAddons(product.getUpsells(), dto.getAddonCodes(), lang)));
+      newItem.setSelectedAttributesSnapshot(selectedAttributesSnapshot);
+      newItem.setSelectedAddonsSnapshot(selectedAddonsSnapshot);
       newItem.setCreateTime(LocalDateTime.now());
       newItem.setUpdateTime(LocalDateTime.now());
       cartItemService.save(newItem);
@@ -153,5 +166,9 @@ public class CartController {
         .map(item -> item.path("code").asText())
         .filter(code -> code != null && !code.isBlank())
         .collect(Collectors.toList());
+  }
+
+  private String normalizeJson(com.fasterxml.jackson.databind.JsonNode node) {
+    return node == null || node.isNull() ? "" : node.toString();
   }
 }

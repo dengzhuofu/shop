@@ -715,7 +715,7 @@ INSERT INTO pms_review (id, product_id, user_id, user_name, rating, title, conte
 (1, 1, 1, 'Admin User', 5, 'Great commuter scooter', 'Smooth ride and easy to fold for office storage.', '[]', TRUE),
 (2, 2, 2, 'Sarah Miller', 5, 'Perfect for daily commute', 'The range is enough for my full work week recharges.', '[]', TRUE),
 (3, 3, 2, 'Sarah Miller', 4, 'Comfortable city ebike', 'Step-through frame makes downtown riding stress-free.', '[]', TRUE),
-(4, 5, 1, 'Admin User', 5, 'Fun first electric skateboard', 'Stable enough for casual carving and neighborhood rides.', '[]', TRUE);
+(4, 5, 1, 'Admin User', 5, 'Fun first electric skateboard', 'Stable enough for casual carving and neighborhood rides.', '[]', TRUE),
 (5, 9, 2, 'Sarah Miller', 5, 'Light, easy, and looks great', 'The new U1 feels easy to carry upstairs and is perfect for quick city errands.', '[]', TRUE);
 
 INSERT INTO ums_user_address (

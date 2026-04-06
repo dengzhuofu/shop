@@ -59,7 +59,7 @@
 
       <div
         class="hover-actions"
-        :class="{ 'is-visible': isHovered || isSoldOut }"
+        :class="{ 'is-visible': isHovered }"
       >
         <button
           v-if="!isSoldOut"
