@@ -27,11 +27,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Pin npm version
-        run: npm install -g npm@11.12.1
-
       - name: Install dependencies
-        run: npm ci
+        run: npm exec --yes --package npm@11.12.1 -- npm ci
 
       - name: Generate static site
         run: npm run generate
