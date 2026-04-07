@@ -123,6 +123,8 @@ const messages = {
     footerNote:
       'Phase 1 focuses on real data, bilingual catalog, cart, checkout, coupons, and payment intent placeholders.',
     refreshData: 'Refresh data',
+    networkError: 'Network error, please try again later',
+    requestFailed: 'Request failed',
   },
   zh: {
     brandTagline: '骑得更远，也更聪明。',
@@ -244,6 +246,8 @@ const messages = {
     footerNote:
       '当前阶段优先打通真实数据、双语目录、购物车、结算、优惠券和支付占位流程。',
     refreshData: '刷新数据',
+    networkError: '网络错误，请稍后重试',
+    requestFailed: '请求失败',
   },
 } as const
 

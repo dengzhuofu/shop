@@ -1,4 +1,5 @@
 <template>
+  <MessageContainer />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
