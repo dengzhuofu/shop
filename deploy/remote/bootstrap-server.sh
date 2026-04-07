@@ -126,7 +126,9 @@ wait_for_db() {
 }
 
 sync_db_from_schema() {
-  local sync_flag="${SYNC_DB_FROM_SCHEMA:-true}"
+  # TODO: Keep schema-based DB sync opt-in only. Do not enable by default in
+  # production deploys because it performs a full reset/import of remote data.
+  local sync_flag="${SYNC_DB_FROM_SCHEMA:-false}"
 
   if [ "$sync_flag" != "true" ]; then
     echo "Skipping database sync because SYNC_DB_FROM_SCHEMA=$sync_flag"
