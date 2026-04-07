@@ -1,5 +1,8 @@
 import { computed } from 'vue'
 
+let pendingCartRefresh: Promise<any[]> | null = null
+let hasQueuedCartRefresh = false
+
 export function useShopCart() {
   const items = useState<any[]>('shop-cart-items', () => [])
   const isOpen = useState('shop-cart-open', () => false)
@@ -11,24 +14,38 @@ export function useShopCart() {
 
   const refreshCart = async () => {
     if (!session.token.value) {
+      pendingCartRefresh = null
+      hasQueuedCartRefresh = false
       items.value = []
       return items.value
     }
 
-    if (loading.value) {
-      return items.value
+    if (pendingCartRefresh) {
+      hasQueuedCartRefresh = true
+      return pendingCartRefresh
     }
 
-    loading.value = true
+    pendingCartRefresh = (async () => {
+      do {
+        hasQueuedCartRefresh = false
+        loading.value = true
+        try {
+          const res = await useHttp('/api/cart/list')
+          items.value = res?.code === 200 ? res.data || [] : []
+        } catch (error) {
+          items.value = []
+        } finally {
+          loading.value = false
+        }
+      } while (hasQueuedCartRefresh && session.token.value)
+
+      return items.value
+    })()
+
     try {
-      const res = await useHttp('/api/cart/list')
-      items.value = res?.code === 200 ? res.data || [] : []
-      return items.value
-    } catch (error) {
-      items.value = []
-      return []
+      return await pendingCartRefresh
     } finally {
-      loading.value = false
+      pendingCartRefresh = null
     }
   }
 
