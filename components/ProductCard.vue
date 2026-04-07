@@ -3,12 +3,12 @@
     class="product-card"
     role="link"
     tabindex="0"
-    @mouseenter="isHovered = true"
+    @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @click="navigateToDetail"
     @keyup.enter="navigateToDetail"
   >
-    <div class="image-wrapper" @mousemove="handleImageHover">
+    <div class="image-wrapper">
       <div v-if="leftTags.length" class="tags-left">
         <span
           v-for="tag in leftTags"
@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import {
   ActivityIcon,
   BatteryIcon,
@@ -257,38 +257,39 @@ const handleActionClick = async () => {
   }
 };
 
-const handleImageHover = (event: MouseEvent) => {
-  if (displayImages.value.length <= 1) {
-    currentImageIndex.value = 0;
-    return;
-  }
+let carouselTimer: ReturnType<typeof setInterval> | null = null;
 
-  const target = event.currentTarget as HTMLElement | null;
-  if (!target) {
-    return;
-  }
+const startCarousel = () => {
+  if (displayImages.value.length <= 1) return;
+  carouselTimer = setInterval(() => {
+    currentImageIndex.value = (currentImageIndex.value + 1) % displayImages.value.length;
+  }, 3000);
+};
 
-  const rect = target.getBoundingClientRect();
-  if (rect.width <= 0) {
-    return;
+const stopCarousel = () => {
+  if (carouselTimer) {
+    clearInterval(carouselTimer);
+    carouselTimer = null;
   }
+};
 
-  const relativeX = Math.min(
-    Math.max(event.clientX - rect.left, 0),
-    rect.width,
-  );
-  const sectionCount = Math.min(displayImages.value.length, 3);
-  const sectionWidth = rect.width / sectionCount;
-  const hoveredSection = Math.min(
-    Math.floor(relativeX / sectionWidth),
-    sectionCount - 1,
-  );
-  currentImageIndex.value = hoveredSection;
+onMounted(() => {
+  startCarousel();
+});
+
+onUnmounted(() => {
+  stopCarousel();
+});
+
+const handleMouseEnter = () => {
+  isHovered.value = true;
+  stopCarousel();
 };
 
 const handleMouseLeave = () => {
   isHovered.value = false;
   currentImageIndex.value = 0;
+  startCarousel();
 };
 </script>
 
@@ -380,8 +381,8 @@ const handleMouseLeave = () => {
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain;
-      padding: 14px;
+      object-fit: cover;
+      padding: 0;
       opacity: 0;
       transition: opacity 0.4s ease, transform 0.4s ease;
 
@@ -394,52 +395,51 @@ const handleMouseLeave = () => {
 
   .carousel-indicators {
     position: absolute;
-    bottom: 70px;
+    bottom: 8px;
     left: 0;
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     z-index: 5;
     padding: 10px 0;
 
     .indicator-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.3);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1.5px solid #111;
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 
       &.is-active {
         background: #111;
-        width: 16px;
       }
 
       &:hover:not(.is-active) {
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.2);
       }
     }
   }
 
   .app-preview-img {
     position: absolute;
-    top: 60px;
-    right: 10px;
-    width: 40px;
+    top: 16px;
+    right: 16px;
+    width: 44px;
     height: auto;
     object-fit: contain;
     z-index: 10;
     background: #fff;
     padding: 2px;
-    border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
 
   .hover-actions {
     position: absolute;
-    bottom: 20px;
+    bottom: 40px;
     left: 0;
     width: 100%;
     display: flex;

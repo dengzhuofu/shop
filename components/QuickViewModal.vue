@@ -35,66 +35,66 @@
               </div>
 
               <img :src="activeImage" :alt="productDetail.title" class="main-image" />
+              
+              <img
+                v-if="productDetail.appImage"
+                :src="productDetail.appImage"
+                :alt="`${productDetail.title} app preview`"
+                class="app-preview-img"
+              />
 
-              <div v-if="galleryImages.length > 1" class="gallery-controls">
-                <button type="button" class="gallery-nav" @click="cycleImage(-1)">
-                  <ChevronLeftIcon class="gallery-nav__icon" />
-                </button>
-                <span class="gallery-count">{{ activeImageIndex + 1 }} / {{ galleryImages.length }}</span>
-                <button type="button" class="gallery-nav" @click="cycleImage(1)">
-                  <ChevronRightIcon class="gallery-nav__icon" />
-                </button>
+              <div v-if="galleryImages.length > 1" class="gallery-indicators">
+                <span
+                  v-for="(img, index) in galleryImages"
+                  :key="index"
+                  class="indicator-dot"
+                  :class="{ 'is-active': activeImageIndex === index }"
+                  @click="activeImage = img"
+                />
               </div>
-            </div>
-
-            <div v-if="galleryImages.length > 1" class="thumbs-shell">
-              <button
-                type="button"
-                class="thumb-stepper"
-                :disabled="!canSlideThumbsBackward"
-                @click="stepThumbs(-1)"
-              >
-                <ChevronLeftIcon class="thumb-stepper__icon" />
-              </button>
-              <div class="thumbs-viewport">
-                <div class="thumbs-list">
-                  <button
-                    v-for="(img, index) in visibleThumbImages"
-                    :key="`${img}-${thumbStartIndex + index}`"
-                    type="button"
-                    class="thumb-btn"
-                    :class="{ 'is-active': activeImage === img }"
-                    @click="activeImage = img"
-                  >
-                    <img :src="img" :alt="`${productDetail.title}-${thumbStartIndex + index + 1}`" />
-                  </button>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="thumb-stepper"
-                :disabled="!canSlideThumbsForward"
-                @click="stepThumbs(1)"
-              >
-                <ChevronRightIcon class="thumb-stepper__icon" />
-              </button>
             </div>
           </section>
 
           <section class="info-panel">
-            <p class="brand">isinwheel Official Store</p>
-            <h2 class="title">{{ productDetail.title }}</h2>
-
-            <div class="price-row">
-              <div class="reviews">
-                <StarIcon v-for="index in 5" :key="index" class="star-icon" />
-                <span>{{ reviewCount }} reviews</span>
-              </div>
+            <p class="brand">iSinwheel Official Store</p>
+            <div class="title-price-row">
+              <h2 class="title">{{ productDetail.title }}</h2>
               <div class="price-box">
                 <span class="current-price">{{ money(selectedPrice) }}</span>
                 <span v-if="selectedCompareAtPrice" class="old-price">
                   {{ money(selectedCompareAtPrice) }}
                 </span>
+              </div>
+            </div>
+
+            <div class="reviews">
+              <StarIcon v-for="index in 5" :key="index" class="star-icon filled" />
+              <span>| {{ reviewCount }} reviews</span>
+            </div>
+
+            <div v-if="hasSpringSale" class="sale-timer">
+              <div class="sale-timer-left">
+                <ZapIcon class="timer-icon" />
+                <div class="timer-text">
+                  <span class="timer-title">Hurry up!</span>
+                  <span class="timer-subtitle">SALE END IN:</span>
+                </div>
+              </div>
+              <div class="sale-timer-right">
+                <div class="time-block">
+                  <span class="time-val">4</span>
+                  <span class="time-label">HOURS</span>
+                </div>
+                <span class="time-sep">:</span>
+                <div class="time-block">
+                  <span class="time-val">58</span>
+                  <span class="time-label">MINS</span>
+                </div>
+                <span class="time-sep">:</span>
+                <div class="time-block">
+                  <span class="time-val">45</span>
+                  <span class="time-label">SECS</span>
+                </div>
               </div>
             </div>
 
@@ -136,17 +136,18 @@
             </div>
 
             <div class="stock-notice" :class="{ soldout: !selectedSkuAvailable }">
+              <span class="stock-dot"></span>
               {{ selectedSkuAvailable ? t('inStock') : t('soldOut') }}
             </div>
 
             <div class="actions">
               <div class="quantity-selector">
                 <button type="button" class="qty-btn" @click="quantity = Math.max(1, quantity - 1)">
-                  <MinusIcon class="qty-icon" />
+                  <ChevronLeftIcon class="qty-icon" />
                 </button>
-                <input v-model="quantity" type="number" min="1" class="qty-input" />
+                <input v-model="quantity" type="number" min="1" class="qty-input no-spinners" />
                 <button type="button" class="qty-btn" @click="quantity += 1">
-                  <PlusIcon class="qty-icon" />
+                  <ChevronRightIcon class="qty-icon" />
                 </button>
               </div>
 
@@ -159,6 +160,10 @@
                 {{ adding ? t('adding') : t('addToCart') }}
               </button>
             </div>
+
+            <button type="button" class="btn-buy-with-shop">
+              Buy with <strong>shop</strong>
+            </button>
 
             <NuxtLink :to="productLink" class="view-details" @click="close">
               {{ t('viewFullDetails') }}
@@ -173,7 +178,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon } from 'lucide-vue-next'
+import { ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon, ZapIcon } from 'lucide-vue-next'
 import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
 import { mergeProductImages } from '~/utils/productMedia'
 
@@ -420,9 +425,10 @@ onBeforeUnmount(() => {
 
 .modal-shell {
   position: relative;
-  width: min(1180px, 100%);
-  max-height: min(860px, calc(100vh - 48px));
-  overflow: auto;
+  width: min(1200px, 100%);
+  height: 720px;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
   border-radius: 28px;
   background: #fff;
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
@@ -460,126 +466,241 @@ onBeforeUnmount(() => {
 
 .modal-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.84fr) minmax(420px, 1.16fr);
-  min-height: 680px;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr);
+  height: 100%;
 }
 
 .gallery-panel {
-  padding: 28px;
+  padding: 16px 16px 16px 24px;
   border-right: 1px solid #ececec;
-  background: #fafafa;
+  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  height: 100%;
 }
 
 .main-image-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 24px;
+  height: 100%;
+  border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(180deg, #fcfcfc 0%, #f3f4f6 100%);
-  max-width: 520px;
+  max-width: none;
 }
 
 .main-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: 24px;
+  object-fit: cover;
+  padding: 0;
 }
 
-.gallery-controls {
+.gallery-indicators {
   position: absolute;
-  right: 18px;
-  bottom: 18px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(17, 24, 39, 0.72);
-  color: #fff;
-  backdrop-filter: blur(10px);
-}
-
-.gallery-nav {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 12px;
+  z-index: 5;
+  padding: 10px 24px;
+  background: #fff;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: inherit;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.gallery-nav__icon {
-  width: 16px;
-  height: 16px;
+.indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #999;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.gallery-count {
-  min-width: 52px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
+.indicator-dot.is-active {
+  background: transparent;
+  border: 1.5px solid #111;
+  transform: scale(1.3);
 }
 
-.thumbs-shell {
+.indicator-dot:hover:not(.is-active) {
+  background: #666;
+}
+
+.app-preview-img {
+  position: absolute;
+  top: 40px;
+  right: 20px;
+  width: 60px;
+  height: auto;
+  object-fit: contain;
+  z-index: 10;
+  background: #fff;
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.info-panel {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+}
+
+.brand {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.title-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #111;
+  margin: 0;
+  flex: 1;
+}
+
+.price-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.current-price {
+  font-size: 24px;
+  font-weight: 800;
+  color: #e62332;
+}
+
+.old-price {
+  font-size: 16px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.reviews {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  max-width: 404px;
-  width: 100%;
+  gap: 4px;
+  font-size: 13px;
+  color: #111;
+  font-weight: 500;
 }
 
-.thumbs-viewport {
-  width: 100%;
-  overflow: hidden;
+.star-icon {
+  width: 14px;
+  height: 14px;
+  color: #ffb400;
 }
 
-.thumb-stepper {
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
+.star-icon.filled {
+  fill: #ffb400;
+}
+
+.sale-timer {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid #d0d5dd;
-  border-radius: 999px;
-  background: #fff;
-  color: #111827;
-  flex-shrink: 0;
+  justify-content: space-between;
+  background: #fff0f2;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin: 8px 0;
 }
 
-.thumb-stepper:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.sale-timer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.thumb-stepper__icon {
-  width: 16px;
-  height: 16px;
+.timer-icon {
+  width: 24px;
+  height: 24px;
+  color: #e62332;
+}
+
+.timer-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.timer-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #e62332;
+}
+
+.timer-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: #e62332;
+  letter-spacing: 0.5px;
+}
+
+.sale-timer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.time-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #e62332;
+}
+
+.time-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #e62332;
+}
+
+.time-sep {
+  font-size: 18px;
+  font-weight: 800;
+  color: #e62332;
+  margin-top: -12px;
 }
 
 .tags-left {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 24px;
+  left: 24px;
   z-index: 2;
 }
 
 .tag-label {
   display: inline-block;
   color: #fff;
-  font-size: 11px;
-  padding: 5px 10px;
+  font-size: 12px;
+  padding: 6px 12px;
   font-weight: 700;
   text-transform: uppercase;
-  border-radius: 0 0 10px 0;
+  border-radius: 6px;
 }
 
 .tag-label.new {
@@ -592,8 +713,8 @@ onBeforeUnmount(() => {
 
 .tags-right {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 24px;
+  right: 24px;
   z-index: 2;
 }
 
@@ -616,31 +737,7 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 }
 
-.thumbs-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
 
-.thumb-btn {
-  aspect-ratio: 1 / 1;
-  border: 2px solid transparent;
-  border-radius: 14px;
-  padding: 4px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.thumb-btn.is-active {
-  border-color: #111;
-}
-
-.thumb-btn img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 10px;
-}
 
 .info-panel {
   padding: 48px 42px 36px;
@@ -774,21 +871,32 @@ onBeforeUnmount(() => {
 }
 
 .stock-notice {
-  width: fit-content;
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: #ecfdf3;
-  color: #027a48;
-  font-size: 14px;
-  font-weight: 700;
+  gap: 8px;
+  background: #f4fdf4;
+  color: #3a7d3d;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.stock-dot {
+  width: 8px;
+  height: 8px;
+  background: #3a7d3d;
+  border-radius: 50%;
 }
 
 .stock-notice.soldout {
-  background: #fef3f2;
-  color: #b42318;
+  background: #fff0f2;
+  color: #c62828;
+}
+
+.stock-notice.soldout .stock-dot {
+  background: #c62828;
 }
 
 .actions {
@@ -823,6 +931,7 @@ onBeforeUnmount(() => {
 
 .qty-input {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   text-align: center;
@@ -855,6 +964,27 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 
+.btn-buy-with-shop {
+  width: 100%;
+  min-height: 56px;
+  border: none;
+  border-radius: 999px;
+  background: #5a31f4;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn-buy-with-shop strong {
+  font-weight: 800;
+  margin-left: 4px;
+}
+
 .view-details {
   margin-top: auto;
   display: inline-flex;
@@ -883,9 +1013,11 @@ onBeforeUnmount(() => {
     border-bottom: 1px solid #ececec;
   }
 
-  .main-image-wrap,
-  .thumbs-shell {
+  .main-image-wrap {
     max-width: 100%;
+    border-radius: 28px 28px 0 0;
+    aspect-ratio: 1/1;
+    height: auto;
   }
 }
 
@@ -899,7 +1031,14 @@ onBeforeUnmount(() => {
     max-height: calc(100vh - 24px);
   }
 
-  .gallery-panel,
+  .main-image-wrap {
+    border-radius: 20px 20px 0 0;
+  }
+
+  .gallery-panel {
+    padding: 0;
+  }
+
   .info-panel {
     padding: 22px;
   }
