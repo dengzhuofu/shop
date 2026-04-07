@@ -109,6 +109,35 @@ fi
 
 chmod 600 .env
 
+wait_for_db() {
+  local attempts="${1:-60}"
+  local delay_seconds="${2:-2}"
+  local i
+
+  for ((i = 0; i < attempts; i++)); do
+    if $COMPOSE_CMD -f compose.prod.yml exec -T db sh -lc 'pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "$delay_seconds"
+  done
+
+  echo "PostgreSQL did not become ready in time." >&2
+  exit 1
+}
+
+sync_db_from_schema() {
+  local sync_flag="${SYNC_DB_FROM_SCHEMA:-true}"
+
+  if [ "$sync_flag" != "true" ]; then
+    echo "Skipping database sync because SYNC_DB_FROM_SCHEMA=$sync_flag"
+    return 0
+  fi
+
+  echo "Syncing production database from backend/src/main/resources/schema.sql ..."
+  wait_for_db
+  $COMPOSE_CMD -f compose.prod.yml exec -T db sh -lc 'PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < backend/src/main/resources/schema.sql
+}
+
 if [ "$IS_ROOT" = "true" ] && systemctl is-active --quiet firewalld; then
   firewall-cmd --permanent --add-service=http
   firewall-cmd --reload
@@ -126,10 +155,14 @@ if [ "$DEPLOY_MODE" = "images" ]; then
   if [ "$COMPOSE_IS_V1" = "true" ]; then
     $COMPOSE_CMD -f compose.prod.yml pull --ignore-pull-failures
     $COMPOSE_CMD -f compose.prod.yml rm -sf backend frontend nginx || true
-    $COMPOSE_CMD -f compose.prod.yml up -d db backend frontend nginx
+    $COMPOSE_CMD -f compose.prod.yml up -d db
+    sync_db_from_schema
+    $COMPOSE_CMD -f compose.prod.yml up -d backend frontend nginx
   else
     $COMPOSE_CMD -f compose.prod.yml pull
-    $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans db backend frontend
+    $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans db
+    sync_db_from_schema
+    $COMPOSE_CMD -f compose.prod.yml up -d --remove-orphans backend frontend
     # Recreate nginx after upstream containers may have changed IPs, so it re-resolves
     # Docker service names instead of proxying to stale container addresses.
     $COMPOSE_CMD -f compose.prod.yml up -d --force-recreate nginx
