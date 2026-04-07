@@ -22,7 +22,7 @@
     <section class="panel">
       <div class="panel-head">
         <h2>{{ t('addresses') }}</h2>
-        <button type="button" class="inline-action" @click="addressFormOpen = !addressFormOpen">
+        <button type="button" class="inline-action" @click="addressFormOpen = true">
           + {{ profileCopy.add }}
         </button>
       </div>
@@ -40,59 +40,6 @@
         <span class="empty-icon">i</span>
         <p>{{ t('noAddress') }}</p>
       </div>
-
-      <form v-show="addressFormOpen || !addresses.length" class="address-form" @submit.prevent="saveAddress">
-        <div class="two-col">
-          <label>
-            <span>{{ t('firstName') }}</span>
-            <input v-model="form.firstName" type="text" required />
-          </label>
-          <label>
-            <span>{{ t('lastName') }}</span>
-            <input v-model="form.lastName" type="text" required />
-          </label>
-        </div>
-
-        <label>
-          <span>{{ t('addressLine1') }}</span>
-          <input v-model="form.addressLine1" type="text" required />
-        </label>
-
-        <label>
-          <span>{{ t('addressLine2') }}</span>
-          <input v-model="form.addressLine2" type="text" />
-        </label>
-
-        <div class="three-col">
-          <label>
-            <span>{{ t('city') }}</span>
-            <input v-model="form.city" type="text" required />
-          </label>
-          <label>
-            <span>{{ t('state') }}</span>
-            <input v-model="form.state" type="text" required />
-          </label>
-          <label>
-            <span>{{ t('zipCode') }}</span>
-            <input v-model="form.zipCode" type="text" required />
-          </label>
-        </div>
-
-        <div class="two-col">
-          <label>
-            <span>{{ t('country') }}</span>
-            <input v-model="form.country" type="text" />
-          </label>
-          <label>
-            <span>{{ t('phone') }}</span>
-            <input v-model="form.phone" type="tel" />
-          </label>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="primary-btn">{{ t('saveAddress') }}</button>
-        </div>
-      </form>
     </section>
 
     <section class="panel">
@@ -122,6 +69,12 @@
         </button>
       </div>
     </section>
+
+    <AddAddressModal
+      :is-open="addressFormOpen"
+      @close="addressFormOpen = false"
+      @save="handleSaveAddress"
+    />
   </div>
 </template>
 
@@ -188,18 +141,18 @@ const fetchAddresses = async () => {
   addresses.value = res?.code === 200 ? res.data || [] : []
 }
 
-const saveAddress = async () => {
+const handleSaveAddress = async (formData: any) => {
   const res = await useHttp('/api/address', {
     method: 'POST',
     body: {
-      ...form,
-      isDefault: !addresses.value.length,
+      ...formData,
+      addressLine1: formData.address,
+      addressLine2: formData.apartment,
+      isDefault: !addresses.value.length || formData.isDefault,
     },
   })
   if (res?.code === 200) {
     await fetchAddresses()
-    addressFormOpen.value = false
-    resetForm()
   }
 }
 
@@ -230,6 +183,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .panel {

@@ -2,193 +2,200 @@
   <div class="checkout-page">
     <div class="checkout-container">
       <main class="checkout-main">
-        <section class="checkout-section user-section">
-          <div class="section-head">
-            <div>
-              <p class="step-label">{{ checkoutCopy.contact }}</p>
-              <h2>{{ session.user.value?.email || '--' }}</h2>
-            </div>
-            <button type="button" class="ghost-btn" @click="toggleLang">
-              {{ lang.value === 'zh' ? 'EN' : 'ZH' }}
-            </button>
-          </div>
-        </section>
-
-        <section class="checkout-section">
-          <div class="section-head">
-            <div>
-              <p class="step-label">{{ t('addressTitle') }}</p>
-              <h2>{{ checkoutCopy.shippingAddress }}</h2>
-            </div>
-            <button type="button" class="ghost-btn" @click="saveAddressFromForm">
-              {{ t('saveAddress') }}
-            </button>
-          </div>
-
-          <div class="saved-addresses">
-            <label
-              v-for="item in addresses"
-              :key="item.id"
-              class="saved-address"
-              :class="{ 'is-selected': selectedAddressId === String(item.id) }"
-            >
-              <input v-model="selectedAddressId" :value="String(item.id)" type="radio" />
-              <span class="saved-address__body">
-                <span class="saved-address__header">
-                  <strong>{{ item.firstName }} {{ item.lastName }}</strong>
-                  <em v-if="item.isDefault">{{ checkoutCopy.defaultAddress }}</em>
-                </span>
-                <small>{{ item.addressLine1 }}, {{ item.city }}, {{ item.state }} {{ item.zipCode }}</small>
-              </span>
-            </label>
-
-            <label class="saved-address" :class="{ 'is-selected': selectedAddressId === 'manual' }">
-              <input v-model="selectedAddressId" value="manual" type="radio" />
-              <span class="saved-address__body">
-                <span class="saved-address__header">
-                  <strong>{{ checkoutCopy.manualAddress }}</strong>
-                </span>
-                <small>{{ addresses.length ? checkoutCopy.manualAddressHint : t('noAddress') }}</small>
-              </span>
-            </label>
-          </div>
-
-          <form class="address-form" @submit.prevent>
-            <div class="form-group">
-              <label>{{ t('country') }}</label>
-              <input v-model="addressForm.country" type="text" autocomplete="country-name" />
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>{{ t('firstName') }}</label>
-                <input v-model="addressForm.firstName" type="text" autocomplete="given-name" />
+        <div class="checkout-main-inner">
+          <section class="checkout-section user-section">
+            <div class="section-head">
+              <div>
+                <p class="step-label">{{ checkoutCopy.contact }}</p>
+                <h2>{{ session.user.value?.email || '--' }}</h2>
               </div>
-              <div class="form-group">
-                <label>{{ t('lastName') }}</label>
-                <input v-model="addressForm.lastName" type="text" autocomplete="family-name" />
+              <button type="button" class="ghost-btn" @click="toggleLang">
+                {{ lang.value === 'zh' ? 'EN' : 'ZH' }}
+              </button>
+            </div>
+          </section>
+
+          <section class="checkout-section">
+            <div class="section-head">
+              <div>
+                <p class="step-label">{{ t('addressTitle') }}</p>
+                <h2>{{ checkoutCopy.shippingAddress }}</h2>
               </div>
             </div>
 
-            <div class="form-group">
-              <label>{{ t('addressLine1') }}</label>
-              <input v-model="addressForm.addressLine1" type="text" autocomplete="address-line1" />
-            </div>
-
-            <div class="form-group">
-              <label>{{ t('addressLine2') }}</label>
-              <input v-model="addressForm.addressLine2" type="text" autocomplete="address-line2" />
-            </div>
-
-            <div class="form-row three-cols">
-              <div class="form-group">
-                <label>{{ t('city') }}</label>
-                <input v-model="addressForm.city" type="text" autocomplete="address-level2" />
-              </div>
-              <div class="form-group">
-                <label>{{ t('state') }}</label>
-                <input v-model="addressForm.state" type="text" autocomplete="address-level1" />
-              </div>
-              <div class="form-group">
-                <label>{{ t('zipCode') }}</label>
-                <input v-model="addressForm.zipCode" type="text" autocomplete="postal-code" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>{{ t('phone') }}</label>
-              <input v-model="addressForm.phone" type="tel" autocomplete="tel" />
-            </div>
-          </form>
-
-          <p class="address-help" :class="{ ready: canPreviewAddress }">
-            {{ canPreviewAddress ? checkoutCopy.addressReady : checkoutCopy.addressIncomplete }}
-          </p>
-        </section>
-
-        <section class="checkout-section">
-          <div class="section-head compact">
-            <div>
-              <p class="step-label">{{ t('shipping') }}</p>
-              <h2>{{ checkoutCopy.shippingMethod }}</h2>
-            </div>
-          </div>
-          <div class="info-box">{{ shippingMethod }}</div>
-        </section>
-
-        <section class="checkout-section">
-          <div class="section-head compact">
-            <div>
-              <p class="step-label">{{ t('paymentMethod') }}</p>
-              <h2>{{ checkoutCopy.paymentTitle }}</h2>
-            </div>
-          </div>
-
-          <div class="payment-methods">
-            <div class="payment-option selected">
-              <div class="option-header">
-                <div class="radio-wrap">
-                  <div class="radio-inner"></div>
+            <div class="address-selector-area">
+              <div v-if="selectedSavedAddress" class="selected-address-card">
+                <div class="address-details">
+                  <strong>{{ selectedSavedAddress.firstName }} {{ selectedSavedAddress.lastName }}</strong>
+                  <p>{{ selectedSavedAddress.addressLine1 }} {{ selectedSavedAddress.addressLine2 }}</p>
+                  <p>{{ selectedSavedAddress.city }}, {{ selectedSavedAddress.state }} {{ selectedSavedAddress.zipCode }}</p>
+                  <p>{{ selectedSavedAddress.country }}</p>
+                  <p>{{ selectedSavedAddress.phone }}</p>
                 </div>
-                <span class="option-name">Credit card</span>
-                <div class="card-icons">
-                  <span class="card-icon visa">VISA</span>
-                  <span class="card-icon master">MC</span>
-                  <span class="card-icon amex">AMEX</span>
+                <button type="button" class="ghost-btn" @click="addressListOpen = true">
+                  Change
+                </button>
+              </div>
+              
+              <div v-else class="empty-address-card">
+                <button type="button" class="btn-select-address" @click="addressListOpen = true">
+                  Select Saved Address
+                </button>
+              </div>
+            </div>
+
+            <form v-if="selectedAddressId === 'manual' || !selectedSavedAddress" class="address-form" @submit.prevent>
+              <div class="form-group">
+                <label>{{ t('country') }}</label>
+                <input v-model="addressForm.country" type="text" autocomplete="country-name" />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>{{ t('firstName') }}</label>
+                  <input v-model="addressForm.firstName" type="text" autocomplete="given-name" />
+                </div>
+                <div class="form-group">
+                  <label>{{ t('lastName') }}</label>
+                  <input v-model="addressForm.lastName" type="text" autocomplete="family-name" />
                 </div>
               </div>
 
-              <div class="option-body">
-                <p class="payment-note">{{ checkoutCopy.secure }}</p>
-                <div class="card-form">
-                  <input type="text" :placeholder="checkoutCopy.cardNumber" />
-                  <div class="form-row">
-                    <input type="text" :placeholder="checkoutCopy.expiry" />
-                    <input type="text" :placeholder="checkoutCopy.cvc" />
+              <div class="form-group">
+                <label>{{ t('addressLine1') }}</label>
+                <input v-model="addressForm.addressLine1" type="text" autocomplete="address-line1" />
+              </div>
+
+              <div class="form-group">
+                <label>{{ t('addressLine2') }}</label>
+                <input v-model="addressForm.addressLine2" type="text" autocomplete="address-line2" />
+              </div>
+
+              <div class="form-row three-cols">
+                <div class="form-group">
+                  <label>{{ t('city') }}</label>
+                  <input v-model="addressForm.city" type="text" autocomplete="address-level2" />
+                </div>
+                <div class="form-group">
+                  <label>{{ t('state') }}</label>
+                  <input v-model="addressForm.state" type="text" autocomplete="address-level1" />
+                </div>
+                <div class="form-group">
+                  <label>{{ t('zipCode') }}</label>
+                  <input v-model="addressForm.zipCode" type="text" autocomplete="postal-code" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>{{ t('phone') }}</label>
+                <input v-model="addressForm.phone" type="tel" autocomplete="tel" />
+              </div>
+            </form>
+
+            <p class="address-help" :class="{ ready: canPreviewAddress }">
+              {{ canPreviewAddress ? checkoutCopy.addressReady : checkoutCopy.addressIncomplete }}
+            </p>
+          </section>
+
+          <section class="checkout-section">
+            <div class="section-head compact">
+              <div>
+                <p class="step-label">{{ t('shipping') }}</p>
+                <h2>{{ checkoutCopy.shippingMethod }}</h2>
+              </div>
+            </div>
+            <div class="info-box">{{ shippingMethod }}</div>
+          </section>
+
+          <section class="checkout-section">
+            <div class="section-head compact">
+              <div>
+                <p class="step-label">{{ t('paymentMethod') }}</p>
+                <h2>{{ checkoutCopy.paymentTitle }}</h2>
+              </div>
+            </div>
+
+            <div class="payment-methods">
+              <div class="payment-option selected">
+                <div class="option-header">
+                  <div class="radio-wrap">
+                    <div class="radio-inner"></div>
                   </div>
-                  <input type="text" :placeholder="checkoutCopy.nameOnCard" />
+                  <span class="option-name">Credit card</span>
+                  <div class="card-icons">
+                    <span class="card-icon visa">VISA</span>
+                    <span class="card-icon master">MC</span>
+                    <span class="card-icon amex">AMEX</span>
+                  </div>
+                </div>
+
+                <div class="option-body">
+                  <div class="card-form">
+                    <input type="text" :placeholder="checkoutCopy.cardNumber" />
+                    <div class="form-row">
+                      <input type="text" :placeholder="checkoutCopy.expiry" />
+                      <input type="text" :placeholder="checkoutCopy.cvc" />
+                    </div>
+                    <input type="text" :placeholder="checkoutCopy.nameOnCard" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="payment-option disabled">
+                <div class="option-header">
+                  <div class="radio-wrap"></div>
+                  <span class="option-name">PayPal</span>
+                  <span class="brand-text paypal">PayPal</span>
+                </div>
+              </div>
+
+              <div class="payment-option disabled">
+                <div class="option-header">
+                  <div class="radio-wrap"></div>
+                  <span class="option-name">Affirm - Pay Over Time</span>
+                  <span class="brand-text affirm">affirm</span>
+                </div>
+              </div>
+
+              <div class="payment-option disabled">
+                <div class="option-header">
+                  <div class="radio-wrap"></div>
+                  <span class="option-name">Klarna</span>
+                  <span class="brand-text klarna">Klarna</span>
                 </div>
               </div>
             </div>
-
-            <div class="payment-option disabled">
-              <div class="option-header">
-                <div class="radio-wrap"></div>
-                <span class="option-name">Shop Pay</span>
-                <span class="brand-text shop">shop</span>
+            
+            <div class="payment-note-container">
+              <div class="save-info-checkbox">
+                <input type="checkbox" id="save-info" />
+                <label for="save-info">Save my information for a faster checkout</label>
               </div>
+              <p class="payment-note">{{ checkoutCopy.secure }}</p>
             </div>
 
-            <div class="payment-option disabled">
-              <div class="option-header">
-                <div class="radio-wrap"></div>
-                <span class="option-name">PayPal</span>
-                <span class="brand-text paypal">PayPal</span>
-              </div>
+            <div class="action-stack">
+              <button
+                type="button"
+                class="pay-now-btn"
+                :disabled="isPayDisabled || isPaying"
+                @click="startPayment"
+              >
+                {{ isPaying ? checkoutCopy.processing : checkoutCopy.payNow }}
+              </button>
+              <button
+                type="button"
+                class="pay-now-btn ghost"
+                :disabled="!paymentIntent?.id || completingPayment"
+                @click="completePayment"
+              >
+                {{ completingPayment ? checkoutCopy.completing : t('completeMockPayment') }}
+              </button>
             </div>
-          </div>
 
-          <div class="action-stack">
-            <button
-              type="button"
-              class="pay-now-btn"
-              :disabled="isPayDisabled || isPaying"
-              @click="startPayment"
-            >
-              {{ isPaying ? checkoutCopy.processing : checkoutCopy.payNow }}
-            </button>
-            <button
-              type="button"
-              class="pay-now-btn ghost"
-              :disabled="!paymentIntent?.id || completingPayment"
-              @click="completePayment"
-            >
-              {{ completingPayment ? checkoutCopy.completing : t('completeMockPayment') }}
-            </button>
-          </div>
-
-          <p v-if="message" class="status-message">{{ message }}</p>
-        </section>
+            <p v-if="message" class="status-message">{{ message }}</p>
+          </section>
+        </div>
       </main>
 
       <aside class="checkout-sidebar">
@@ -210,70 +217,77 @@
             </div>
           </div>
 
-          <div class="points-banner">
-            <strong>{{ checkoutCopy.pointsTitle }}</strong>
-            <p>{{ checkoutCopy.pointsSubtitle }}</p>
-          </div>
-
           <div class="discount-section">
             <div class="discount-input">
-              <select v-model="selectedCouponUserId">
-                <option :value="null">{{ checkoutCopy.noCoupon }}</option>
-                <option v-for="coupon in availableCoupons" :key="coupon.couponUserId" :value="coupon.couponUserId">
-                  {{ coupon.code }} - {{ coupon.title }}
-                </option>
-              </select>
-            </div>
-
-            <div v-if="claimableCoupons.length" class="claimable-list">
-              <button
-                v-for="coupon in claimableCoupons"
-                :key="coupon.couponId"
-                type="button"
-                class="claim-btn"
-                @click="claimCoupon(coupon.couponId)"
-              >
-                {{ coupon.code }} - {{ t('claim') }}
-              </button>
+              <input type="text" placeholder="Discount code" />
+              <button type="button" class="btn-apply">Apply</button>
             </div>
           </div>
 
           <div class="summary-lines">
             <div class="line">
-              <span>{{ t('subtotal') }}</span>
+              <span>Subtotal</span>
               <span>{{ money(preview.subtotal || cart.subtotal.value) }}</span>
             </div>
             <div class="line">
-              <span>{{ t('shipping') }}</span>
-              <span>{{ money(preview.shippingAmount || 0) }}</span>
-            </div>
-            <div class="line">
-              <span>{{ t('tax') }}</span>
-              <span>{{ money(preview.taxAmount || 0) }}</span>
-            </div>
-            <div v-if="preview.discountAmount" class="line discount">
-              <span>{{ t('coupon') }}</span>
-              <span>-{{ money(preview.discountAmount || 0) }}</span>
+              <span>{{ shippingMethod }}</span>
+              <span>Free</span>
             </div>
           </div>
 
           <div class="total-line">
-            <span>{{ t('total') }}</span>
-            <strong>{{ money(preview.totalAmount || cart.subtotal.value) }}</strong>
-          </div>
-
-          <div v-if="preview.previewToken" class="preview-state">
-            <strong>{{ checkoutCopy.previewReady }}</strong>
-            <p>{{ preview.previewToken }}</p>
-          </div>
-
-          <div v-if="paymentIntent" class="payment-state">
-            <strong>{{ t('paymentStep') }}</strong>
-            <p>{{ paymentIntent.methodCode }} - {{ t('paymentReady') }}</p>
+            <span>Total</span>
+            <div class="total-price-group">
+              <span class="currency-code">USD</span>
+              <strong>{{ money(preview.totalAmount || cart.subtotal.value) }}</strong>
+            </div>
           </div>
         </div>
       </aside>
     </div>
+
+    <!-- Address Selection Modal -->
+    <div v-if="addressListOpen" class="modal-overlay" @click.self="addressListOpen = false">
+      <div class="modal-content address-list-modal">
+        <div class="modal-header">
+          <h2>Select Address</h2>
+          <button class="close-btn" @click="addressListOpen = false">
+            <span>✕</span>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="saved-addresses-modal">
+            <label
+              v-for="item in addresses"
+              :key="item.id"
+              class="saved-address"
+              :class="{ 'is-selected': selectedAddressId === String(item.id) }"
+            >
+              <input v-model="selectedAddressId" :value="String(item.id)" type="radio" @change="addressListOpen = false" />
+              <span class="saved-address__body">
+                <span class="saved-address__header">
+                  <strong>{{ item.firstName }} {{ item.lastName }}</strong>
+                  <em v-if="item.isDefault">{{ checkoutCopy.defaultAddress }}</em>
+                </span>
+                <small>{{ item.addressLine1 }}, {{ item.city }}, {{ item.state }} {{ item.zipCode }}</small>
+              </span>
+            </label>
+            
+            <button type="button" class="btn-add-new-address" @click="openAddAddressModal">
+              + Add new address
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add New Address Modal -->
+    <AddAddressModal
+      :is-open="addAddressModalOpen"
+      @close="addAddressModalOpen = false"
+      @save="handleSaveNewAddress"
+    />
   </div>
 </template>
 
@@ -310,6 +324,30 @@ const bootstrapped = ref(false)
 const previewing = ref(false)
 const isPaying = ref(false)
 const completingPayment = ref(false)
+
+const addressListOpen = ref(false)
+const addAddressModalOpen = ref(false)
+
+const openAddAddressModal = () => {
+  addressListOpen.value = false
+  addAddressModalOpen.value = true
+}
+
+const handleSaveNewAddress = async (formData: any) => {
+  const res = await useHttp('/api/address', {
+    method: 'POST',
+    body: {
+      ...formData,
+      addressLine1: formData.address,
+      addressLine2: formData.apartment,
+      isDefault: !addresses.value.length || formData.isDefault,
+    },
+  })
+  if (res?.code === 200) {
+    await fetchAddresses()
+    selectedAddressId.value = String(res.data.id)
+  }
+}
 
 const checkoutCopy = computed(() =>
   lang.value === 'zh'
@@ -604,40 +642,43 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .checkout-page {
-  min-height: calc(100vh - 88px);
+  min-height: 100vh;
+  background: #fff;
 }
 
 .checkout-container {
-  max-width: 1460px;
+  display: flex;
   margin: 0 auto;
-  padding: 32px 24px 56px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
-  gap: 24px;
-}
-
-.checkout-main,
-.checkout-sidebar {
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  border-radius: 32px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  padding: 0;
+  min-height: 100vh;
+  border-top: 1px solid #e4e7ec;
 }
 
 .checkout-main {
-  padding: 36px;
+  flex: 1.12;
+  padding: 56px 48px;
+  background: #fff;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.checkout-main-inner {
+  width: 100%;
+  max-width: 640px;
 }
 
 .checkout-sidebar {
-  padding: 32px;
-  background:
-    radial-gradient(circle at top, rgba(88, 204, 2, 0.08), transparent 34%),
-    #fafaf7;
+  flex: 0.88;
+  padding: 56px 48px;
+  background: #f9fafb;
+  border-left: 1px solid #e4e7ec;
 }
 
 .sidebar-inner {
+  width: 100%;
+  max-width: 480px;
   position: sticky;
-  top: 112px;
+  top: 56px;
 }
 
 .checkout-section + .checkout-section {
@@ -682,6 +723,115 @@ onMounted(async () => {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.address-selector-area {
+  margin-bottom: 24px;
+}
+
+.selected-address-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.address-details {
+  strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 15px;
+    color: #111827;
+  }
+  p {
+    margin: 0 0 2px;
+    font-size: 14px;
+    color: #475467;
+  }
+}
+
+.empty-address-card {
+  text-align: center;
+}
+
+.btn-select-address, .btn-add-new-address {
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed #d0d5dd;
+  border-radius: 12px;
+  background: transparent;
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #111827;
+    background: #f9fafb;
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content.address-list-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eaeaea;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    color: #111;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #666;
+    padding: 4px;
+  }
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.saved-addresses-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .saved-addresses {
@@ -824,7 +974,7 @@ onMounted(async () => {
 
 .payment-methods {
   border: 1px solid #d0d5dd;
-  border-radius: 24px;
+  border-radius: 8px;
   overflow: hidden;
   background: #fff;
 }
@@ -845,29 +995,42 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 18px;
+  padding: 16px 18px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.payment-option.selected .option-header {
+  background: #fdfdfd;
 }
 
 .radio-wrap {
   width: 18px;
   height: 18px;
   border: 1px solid #cfd4dc;
-  border-radius: 999px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  background: #fff;
+}
+
+.payment-option.selected .radio-wrap {
+  border-color: #111;
+  background: #111;
 }
 
 .radio-inner {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #111827;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
 }
 
 .option-name {
   flex: 1;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 14px;
   color: #111827;
 }
 
@@ -877,12 +1040,12 @@ onMounted(async () => {
 }
 
 .card-icon {
-  padding: 3px 7px;
+  padding: 2px 6px;
   border: 1px solid #eaecf0;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #fff;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .brand-text {
@@ -894,18 +1057,68 @@ onMounted(async () => {
 
   &.paypal {
     color: #003087;
+    font-style: italic;
+  }
+
+  &.affirm {
+    color: #000;
+  }
+
+  &.klarna {
+    color: #ffb3c7;
   }
 }
 
 .option-body {
-  padding: 0 18px 18px;
-  background: #fcfcfd;
+  padding: 18px;
+  background: #fafafa;
+  border-top: 1px solid #eaecf0;
 }
 
-.payment-note {
-  margin: 0 0 14px;
-  color: #667085;
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-form input {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 4px;
+  background: #fff;
   font-size: 14px;
+  color: #111;
+  outline: none;
+}
+
+.card-form input:focus {
+  border-color: #111;
+}
+
+.payment-note-container {
+  margin-top: 18px;
+}
+
+.save-info-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #d0d5dd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  label {
+    font-size: 14px;
+    color: #111;
+    cursor: pointer;
+  }
 }
 
 .action-stack {
