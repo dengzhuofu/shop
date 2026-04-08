@@ -139,9 +139,9 @@ public class PaymentController {
   public String handleAlipayNotify(@RequestParam Map<String, String> params) {
     try {
       processAlipayCallback(params);
-      return "success";
+      return "SUCCESS";
     } catch (Exception ex) {
-      return "failure";
+      return "FAIL";
     }
   }
 
@@ -187,24 +187,9 @@ public class PaymentController {
   private String buildAlipayRedirectUrl(PayPaymentIntent intent, OmsOrder order,
       PaymentProperties.AlipayProperties alipay) {
     try {
-      Map<String, String> params = new LinkedHashMap<>();
-      params.put("app_id", alipay.getAppId());
-      params.put("method", "alipay.trade.page.pay");
-      params.put("format", "JSON");
-      params.put("charset", alipay.getCharset());
-      params.put("sign_type", alipay.getSignType());
-      params.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-      params.put("version", "1.0");
-      if (hasText(alipay.getNotifyUrl())) {
-        params.put("notify_url", alipay.getNotifyUrl());
-      }
-      params.put("return_url", alipay.getReturnUrl());
-      params.put("biz_content", objectMapper.writeValueAsString(Map.of(
-          "out_trade_no", intent.getIntentNo(),
-          "total_amount", normalizeAmount(intent.getAmount()),
-          "subject", buildAlipaySubject(order, alipay),
-          "product_code", "FAST_INSTANT_TRADE_PAY"
-      )));
+      Map<String, String> params = alipay.isCrossBorderMode()
+          ? buildCrossBorderRequestParams(intent, order, alipay)
+          : buildOpenApiRequestParams(intent, order, alipay);
       params.put("sign", AlipaySignatureUtils.sign(
           params,
           alipay.getAppPrivateKey(),
@@ -230,7 +215,9 @@ public class PaymentController {
     )) {
       throw new IllegalArgumentException("Invalid Alipay signature");
     }
-    if (hasText(callbackParams.get("app_id")) && !alipay.getAppId().equals(callbackParams.get("app_id"))) {
+    if (!alipay.isCrossBorderMode()
+        && hasText(callbackParams.get("app_id"))
+        && !alipay.getAppId().equals(callbackParams.get("app_id"))) {
       throw new IllegalArgumentException("Alipay appId mismatch");
     }
 
@@ -254,8 +241,9 @@ public class PaymentController {
       throw new IllegalArgumentException("Order not found");
     }
 
-    if (hasText(callbackParams.get("total_amount"))) {
-      BigDecimal paidAmount = new BigDecimal(callbackParams.get("total_amount"));
+    String amountText = firstNonBlank(callbackParams.get("total_amount"), callbackParams.get("total_fee"));
+    if (hasText(amountText)) {
+      BigDecimal paidAmount = new BigDecimal(amountText);
       if (intent.getAmount() == null || intent.getAmount().compareTo(paidAmount) != 0) {
         throw new IllegalArgumentException("Paid amount mismatch");
       }
@@ -316,6 +304,48 @@ public class PaymentController {
     return subject.length() > 256 ? subject.substring(0, 256) : subject;
   }
 
+  private Map<String, String> buildOpenApiRequestParams(PayPaymentIntent intent, OmsOrder order,
+      PaymentProperties.AlipayProperties alipay) throws Exception {
+    Map<String, String> params = new LinkedHashMap<>();
+    params.put("app_id", alipay.getAppId());
+    params.put("method", "alipay.trade.page.pay");
+    params.put("format", "JSON");
+    params.put("charset", alipay.getCharset());
+    params.put("sign_type", alipay.getSignType());
+    params.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    params.put("version", "1.0");
+    if (hasText(alipay.getNotifyUrl())) {
+      params.put("notify_url", alipay.getNotifyUrl());
+    }
+    params.put("return_url", alipay.getReturnUrl());
+    params.put("biz_content", objectMapper.writeValueAsString(Map.of(
+        "out_trade_no", intent.getIntentNo(),
+        "total_amount", normalizeAmount(intent.getAmount()),
+        "subject", buildAlipaySubject(order, alipay),
+        "product_code", "FAST_INSTANT_TRADE_PAY"
+    )));
+    return params;
+  }
+
+  private Map<String, String> buildCrossBorderRequestParams(PayPaymentIntent intent, OmsOrder order,
+      PaymentProperties.AlipayProperties alipay) {
+    Map<String, String> params = new LinkedHashMap<>();
+    params.put("service", "create_forex_trade");
+    params.put("partner", alipay.getPartner());
+    params.put("_input_charset", alipay.getCharset());
+    params.put("sign_type", alipay.getSignType());
+    params.put("out_trade_no", intent.getIntentNo());
+    params.put("subject", buildAlipaySubject(order, alipay));
+    params.put("currency", order.getCurrency());
+    params.put("total_fee", normalizeAmount(intent.getAmount()));
+    params.put("product_code", alipay.getCrossBorderProductCode());
+    if (hasText(alipay.getNotifyUrl())) {
+      params.put("notify_url", alipay.getNotifyUrl());
+    }
+    params.put("return_url", alipay.getReturnUrl());
+    return params;
+  }
+
   private String normalizeAmount(BigDecimal amount) {
     return amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
   }
@@ -335,5 +365,14 @@ public class PaymentController {
 
   private boolean hasText(String value) {
     return value != null && !value.isBlank();
+  }
+
+  private String firstNonBlank(String... values) {
+    for (String value : values) {
+      if (hasText(value)) {
+        return value;
+      }
+    }
+    return null;
   }
 }
