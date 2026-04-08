@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -186,12 +187,13 @@ public class PaymentController {
   }
 
   private PaymentIntentVO processAlipayCallback(Map<String, String> callbackParams, boolean preferAuthoritativeQuery) {
+    Map<String, String> normalizedParams = normalizeAlipayCallbackParams(callbackParams);
     PaymentProperties.AlipayProperties alipay = paymentProperties.getAlipay();
     if (!alipay.isConfigured()) {
       throw new IllegalStateException("Alipay is not configured");
     }
     if (!AlipaySignatureUtils.verify(
-        callbackParams,
+        normalizedParams,
         alipay.getAlipayPublicKey(),
         alipay.getCharset(),
         alipay.getSignType()
@@ -199,12 +201,12 @@ public class PaymentController {
       throw new IllegalArgumentException("Invalid Alipay signature");
     }
     if (!alipay.isCrossBorderMode()
-        && hasText(callbackParams.get("app_id"))
-        && !alipay.getAppId().equals(callbackParams.get("app_id"))) {
+        && hasText(normalizedParams.get("app_id"))
+        && !alipay.getAppId().equals(normalizedParams.get("app_id"))) {
       throw new IllegalArgumentException("Alipay appId mismatch");
     }
 
-    String outTradeNo = callbackParams.get("out_trade_no");
+    String outTradeNo = normalizedParams.get("out_trade_no");
     if (!hasText(outTradeNo)) {
       throw new IllegalArgumentException("Missing out_trade_no");
     }
@@ -224,13 +226,13 @@ public class PaymentController {
       throw new IllegalArgumentException("Order not found");
     }
 
-    String tradeStatus = callbackParams.get("trade_status");
-    String tradeNo = callbackParams.get("trade_no");
+    String tradeStatus = normalizedParams.get("trade_status");
+    String tradeNo = normalizedParams.get("trade_no");
     BigDecimal paidAmount = parseAmount(firstNonBlank(
-        callbackParams.get("total_amount"),
-        callbackParams.get("receipt_amount"),
-        callbackParams.get("buyer_pay_amount"),
-        callbackParams.get("total_fee")
+        normalizedParams.get("total_amount"),
+        normalizedParams.get("receipt_amount"),
+        normalizedParams.get("buyer_pay_amount"),
+        normalizedParams.get("total_fee")
     ));
 
     if (preferAuthoritativeQuery || !hasText(tradeStatus)) {
@@ -261,6 +263,19 @@ public class PaymentController {
     response.setDisplayMessage(resolveAlipayMessage(tradeStatus));
     response.setSandbox(alipay.isSandbox());
     return response;
+  }
+
+  private Map<String, String> normalizeAlipayCallbackParams(Map<String, String> callbackParams) {
+    Map<String, String> normalized = new LinkedHashMap<>();
+    callbackParams.forEach((key, value) -> {
+      if (!hasText(key) || "lang".equalsIgnoreCase(key)) {
+        return;
+      }
+      normalized.put(key, "sign".equalsIgnoreCase(key) && value != null
+          ? value.replace(' ', '+')
+          : value);
+    });
+    return normalized;
   }
 
   private void markPaymentSucceeded(PayPaymentIntent intent, OmsOrder order, String transactionNo) {

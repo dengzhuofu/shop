@@ -44,9 +44,43 @@ const ui = computed(() =>
       },
 )
 
+const getRawQueryParam = (targetKey: string) => {
+  if (!process.client) {
+    return null
+  }
+
+  const rawQuery = window.location.search.startsWith('?')
+    ? window.location.search.slice(1)
+    : window.location.search
+
+  if (!rawQuery) {
+    return null
+  }
+
+  for (const pair of rawQuery.split('&')) {
+    if (!pair) {
+      continue
+    }
+
+    const [rawKey, ...rawValueParts] = pair.split('=')
+    const key = decodeURIComponent(rawKey || '')
+    if (key !== targetKey) {
+      continue
+    }
+
+    return decodeURIComponent(rawValueParts.join('=') || '')
+  }
+
+  return null
+}
+
 const normalizeQuery = () => {
   const params: Record<string, string> = {}
   Object.entries(route.query).forEach(([key, value]) => {
+    if (key === 'lang') {
+      return
+    }
+
     if (Array.isArray(value)) {
       if (value[0]) {
         params[key] = String(value[0])
@@ -57,6 +91,12 @@ const normalizeQuery = () => {
       params[key] = String(value)
     }
   })
+
+  const rawSign = getRawQueryParam('sign')
+  if (rawSign) {
+    params.sign = rawSign
+  }
+
   return params
 }
 

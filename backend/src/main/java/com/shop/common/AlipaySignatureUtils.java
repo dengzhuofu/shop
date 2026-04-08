@@ -39,7 +39,7 @@ public final class AlipaySignatureUtils {
       Signature signature = Signature.getInstance(resolveAlgorithm(signType));
       signature.initVerify(loadPublicKey(publicKey));
       signature.update(buildSignContent(params).getBytes(Charset.forName(charset)));
-      return signature.verify(Base64.getDecoder().decode(sign));
+      return signature.verify(Base64.getDecoder().decode(sign.replace(' ', '+')));
     } catch (Exception ex) {
       return false;
     }
