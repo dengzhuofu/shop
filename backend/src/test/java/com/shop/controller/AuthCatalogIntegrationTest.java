@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.shop.support.BackendIntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -77,5 +80,39 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
 
     JsonNode productJson = objectMapper.readTree(productResponse);
     assertThat(productJson.path("data").path("skuList").size()).isEqualTo(6);
+  }
+
+  @Test
+  void skateboardSeedDataProvidesMultipleSelectableVariantScenarios() throws Exception {
+    String token = loginAndGetToken("admin@isinwheel.local", "123456");
+
+    String productResponse = mockMvc.perform(get("/product/slug/isinwheel-v8-electric-skateboard-with-remote")
+            .param("lang", "en")
+            .header("Authorization", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.slug").value("isinwheel-v8-electric-skateboard-with-remote"))
+        .andExpect(jsonPath("$.data.skuAttributeOptions.color[1]").value("Forest Green"))
+        .andExpect(jsonPath("$.data.skuAttributeOptions.bundle[2]").value("Travel Kit"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode skuList = objectMapper.readTree(productResponse).path("data").path("skuList");
+    assertThat(skuList.size()).isEqualTo(5);
+
+    Set<String> uniquePics = new HashSet<>();
+    Set<String> uniquePrices = new HashSet<>();
+    int selectableCount = 0;
+    for (JsonNode sku : skuList) {
+      uniquePics.add(sku.path("pic").asText());
+      uniquePrices.add(sku.path("price").asText());
+      if (sku.path("stock").asInt() > 0 && !"INACTIVE".equals(sku.path("status").asText())) {
+        selectableCount++;
+      }
+    }
+
+    assertThat(uniquePics.size()).isGreaterThanOrEqualTo(4);
+    assertThat(uniquePrices.size()).isGreaterThanOrEqualTo(5);
+    assertThat(selectableCount).isEqualTo(4);
   }
 }
