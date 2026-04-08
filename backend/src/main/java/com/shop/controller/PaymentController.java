@@ -2,7 +2,6 @@ package com.shop.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.common.AlipaySignatureUtils;
 import com.shop.common.JsonLocaleUtils;
 import com.shop.common.PaymentMethodCatalog;
@@ -12,6 +11,7 @@ import com.shop.dto.PaymentIntentCreateDTO;
 import com.shop.dto.PaymentMockCompleteDTO;
 import com.shop.entity.OmsOrder;
 import com.shop.entity.PayPaymentIntent;
+import com.shop.service.AlipayGatewayService;
 import com.shop.service.OmsOrderService;
 import com.shop.service.PayPaymentIntentService;
 import com.shop.vo.PaymentIntentVO;
@@ -26,12 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,7 +39,7 @@ public class PaymentController {
   private final OmsOrderService orderService;
   private final PayPaymentIntentService paymentIntentService;
   private final PaymentProperties paymentProperties;
-  private final ObjectMapper objectMapper;
+  private final AlipayGatewayService alipayGatewayService;
 
   @GetMapping("/methods")
   public Result<List<PaymentMethodVO>> methods() {
@@ -132,16 +127,16 @@ public class PaymentController {
 
   @PostMapping("/alipay/return/confirm")
   public Result<PaymentIntentVO> confirmAlipayReturn(@RequestBody Map<String, String> params) {
-    return Result.success(processAlipayCallback(params));
+    return Result.success(processAlipayCallback(params, true));
   }
 
   @PostMapping("/alipay/notify")
   public String handleAlipayNotify(@RequestParam Map<String, String> params) {
     try {
-      processAlipayCallback(params);
-      return "SUCCESS";
+      processAlipayCallback(params, false);
+      return "success";
     } catch (Exception ex) {
-      return "FAIL";
+      return "fail";
     }
   }
 
@@ -176,7 +171,12 @@ public class PaymentController {
 
     PaymentIntentVO response = PaymentIntentVO.from(intent);
     response.setNextAction("REDIRECT");
-    response.setRedirectUrl(buildAlipayRedirectUrl(intent, order, alipay));
+    response.setRedirectUrl(alipayGatewayService.createPageRedirectUrl(
+        alipay,
+        intent,
+        order,
+        buildAlipaySubject(order, alipay)
+    ));
     response.setDisplayMessage(alipay.isSandbox()
         ? "Redirecting to Alipay sandbox..."
         : "Redirecting to Alipay...");
@@ -184,25 +184,7 @@ public class PaymentController {
     return response;
   }
 
-  private String buildAlipayRedirectUrl(PayPaymentIntent intent, OmsOrder order,
-      PaymentProperties.AlipayProperties alipay) {
-    try {
-      Map<String, String> params = alipay.isCrossBorderMode()
-          ? buildCrossBorderRequestParams(intent, order, alipay)
-          : buildOpenApiRequestParams(intent, order, alipay);
-      params.put("sign", AlipaySignatureUtils.sign(
-          params,
-          alipay.getAppPrivateKey(),
-          alipay.getCharset(),
-          alipay.getSignType()
-      ));
-      return alipay.resolvedGateway() + "?" + toQueryString(params);
-    } catch (Exception ex) {
-      throw new IllegalStateException("Failed to build Alipay redirect URL", ex);
-    }
-  }
-
-  private PaymentIntentVO processAlipayCallback(Map<String, String> callbackParams) {
+  private PaymentIntentVO processAlipayCallback(Map<String, String> callbackParams, boolean preferAuthoritativeQuery) {
     PaymentProperties.AlipayProperties alipay = paymentProperties.getAlipay();
     if (!alipay.isConfigured()) {
       throw new IllegalStateException("Alipay is not configured");
@@ -241,17 +223,32 @@ public class PaymentController {
       throw new IllegalArgumentException("Order not found");
     }
 
-    String amountText = firstNonBlank(callbackParams.get("total_amount"), callbackParams.get("total_fee"));
-    if (hasText(amountText)) {
-      BigDecimal paidAmount = new BigDecimal(amountText);
-      if (intent.getAmount() == null || intent.getAmount().compareTo(paidAmount) != 0) {
-        throw new IllegalArgumentException("Paid amount mismatch");
+    String tradeStatus = callbackParams.get("trade_status");
+    String tradeNo = callbackParams.get("trade_no");
+    BigDecimal paidAmount = parseAmount(firstNonBlank(
+        callbackParams.get("total_amount"),
+        callbackParams.get("receipt_amount"),
+        callbackParams.get("buyer_pay_amount"),
+        callbackParams.get("total_fee")
+    ));
+
+    if (preferAuthoritativeQuery || !hasText(tradeStatus)) {
+      AlipayGatewayService.TradeQueryResult tradeQueryResult = alipayGatewayService.queryTrade(alipay, outTradeNo, tradeNo);
+      if (tradeQueryResult.success()) {
+        tradeStatus = firstNonBlank(tradeQueryResult.tradeStatus(), tradeStatus);
+        tradeNo = firstNonBlank(tradeQueryResult.tradeNo(), tradeNo);
+        if (paidAmount == null) {
+          paidAmount = tradeQueryResult.totalAmount();
+        }
       }
     }
 
-    String tradeStatus = callbackParams.get("trade_status");
+    if (paidAmount != null && (intent.getAmount() == null || intent.getAmount().compareTo(paidAmount) != 0)) {
+      throw new IllegalArgumentException("Paid amount mismatch");
+    }
+
     if ("TRADE_SUCCESS".equalsIgnoreCase(tradeStatus) || "TRADE_FINISHED".equalsIgnoreCase(tradeStatus)) {
-      markPaymentSucceeded(intent, order, callbackParams.get("trade_no"));
+      markPaymentSucceeded(intent, order, tradeNo);
     } else if ("TRADE_CLOSED".equalsIgnoreCase(tradeStatus)) {
       markPaymentFailed(intent, order, "closed");
     }
@@ -260,10 +257,7 @@ public class PaymentController {
     orderService.updateById(order);
 
     PaymentIntentVO response = PaymentIntentVO.from(intent);
-    response.setDisplayMessage(("TRADE_SUCCESS".equalsIgnoreCase(tradeStatus)
-        || "TRADE_FINISHED".equalsIgnoreCase(tradeStatus))
-        ? "Alipay payment confirmed."
-        : "Alipay return received.");
+    response.setDisplayMessage(resolveAlipayMessage(tradeStatus));
     response.setSandbox(alipay.isSandbox());
     return response;
   }
@@ -304,67 +298,12 @@ public class PaymentController {
     return subject.length() > 256 ? subject.substring(0, 256) : subject;
   }
 
-  private Map<String, String> buildOpenApiRequestParams(PayPaymentIntent intent, OmsOrder order,
-      PaymentProperties.AlipayProperties alipay) throws Exception {
-    Map<String, String> params = new LinkedHashMap<>();
-    params.put("app_id", alipay.getAppId());
-    params.put("method", "alipay.trade.page.pay");
-    params.put("format", "JSON");
-    params.put("charset", alipay.getCharset());
-    params.put("sign_type", alipay.getSignType());
-    params.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-    params.put("version", "1.0");
-    if (hasText(alipay.getNotifyUrl())) {
-      params.put("notify_url", alipay.getNotifyUrl());
-    }
-    params.put("return_url", alipay.getReturnUrl());
-    params.put("biz_content", objectMapper.writeValueAsString(Map.of(
-        "out_trade_no", intent.getIntentNo(),
-        "total_amount", normalizeAmount(intent.getAmount()),
-        "subject", buildAlipaySubject(order, alipay),
-        "product_code", "FAST_INSTANT_TRADE_PAY"
-    )));
-    return params;
-  }
-
-  private Map<String, String> buildCrossBorderRequestParams(PayPaymentIntent intent, OmsOrder order,
-      PaymentProperties.AlipayProperties alipay) {
-    Map<String, String> params = new LinkedHashMap<>();
-    params.put("service", "create_forex_trade");
-    params.put("partner", alipay.getPartner());
-    params.put("_input_charset", alipay.getCharset());
-    params.put("sign_type", alipay.getSignType());
-    params.put("out_trade_no", intent.getIntentNo());
-    params.put("subject", buildAlipaySubject(order, alipay));
-    params.put("currency", order.getCurrency());
-    params.put("total_fee", normalizeAmount(intent.getAmount()));
-    params.put("product_code", alipay.getCrossBorderProductCode());
-    if (hasText(alipay.getNotifyUrl())) {
-      params.put("notify_url", alipay.getNotifyUrl());
-    }
-    params.put("return_url", alipay.getReturnUrl());
-    return params;
-  }
-
-  private String normalizeAmount(BigDecimal amount) {
-    return amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
-  }
-
-  private String toQueryString(Map<String, String> params) {
-    StringBuilder builder = new StringBuilder();
-    for (Map.Entry<String, String> entry : params.entrySet()) {
-      if (builder.length() > 0) {
-        builder.append('&');
-      }
-      builder.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
-      builder.append('=');
-      builder.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
-    }
-    return builder.toString();
-  }
-
   private boolean hasText(String value) {
     return value != null && !value.isBlank();
+  }
+
+  private BigDecimal parseAmount(String value) {
+    return hasText(value) ? new BigDecimal(value) : null;
   }
 
   private String firstNonBlank(String... values) {
@@ -374,5 +313,18 @@ public class PaymentController {
       }
     }
     return null;
+  }
+
+  private String resolveAlipayMessage(String tradeStatus) {
+    if ("TRADE_SUCCESS".equalsIgnoreCase(tradeStatus) || "TRADE_FINISHED".equalsIgnoreCase(tradeStatus)) {
+      return "Alipay payment confirmed.";
+    }
+    if ("WAIT_BUYER_PAY".equalsIgnoreCase(tradeStatus)) {
+      return "Alipay payment is still pending.";
+    }
+    if ("TRADE_CLOSED".equalsIgnoreCase(tradeStatus)) {
+      return "Alipay payment was closed.";
+    }
+    return "Alipay return received.";
   }
 }

@@ -126,6 +126,16 @@ jobs:
       GHCR_USERNAME: ${{ secrets.PROD_GHCR_USERNAME }}
       GHCR_TOKEN: ${{ secrets.PROD_GHCR_READ_TOKEN }}
       PROD_PROJECT_DIR: ${{ secrets.PROD_PROJECT_DIR }}
+      PAYMENT_DEFAULT_PROVIDER: ${{ secrets.PROD_PAYMENT_DEFAULT_PROVIDER }}
+      PAYMENT_ALIPAY_ENABLED: ${{ secrets.PROD_PAYMENT_ALIPAY_ENABLED }}
+      PAYMENT_ALIPAY_SANDBOX: ${{ secrets.PROD_PAYMENT_ALIPAY_SANDBOX }}
+      PAYMENT_ALIPAY_FALLBACK_TO_MOCK: ${{ secrets.PROD_PAYMENT_ALIPAY_FALLBACK_TO_MOCK }}
+      PAYMENT_ALIPAY_APP_ID: ${{ secrets.PROD_PAYMENT_ALIPAY_APP_ID }}
+      PAYMENT_ALIPAY_APP_PRIVATE_KEY: ${{ secrets.PROD_PAYMENT_ALIPAY_APP_PRIVATE_KEY }}
+      PAYMENT_ALIPAY_PUBLIC_KEY: ${{ secrets.PROD_PAYMENT_ALIPAY_PUBLIC_KEY }}
+      PAYMENT_ALIPAY_RETURN_URL: ${{ secrets.PROD_PAYMENT_ALIPAY_RETURN_URL }}
+      PAYMENT_ALIPAY_NOTIFY_URL: ${{ secrets.PROD_PAYMENT_ALIPAY_NOTIFY_URL }}
+      PAYMENT_ALIPAY_SUBJECT_PREFIX: ${{ secrets.PROD_PAYMENT_ALIPAY_SUBJECT_PREFIX }}
     steps:
       - name: Download deploy bundle artifact
         uses: actions/download-artifact@v4
@@ -141,6 +151,9 @@ jobs:
           tar -xzf "${{ needs.build.outputs.deploy_bundle }}" -C "$PROJECT_DIR"
           chmod +x "$PROJECT_DIR/deploy/remote/bootstrap-server.sh" "$PROJECT_DIR/deploy/remote/deploy_registry.sh"
           export GHCR_USERNAME GHCR_TOKEN
+          export PAYMENT_DEFAULT_PROVIDER PAYMENT_ALIPAY_ENABLED PAYMENT_ALIPAY_SANDBOX PAYMENT_ALIPAY_FALLBACK_TO_MOCK
+          export PAYMENT_ALIPAY_APP_ID PAYMENT_ALIPAY_APP_PRIVATE_KEY PAYMENT_ALIPAY_PUBLIC_KEY
+          export PAYMENT_ALIPAY_RETURN_URL PAYMENT_ALIPAY_NOTIFY_URL PAYMENT_ALIPAY_SUBJECT_PREFIX
           bash "$PROJECT_DIR/deploy/remote/deploy_registry.sh" "$PROJECT_DIR" "$BACKEND_IMAGE" "$FRONTEND_IMAGE" "${{ github.sha }}"
 
       - name: Verify deployment

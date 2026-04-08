@@ -31,6 +31,26 @@ Create these repository secrets in GitHub:
   Example: `dengzhuofu`
 - `PROD_GHCR_READ_TOKEN`
   Token with at least `read:packages`
+- `PROD_PAYMENT_DEFAULT_PROVIDER`
+  Example: `alipay`
+- `PROD_PAYMENT_ALIPAY_ENABLED`
+  Example: `true`
+- `PROD_PAYMENT_ALIPAY_SANDBOX`
+  Example: `true`
+- `PROD_PAYMENT_ALIPAY_FALLBACK_TO_MOCK`
+  Example: `false`
+- `PROD_PAYMENT_ALIPAY_APP_ID`
+  Your Alipay app id
+- `PROD_PAYMENT_ALIPAY_APP_PRIVATE_KEY`
+  Your one-line base64 app private key
+- `PROD_PAYMENT_ALIPAY_PUBLIC_KEY`
+  Your one-line base64 Alipay public key
+- `PROD_PAYMENT_ALIPAY_RETURN_URL`
+  Example: `http://101.200.239.103/payment/alipay-return`
+- `PROD_PAYMENT_ALIPAY_NOTIFY_URL`
+  Example: `http://101.200.239.103/api/payment/alipay/notify`
+- `PROD_PAYMENT_ALIPAY_SUBJECT_PREFIX`
+  Example: `isinwheel`
 
 The old SSH secrets are no longer used by the workflow.
 
