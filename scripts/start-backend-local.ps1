@@ -38,6 +38,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent $scriptDir
 $backendDir = Join-Path $projectRoot 'backend'
 $schemaPath = Join-Path $backendDir 'src\main\resources\schema.sql'
+$localAppConfigPath = Join-Path $backendDir 'src\main\resources\application-local.yml'
 $localPgRoot = Join-Path $backendDir '.local-postgres'
 $localPgData = Join-Path $localPgRoot 'data'
 $localPgLogDir = Join-Path $localPgRoot 'logs'
@@ -129,6 +130,10 @@ $env:DB_PORT = "$dbPort"
 $env:DB_NAME = $dbName
 $env:DB_USERNAME = $dbUser
 $env:DB_PASSWORD = $dbPassword
+if (Test-Path $localAppConfigPath) {
+    $env:SPRING_PROFILES_ACTIVE = 'local'
+    Write-Step "Loaded Spring profile: local"
+}
 
 Push-Location $backendDir
 try {

@@ -116,10 +116,24 @@
             </div>
 
             <div class="payment-methods">
-              <div class="payment-option selected">
-                <div class="option-header">
+              <div class="payment-option" :class="{ selected: selectedPaymentMethod === 'alipay' }">
+                <button type="button" class="option-header" @click="selectedPaymentMethod = 'alipay'">
                   <div class="radio-wrap">
-                    <div class="radio-inner"></div>
+                    <div v-if="selectedPaymentMethod === 'alipay'" class="radio-inner"></div>
+                  </div>
+                  <span class="option-name">Alipay</span>
+                  <span class="brand-text alipay">Sandbox</span>
+                </button>
+
+                <div v-if="selectedPaymentMethod === 'alipay'" class="option-body">
+                  <p class="payment-hint">{{ paymentUiCopy.alipayHint }}</p>
+                </div>
+              </div>
+
+              <div class="payment-option" :class="{ selected: selectedPaymentMethod === 'credit_card' }">
+                <button type="button" class="option-header" @click="selectedPaymentMethod = 'credit_card'">
+                  <div class="radio-wrap">
+                    <div v-if="selectedPaymentMethod === 'credit_card'" class="radio-inner"></div>
                   </div>
                   <span class="option-name">Credit card</span>
                   <div class="card-icons">
@@ -127,9 +141,9 @@
                     <span class="card-icon master">MC</span>
                     <span class="card-icon amex">AMEX</span>
                   </div>
-                </div>
+                </button>
 
-                <div class="option-body">
+                <div v-if="selectedPaymentMethod === 'credit_card'" class="option-body">
                   <div class="card-form">
                     <input type="text" :placeholder="checkoutCopy.cardNumber" />
                     <div class="form-row">
@@ -138,6 +152,7 @@
                     </div>
                     <input type="text" :placeholder="checkoutCopy.nameOnCard" />
                   </div>
+                  <p class="payment-hint">{{ paymentUiCopy.mockHint }}</p>
                 </div>
               </div>
 
@@ -184,12 +199,13 @@
                 {{ isPaying ? checkoutCopy.processing : checkoutCopy.payNow }}
               </button>
               <button
+                v-if="isMockFlow"
                 type="button"
                 class="pay-now-btn ghost"
                 :disabled="!paymentIntent?.id || completingPayment"
                 @click="completePayment"
               >
-                {{ completingPayment ? checkoutCopy.completing : t('completeMockPayment') }}
+                {{ completingPayment ? checkoutCopy.completing : paymentUiCopy.completeMockPayment }}
               </button>
             </div>
 
@@ -317,6 +333,7 @@ const availableCoupons = ref<any[]>([])
 const claimableCoupons = ref<any[]>([])
 const selectedAddressId = ref<string>('manual')
 const selectedCouponUserId = ref<number | null>(null)
+const selectedPaymentMethod = ref<'alipay' | 'credit_card'>('alipay')
 const preview = ref<Record<string, any>>({})
 const paymentIntent = ref<Record<string, any> | null>(null)
 const message = ref('')
@@ -405,6 +422,22 @@ const checkoutCopy = computed(() =>
       },
 )
 
+const paymentUiCopy = computed(() =>
+  lang.value === 'zh'
+    ? {
+        alipayHint: '优先走支付宝沙盒；支付完成后会回跳并在站内确认结果。',
+        mockHint: '如果沙盒凭证还没配置好，会自动回退到 mock 支付流程。',
+        completeMockPayment: '完成 mock 支付',
+        redirectingToAlipay: '正在跳转到支付宝...',
+      }
+    : {
+        alipayHint: 'Preferred path: redirect to Alipay Sandbox and confirm the result on return.',
+        mockHint: 'If sandbox credentials are not ready yet, checkout can fall back to mock completion.',
+        completeMockPayment: 'Complete mock payment',
+        redirectingToAlipay: 'Redirecting to Alipay...',
+      },
+)
+
 const addressForm = reactive(createEmptyAddressDraft())
 
 const cartSignature = computed(() =>
@@ -417,8 +450,9 @@ const canPreviewAddress = computed(
   () => Boolean(selectedSavedAddress.value) || isAddressDraftComplete(addressForm),
 )
 const isPayDisabled = computed(
-  () => !preview.value.previewToken || !cart.items.value.length || !canPreviewAddress.value,
+  () => !cart.items.value.length || !canPreviewAddress.value || previewing.value,
 )
+const isMockFlow = computed(() => paymentIntent.value?.providerKey === 'mock')
 
 const applyAddress = (address: any) => {
   Object.assign(addressForm, toAddressDraft(address))
@@ -547,13 +581,18 @@ const startPayment = async () => {
         method: 'POST',
         body: {
           orderId: res.data.id,
-          paymentMethod: 'credit_card',
+          paymentMethod: selectedPaymentMethod.value,
         },
       })
 
       if (intentRes?.code === 200) {
         paymentIntent.value = intentRes.data
-        message.value = t('paymentReady')
+        message.value = intentRes.data?.displayMessage || t('paymentReady')
+        if (intentRes.data?.nextAction === 'REDIRECT' && intentRes.data?.redirectUrl && process.client) {
+          message.value = paymentUiCopy.value.redirectingToAlipay
+          window.location.href = intentRes.data.redirectUrl
+          return
+        }
       }
 
       await cart.refreshCart()
@@ -995,9 +1034,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 16px 18px;
+  border: none;
   background: #fafafa;
   cursor: pointer;
+  text-align: left;
 }
 
 .payment-option.selected .option-header {
@@ -1060,6 +1102,10 @@ onMounted(async () => {
     font-style: italic;
   }
 
+  &.alipay {
+    color: #1677ff;
+  }
+
   &.affirm {
     color: #000;
   }
@@ -1094,6 +1140,13 @@ onMounted(async () => {
 
 .card-form input:focus {
   border-color: #111;
+}
+
+.payment-hint {
+  margin: 0;
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .payment-note-container {

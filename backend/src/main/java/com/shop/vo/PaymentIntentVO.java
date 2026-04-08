@@ -19,6 +19,10 @@ public class PaymentIntentVO {
   private String clientSecret;
   private String mockResult;
   private LocalDateTime paidTime;
+  private String nextAction;
+  private String redirectUrl;
+  private String displayMessage;
+  private Boolean sandbox;
 
   public static PaymentIntentVO from(PayPaymentIntent intent) {
     PaymentIntentVO vo = new PaymentIntentVO();

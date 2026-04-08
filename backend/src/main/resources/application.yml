@@ -35,3 +35,17 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: false
+
+payment:
+  default-provider: ${PAYMENT_DEFAULT_PROVIDER:mock}
+  alipay:
+    enabled: ${PAYMENT_ALIPAY_ENABLED:false}
+    sandbox: ${PAYMENT_ALIPAY_SANDBOX:true}
+    fallback-to-mock: ${PAYMENT_ALIPAY_FALLBACK_TO_MOCK:true}
+    gateway: ${PAYMENT_ALIPAY_GATEWAY:}
+    app-id: ${PAYMENT_ALIPAY_APP_ID:}
+    app-private-key: ${PAYMENT_ALIPAY_APP_PRIVATE_KEY:}
+    alipay-public-key: ${PAYMENT_ALIPAY_PUBLIC_KEY:}
+    return-url: ${PAYMENT_ALIPAY_RETURN_URL:http://101.200.239.103/payment/alipay-return}
+    notify-url: ${PAYMENT_ALIPAY_NOTIFY_URL:http://101.200.239.103/payment/alipay/notify}
+    subject-prefix: ${PAYMENT_ALIPAY_SUBJECT_PREFIX:Shop}

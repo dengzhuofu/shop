@@ -17,6 +17,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
           .notMatch(
               "/auth/login",
               "/auth/register/email",
+              "/payment/alipay/notify",
+              "/payment/alipay/return/confirm",
               "/product/**",
               "/category/**",
               "/marketing/**",

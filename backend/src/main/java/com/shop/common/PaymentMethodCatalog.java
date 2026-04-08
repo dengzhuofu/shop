@@ -12,7 +12,8 @@ public final class PaymentMethodCatalog {
   public static List<PaymentMethodVO> methods(String language) {
     boolean zh = "zh".equalsIgnoreCase(language);
     return List.of(
-        new PaymentMethodVO("credit_card", zh ? "信用卡 / 借记卡" : "Credit / Debit Card", "card", true),
+        new PaymentMethodVO("credit_card", zh ? "Credit / Debit Card" : "Credit / Debit Card", "card", true),
+        new PaymentMethodVO("alipay", zh ? "Alipay Sandbox" : "Alipay Sandbox", "wallet", true),
         new PaymentMethodVO("paypal", "PayPal", "wallet", true),
         new PaymentMethodVO("shop_pay", "Shop Pay", "wallet", true),
         new PaymentMethodVO("apple_pay", "Apple Pay", "wallet", true),
