@@ -1,3 +1,5 @@
+import { formatSkuAttributeKey } from '~/utils/skuAttributes'
+
 export function useShopFormat() {
   const { lang, t } = useShopLocale()
 
@@ -17,7 +19,7 @@ export function useShopFormat() {
     const source = attributes.attributes || attributes.attributeDisplay || attributes
     const entries = Object.entries(source)
       .filter(([, value]) => value !== null && value !== undefined && `${value}`.trim() !== '')
-      .map(([key, value]) => `${key}: ${value}`)
+      .map(([key, value]) => `${formatSkuAttributeKey(key)}: ${value}`)
     return entries.join(' / ')
   }
 

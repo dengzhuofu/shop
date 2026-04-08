@@ -180,6 +180,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon, ZapIcon } from 'lucide-vue-next'
 import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
+import { formatSkuAttributeKey } from '~/utils/skuAttributes'
 import { mergeProductImages } from '~/utils/productMedia'
 
 const props = defineProps<{
@@ -256,8 +257,7 @@ const resetSelection = () => {
   Object.assign(selection, nextSelection)
 }
 
-const formatAttributeKey = (value: string) =>
-  ({ color: 'Color', bundle: 'Bundle', style: 'Style' }[value] || value.charAt(0).toUpperCase() + value.slice(1))
+const formatAttributeKey = (value: string) => formatSkuAttributeKey(value)
 
 const optionThumbnail = (attributeKey: string, option: string) => {
   const skuList = Array.isArray(productDetail.value?.skuList) ? productDetail.value.skuList : []

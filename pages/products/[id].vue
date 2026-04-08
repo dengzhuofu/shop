@@ -406,6 +406,7 @@ import {
   isSkuAvailable,
   sortAttributeKeys,
 } from "~/utils/productSelection";
+import { formatSkuAttributeKey } from "~/utils/skuAttributes";
 import { mergeProductImages } from "~/utils/productMedia";
 
 const route = useRoute();
@@ -563,9 +564,7 @@ const isSelectable = (attributeKey: string, option: string) =>
     option,
   );
 
-const formatAttributeKey = (value: string) =>
-  ({ color: "Color", bundle: "Bundle", style: "Style" })[value] ||
-  value.charAt(0).toUpperCase() + value.slice(1);
+const formatAttributeKey = (value: string) => formatSkuAttributeKey(value);
 
 const optionThumbnail = (attributeKey: string, option: string) => {
   const skuList = Array.isArray(product.value?.skuList)

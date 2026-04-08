@@ -115,4 +115,72 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
     assertThat(uniquePrices.size()).isGreaterThanOrEqualTo(5);
     assertThat(selectableCount).isEqualTo(4);
   }
+
+  @Test
+  void seedDataExposesAuthenticSkuAttributeKeysAcrossProducts() throws Exception {
+    String token = loginAndGetToken("admin@isinwheel.local", "123456");
+
+    String kidsResponse = mockMvc.perform(get("/product/slug/isinwheel-long-range-3-wheel-kids-electric-scooter")
+            .param("lang", "en")
+            .header("Authorization", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.slug").value("isinwheel-long-range-3-wheel-kids-electric-scooter"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode kidsData = objectMapper.readTree(kidsResponse).path("data");
+    assertThat(kidsData.path("skuList").size()).isEqualTo(10);
+    assertThat(textValues(kidsData.path("skuAttributeOptions").path("style")))
+        .contains("Blue+Pink", "Pink+Pink");
+    assertThat(textValues(kidsData.path("skuAttributeOptions").path("with gift box")))
+        .contains("Mini Pro Standard", "Mini Pro with Gift Box");
+
+    long kidsSelectableCount = 0;
+    Set<String> kidsUniquePics = new HashSet<>();
+    for (JsonNode sku : kidsData.path("skuList")) {
+      kidsUniquePics.add(sku.path("pic").asText());
+      if (sku.path("stock").asInt() > 0 && !"INACTIVE".equals(sku.path("status").asText())) {
+        kidsSelectableCount++;
+      }
+    }
+    assertThat(kidsSelectableCount).isGreaterThanOrEqualTo(8);
+    assertThat(kidsUniquePics.size()).isGreaterThanOrEqualTo(8);
+
+    String commuterResponse = mockMvc.perform(get("/product/slug/isinwheel-s9-pro-pneumatic-tire-electric-scooter-2026")
+            .param("lang", "en")
+            .header("Authorization", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.slug").value("isinwheel-s9-pro-pneumatic-tire-electric-scooter-2026"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode commuterData = objectMapper.readTree(commuterResponse).path("data");
+    assertThat(textValues(commuterData.path("skuAttributeOptions").path("buy more save more")))
+        .containsExactlyInAnyOrder("S9 Pro*1", "S9 Pro*2");
+
+    String helmetResponse = mockMvc.perform(get("/product/slug/adult-riding-helmet")
+            .param("lang", "en")
+            .header("Authorization", token))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode helmetData = objectMapper.readTree(helmetResponse).path("data");
+    assertThat(textValues(helmetData.path("skuAttributeOptions").path("size")))
+        .containsExactlyInAnyOrder("M", "L");
+  }
+
+  private Set<String> textValues(JsonNode node) {
+    Set<String> values = new HashSet<>();
+    if (node == null || !node.isArray()) {
+      return values;
+    }
+    for (JsonNode item : node) {
+      values.add(item.asText());
+    }
+    return values;
+  }
 }
