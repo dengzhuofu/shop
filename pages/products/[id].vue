@@ -1,6 +1,39 @@
 <template>
   <div v-if="product" class="product-detail-page">
-    <div class="container main-content">
+    <div class="sticky-section-bar" :class="{ 'is-visible': showStickyTabs }">
+      <div class="container sticky-content">
+        <nav class="section-tabs" aria-label="Product detail sections">
+          <button
+            v-for="tab in sectionTabs"
+            :key="tab.id"
+            type="button"
+            class="section-tab-btn"
+            :class="{ 'is-active': activeSection === tab.id }"
+            @click="scrollToSection(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        </nav>
+
+        <div class="sticky-product-summary">
+          <img :src="galleryImages[0]" :alt="product.title" class="mini-img" />
+          <div class="mini-text">
+            <h4 class="mini-title">{{ product.title }}</h4>
+            <span class="mini-variant">{{ selectedVariantText || selectedSku?.attributes?.color || 'Default' }}</span>
+          </div>
+          <button
+            type="button"
+            class="btn-add-to-cart mini"
+            :disabled="!selectedSkuAvailable || adding"
+            @click="handleAddToCart"
+          >
+            {{ adding ? t("adding") : t("addToCart") }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div ref="heroSection" class="container main-content">
       <div class="product-layout">
         <section class="product-media">
           <div class="main-image-container">
@@ -112,9 +145,14 @@
 
           <div class="review-stars">
             <div class="stars">
-              <StarIcon v-for="i in 5" :key="i" class="star-icon filled" />
+              <StarIcon
+                v-for="i in 5"
+                :key="i"
+                class="star-icon"
+                :class="{ filled: i <= roundedReviewAverage }"
+              />
             </div>
-            <span class="review-count">{{ reviewCount }} reviews</span>
+            <span class="review-count">{{ reviewSummary.averageRating.toFixed(2) }} · {{ reviewCount }} reviews</span>
           </div>
 
           <div class="installment-info">
@@ -353,21 +391,60 @@
       </div>
     </div>
 
-    <div class="sticky-cart-bar is-visible">
-      <div class="container sticky-content">
-        <div class="product-mini-info">
+    <section ref="featuresSection" class="detail-section features-section">
+      <div class="container section-shell">
+        <ProductFeatureShowcase :story="featureStory" />
+      </div>
+    </section>
+
+    <section ref="faqSection" class="detail-section faq-section">
+      <div class="container section-shell">
+        <div class="section-heading">
+          <span class="section-kicker">FAQs</span>
+          <h2>Questions riders ask before they commute with {{ product.title }}.</h2>
+        </div>
+
+        <div class="faq-grid">
+          <article
+            v-for="item in product.faqs || []"
+            :key="item.question"
+            class="faq-card"
+          >
+            <h3>{{ item.question }}</h3>
+            <p>{{ item.answer }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section ref="reviewsSection" class="detail-section reviews-section">
+      <div class="container section-shell">
+        <ProductReviews
+          :product-id="product.id"
+          :product-title="product.title"
+          @summary-change="handleSummaryChange"
+        />
+      </div>
+    </section>
+
+    <div class="sticky-cart-bar" :class="{ 'is-visible': !showStickyTabs }">
+      <div class="container sticky-cart-content">
+        <div class="sticky-cart-product">
           <img :src="galleryImages[0]" :alt="product.title" class="mini-img" />
           <div class="mini-text">
             <h4 class="mini-title">{{ product.title }}</h4>
-            <span class="mini-variant">{{ selectedVariantText }}</span>
+            <span class="mini-variant">
+              {{ selectedVariantText || selectedSku?.attributes?.color || "Default" }}
+            </span>
           </div>
         </div>
-        <div class="sticky-actions">
-          <div class="price-area mini">
+
+        <div class="sticky-cart-actions">
+          <div class="sticky-cart-price">
             <span class="current-price">{{ money(selectedPrice) }}</span>
-            <span v-if="selectedCompareAtPrice" class="old-price">{{
-              money(selectedCompareAtPrice)
-            }}</span>
+            <span v-if="selectedCompareAtPrice" class="old-price">
+              {{ money(selectedCompareAtPrice) }}
+            </span>
           </div>
           <button
             type="button"
@@ -384,7 +461,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import {
   ActivityIcon,
   BatteryIcon,
@@ -408,6 +485,7 @@ import {
 } from "~/utils/productSelection";
 import { formatSkuAttributeKey } from "~/utils/skuAttributes";
 import { mergeProductImages } from "~/utils/productMedia";
+import { buildProductFeatureStory } from "~/utils/productFeatureStory";
 
 const route = useRoute();
 const { lang, t } = useShopLocale();
@@ -420,11 +498,23 @@ const activeImage = ref("");
 const thumbStartIndex = ref(0);
 const quantity = ref(1);
 const adding = ref(false);
+const heroSection = ref<HTMLElement | null>(null);
+const featuresSection = ref<HTMLElement | null>(null);
+const faqSection = ref<HTMLElement | null>(null);
+const reviewsSection = ref<HTMLElement | null>(null);
+const showStickyTabs = ref(false);
+const activeSection = ref<"features" | "faqs" | "reviews">("features");
+const stickyTabsTriggerY = ref(Number.POSITIVE_INFINITY);
 const activeAccordion = ref<
   "quick-know" | "specification" | "in-the-box" | "faq" | null
 >("quick-know");
 const selection = reactive<Record<string, string>>({});
 const selectedAddonCodes = ref<string[]>([]);
+const reviewSummary = reactive({
+  averageRating: 0,
+  totalReviews: 0,
+  ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<number, number>,
+});
 
 const iconMap = { ZapIcon, NavigationIcon, ActivityIcon, BatteryIcon } as const;
 
@@ -483,6 +573,16 @@ const resolvedSpecs = computed(() =>
     })),
 );
 
+const sectionTabs = computed(() => [
+  { id: "features", label: "Features" },
+  { id: "faqs", label: "FAQs" },
+  { id: "reviews", label: "Reviews" },
+]);
+
+const featureStory = computed(() =>
+  buildProductFeatureStory(product.value, galleryImages.value),
+);
+
 const attributeOptions = computed(
   () => product.value?.skuAttributeOptions || {},
 );
@@ -511,8 +611,9 @@ const hasSpringSale = computed(() =>
     (tag: string) => String(tag).toLowerCase().includes("spring sale"),
   ),
 );
-const reviewCount = computed(() =>
-  Math.max(Number(product.value?.reviewCount || 0), 61),
+const reviewCount = computed(() => Number(reviewSummary.totalReviews || 0));
+const roundedReviewAverage = computed(() =>
+  Math.round(Number(reviewSummary.averageRating || 0)),
 );
 const selectedVariantText = computed(() => attributeText(selection));
 const normalizedQuantity = computed(() =>
@@ -543,10 +644,26 @@ const fetchProduct = async () => {
       selectedAddonCodes.value = [];
       quantity.value = 1;
       syncActiveImage();
+      Object.assign(reviewSummary, {
+        averageRating: 0,
+        totalReviews: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      });
+      await nextTick();
+      measureSectionAnchors();
+      updateScrollState();
     }
   } catch (error) {
     product.value = null;
   }
+};
+
+const handleSummaryChange = (payload: {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: Record<number, number>;
+}) => {
+  Object.assign(reviewSummary, payload);
 };
 
 const toggleAccordion = (
@@ -616,6 +733,62 @@ const stepThumbs = (direction: number) => {
   );
 };
 
+const sectionElements = () => ({
+  features: featuresSection.value,
+  faqs: faqSection.value,
+  reviews: reviewsSection.value,
+});
+
+const tabBarOffset = () => 96;
+
+const measureSectionAnchors = () => {
+  if (!process.client || !featuresSection.value) return;
+
+  const featuresTop =
+    featuresSection.value.getBoundingClientRect().top + window.scrollY;
+  stickyTabsTriggerY.value = Math.max(
+    featuresTop - Math.max(window.innerHeight * 0.45, 320),
+    0,
+  );
+};
+
+const scrollToSection = (sectionId: "features" | "faqs" | "reviews") => {
+  const target = sectionElements()[sectionId];
+  if (!target || !process.client) return;
+
+  const top =
+    target.getBoundingClientRect().top + window.scrollY - tabBarOffset();
+  window.scrollTo({ top, behavior: "smooth" });
+};
+
+const syncProductTabsBodyClass = () => {
+  if (!process.client) return;
+  document.body.classList.toggle("product-tabs-mode", showStickyTabs.value);
+};
+
+const updateScrollState = () => {
+  if (!process.client) return;
+
+  showStickyTabs.value = window.scrollY >= stickyTabsTriggerY.value;
+
+  const viewportAnchor = tabBarOffset() + 48;
+  const entries = Object.entries(sectionElements()) as Array<
+    ["features" | "faqs" | "reviews", HTMLElement | null]
+  >;
+
+  let nextActive: "features" | "faqs" | "reviews" = "features";
+  for (const [key, element] of entries) {
+    if (!element) continue;
+    const { top } = element.getBoundingClientRect();
+    if (top <= viewportAnchor) {
+      nextActive = key;
+    }
+  }
+
+  activeSection.value = nextActive;
+  syncProductTabsBodyClass();
+};
+
 const handleAddToCart = async () => {
   await session.fetchMe();
   if (!session.isLoggedIn.value) {
@@ -647,25 +820,45 @@ watch(activeImage, ensureActiveThumbVisible);
 onMounted(async () => {
   await session.fetchMe();
   await fetchProduct();
+  if (process.client) {
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", measureSectionAnchors);
+    window.addEventListener("resize", updateScrollState);
+    measureSectionAnchors();
+    updateScrollState();
+  }
+});
+
+onBeforeUnmount(() => {
+  if (!process.client) return;
+  window.removeEventListener("scroll", updateScrollState);
+  window.removeEventListener("resize", measureSectionAnchors);
+  window.removeEventListener("resize", updateScrollState);
+  document.body.classList.remove("product-tabs-mode");
 });
 </script>
 
 <style scoped lang="scss">
 .product-detail-page {
-  padding: 20px 0 120px;
+  padding: 24px 0 120px;
   max-width: 1440px;
   background: #fff;
   margin: 0 auto;
 }
+
+.main-content {
+  position: relative;
+}
+
 .product-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(460px, 1fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(460px, 1fr);
   gap: 64px;
   align-items: start;
 }
 .product-media {
   position: sticky;
-  top: 100px;
+  top: 120px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -677,21 +870,22 @@ onMounted(async () => {
 .main-image-container {
   position: relative;
   width: 100%;
-  border-radius: 20px;
-  background: #fcfcfc;
-  border: 1px solid #f0f0f0;
+  border-radius: 28px;
+  border: 1px solid #e8edf4;
   overflow: hidden;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1.1;
+  min-height: 600px;
 }
 .main-image {
   width: 100%;
   height: 100%;
+  border-radius: 28px;
   object-fit: cover;
   transition: transform 0.3s ease;
-  padding: 0;
+  padding: 10px;
 }
 .main-image:hover {
-  transform: scale(1.02);
+  transform: scale(1.015);
 }
 .gallery-controls {
   position: absolute;
@@ -773,8 +967,8 @@ onMounted(async () => {
   justify-content: center;
   gap: 16px;
   margin: 0 auto;
-  width: 100%;
-  max-width: 560px;
+  width: 70%;
+  max-width: 70%;
 }
 .thumb-stepper {
   width: 40px;
@@ -810,13 +1004,17 @@ onMounted(async () => {
 }
 .thumbnail-btn {
   width: 100%;
-  aspect-ratio: 1/1;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  background: #f9f9f9;
-  padding: 4px;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 2px;
   cursor: pointer;
-  transition: border-color 0.3s;
+  transition:
+    border-color 0.3s,
+    transform 0.3s ease;
+}
+.thumbnail-btn:hover {
+  transform: translateY(-1px);
 }
 .thumbnail-btn img {
   width: 100%;
@@ -825,7 +1023,7 @@ onMounted(async () => {
   border-radius: 8px;
 }
 .thumbnail-btn.is-active {
-  border-color: #111;
+  transform: scale(1.2);
 }
 .key-specs {
   display: grid;
@@ -1202,20 +1400,21 @@ onMounted(async () => {
   color: #555;
   line-height: 1.6;
 }
-.sticky-cart-bar {
+.sticky-section-bar {
   position: fixed;
-  bottom: 0;
+  top: 0;
   left: 0;
   width: 100%;
-  background: #fff;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-  z-index: 100;
-  transform: translateY(100%);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 40px rgba(9, 16, 29, 0.12);
+  backdrop-filter: blur(14px);
+  z-index: 120;
+  transform: translateY(-110%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 12px 0;
-  border-top: 1px solid #eee;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
-.sticky-cart-bar.is-visible {
+.sticky-section-bar.is-visible {
   transform: translateY(0);
 }
 .sticky-content {
@@ -1224,47 +1423,220 @@ onMounted(async () => {
   align-items: center;
   gap: 20px;
 }
-.product-mini-info {
+
+.section-tabs {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.section-tab-btn {
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: #5f6f83;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+}
+
+.section-tab-btn::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 3px;
+  border-radius: 999px;
+  background: #58cc02;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+.section-tab-btn.is-active {
+  color: #0c111d;
+}
+
+.section-tab-btn.is-active::after {
+  transform: scaleX(1);
+}
+
+.sticky-product-summary {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 .mini-img {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   object-fit: cover;
   background: #f9f9f9;
-  border-radius: 4px;
+  border-radius: 14px;
 }
 .mini-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .mini-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #0c111d;
   margin: 0;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mini-variant {
   font-size: 12px;
-  color: #666;
-}
-.sticky-actions {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-.price-area.mini .current-price {
-  font-size: 20px;
+  color: #67778a;
 }
 .btn-add-to-cart.mini {
-  padding: 10px 40px;
+  min-height: 44px;
+  padding: 0 28px;
   border: none;
   border-radius: 30px;
   background: #111;
   color: #fff;
   font-weight: 700;
+}
+
+.sticky-cart-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 115;
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sticky-cart-bar.is-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sticky-cart-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 300px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.sticky-cart-product,
+.sticky-cart-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sticky-cart-actions {
+  margin-left: auto;
+}
+
+.sticky-cart-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.sticky-cart-price .current-price {
+  color: #e62332;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sticky-cart-price .old-price {
+  color: #9ca3af;
+  font-size: 14px;
+  text-decoration: line-through;
+}
+
+.detail-section {
+  padding-top: 36px;
+}
+
+.section-shell {
+  padding-top: 24px;
+}
+
+.features-section {
+  padding-top: 54px;
+}
+
+.faq-section,
+.reviews-section {
+  padding-top: 40px;
+}
+
+.section-heading {
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #1768ae;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.section-heading h2 {
+  margin: 16px 0 0;
+  color: #0c111d;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.faq-card {
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid #e6edf5;
+  background:
+    radial-gradient(circle at top right, rgba(120, 188, 255, 0.12), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.faq-card h3 {
+  margin: 0 0 12px;
+  color: #0d1524;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+
+.faq-card p {
+  margin: 0;
+  color: #526073;
+  font-size: 15px;
+  line-height: 1.75;
 }
 @media (max-width: 1024px) {
   .product-layout {
@@ -1277,16 +1649,34 @@ onMounted(async () => {
   }
   .main-image-container {
     max-height: none;
+    min-height: 560px;
   }
   .thumbnails {
     max-width: 100%;
   }
-}
-@media (max-width: 960px) {
+
   .sticky-content {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .sticky-product-summary {
+    justify-content: space-between;
+  }
+
+  .sticky-cart-content {
+    gap: 16px;
+  }
+
+  .sticky-cart-actions {
+    gap: 12px;
+  }
+
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 960px) {
   .key-specs {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1295,12 +1685,61 @@ onMounted(async () => {
   .main-image {
     padding: 18px;
   }
+  .main-image-container {
+    min-height: 420px;
+  }
   .thumbs-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .gallery-controls {
     right: 12px;
     bottom: 12px;
+  }
+
+  .sticky-section-bar {
+    padding: 12px 0;
+  }
+
+  .section-tabs {
+    gap: 12px;
+  }
+
+  .sticky-product-summary {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sticky-cart-content,
+  .sticky-cart-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sticky-cart-product {
+    width: 100%;
+  }
+
+  .sticky-cart-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .sticky-cart-price {
+    justify-content: space-between;
+  }
+
+  .mini-title {
+    max-width: 180px;
+  }
+
+  .btn-add-to-cart.mini {
+    width: 100%;
+  }
+
+  .sticky-cart-bar {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
   }
 }
 </style>

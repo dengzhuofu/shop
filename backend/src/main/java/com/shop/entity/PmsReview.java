@@ -34,5 +34,9 @@ public class PmsReview {
 
     private Boolean verifiedPurchase;
 
+    private String merchantReply;
+
+    private LocalDateTime merchantReplyTime;
+
     private LocalDateTime createTime;
 }

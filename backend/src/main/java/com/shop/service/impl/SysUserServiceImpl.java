@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
   @Override
   public SysUser getByEmail(String email) {
-    return this.getOne(new QueryWrapper<SysUser>().eq("email", email));
+    if (email == null) {
+      return null;
+    }
+    return this.getOne(new QueryWrapper<SysUser>().eq("email", email.trim().toLowerCase()));
   }
 }

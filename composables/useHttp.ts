@@ -90,7 +90,7 @@ export const useHttp = async (url: string, options: any = {}) => {
       const res = response._data
 
       if (res && res.code && res.code !== 200) {
-        if (res.code === 401) {
+        if (res.code === 401 && options.handleAuthError !== false) {
           handleUnauthorized(options.showError !== false)
           return
         }
@@ -106,7 +106,7 @@ export const useHttp = async (url: string, options: any = {}) => {
       }
     },
     onResponseError({ response, options }: any) {
-      if (response.status === 401 || response._data?.code === 401) {
+      if ((response.status === 401 || response._data?.code === 401) && options.handleAuthError !== false) {
         handleUnauthorized(options.showError !== false)
         return
       }

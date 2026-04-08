@@ -20,4 +20,8 @@ public class RegisterEmailDTO {
 
   @NotBlank(message = "Last name cannot be empty")
   private String lastName;
+
+  public void setEmail(String email) {
+    this.email = email == null ? null : email.trim().toLowerCase();
+  }
 }

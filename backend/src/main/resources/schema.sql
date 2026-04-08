@@ -110,6 +110,8 @@ CREATE TABLE pms_review (
     content TEXT,
     images TEXT,
     verified_purchase BOOLEAN DEFAULT TRUE,
+    merchant_reply TEXT,
+    merchant_reply_time TIMESTAMP,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -606,6 +608,28 @@ UPDATE pms_product SET category_id = 16 WHERE id = 6;
 UPDATE pms_product SET category_id = 18 WHERE id = 7;
 UPDATE pms_product SET category_id = 17 WHERE id = 8;
 
+INSERT INTO pms_product (
+    id, category_id, slug, name, subtitle, description, price, compare_at_price, stock, pic, is_new, tags, images, app_image,
+    specs, quick_know, upsells, spec_table, box_items, faqs, published, sort_order
+) VALUES
+(15, 11, 's-nova-commuting-electric-scooter',
+ '{"en":"S Nova Commuting Electric Scooter","zh":"S Nova Commuting Electric Scooter"}',
+ '{"en":"Stylish urban scooter with ambient lights and dual suspension","zh":"Stylish urban scooter with ambient lights and dual suspension"}',
+ '{"en":"<p>The S Nova is a private-mold commuter scooter built for everyday city rides, standout night visibility, and a lighter learning curve for newer riders.</p>","zh":"<p>The S Nova is a private-mold commuter scooter built for everyday city rides, standout night visibility, and a lighter learning curve for newer riders.</p>"}',
+ 359.99, 369.99, 27,
+ 'https://www.isinwheel.com/cdn/shop/files/8b9cc7c9808a81fc8db0eaf67a4d79d7_e490986b-ebf2-47fb-b7f1-81aa7cc3aee2.jpg?v=1764156934&width=1600',
+ TRUE,
+ '{"en":["NEW","Spring Sale"],"zh":["NEW","Spring Sale"]}',
+ '["https://www.isinwheel.com/cdn/shop/files/8b9cc7c9808a81fc8db0eaf67a4d79d7_e490986b-ebf2-47fb-b7f1-81aa7cc3aee2.jpg?v=1764156934&width=1600","https://www.isinwheel.com/cdn/shop/files/86d6b6668dd249b94188acb64812e4bf.jpg?v=1764156934&width=1600","https://www.isinwheel.com/cdn/shop/files/d92e076f69cb1a6f81c9bab8cd8f57a2.jpg?v=1764156934&width=1600"]',
+ 'https://cdn.shopify.com/s/files/1/0588/3592/7218/files/20bc95811e70462bbfbd089f841c03fb.png?v=1764069889&width=400',
+ '{"en":[{"label":"Max Range","value":"19 Miles","icon":"NavigationIcon"},{"label":"Max Power","value":"600W","icon":"ZapIcon"},{"label":"Max Load","value":"264 LBS","icon":"BatteryIcon"},{"label":"Tires","value":"8.5 Inch","icon":"ActivityIcon"},{"label":"Max Speed","value":"20 MPH","icon":"ActivityIcon"},{"label":"Slope","value":"15%","icon":"NavigationIcon"}],"zh":[{"label":"Max Range","value":"19 Miles","icon":"NavigationIcon"},{"label":"Max Power","value":"600W","icon":"ZapIcon"},{"label":"Max Load","value":"264 LBS","icon":"BatteryIcon"},{"label":"Tires","value":"8.5 Inch","icon":"ActivityIcon"},{"label":"Max Speed","value":"20 MPH","icon":"ActivityIcon"},{"label":"Slope","value":"15%","icon":"NavigationIcon"}]}',
+ '{"en":["Private-mold design that stands apart from common commuter scooters","Dual arm suspension and 8.5-inch pneumatic tires smooth out city pavement","Custom ambient lights and turn signals boost visibility after dark","Quick-fold aluminum frame makes the scooter easy to carry and store"],"zh":["Private-mold design that stands apart from common commuter scooters","Dual arm suspension and 8.5-inch pneumatic tires smooth out city pavement","Custom ambient lights and turn signals boost visibility after dark","Quick-fold aluminum frame makes the scooter easy to carry and store"]}',
+ '{"en":[{"code":"cable-lock","name":"Cable Lock","description":"Keep your S Nova secured during coffee stops and office parking.","price":29.99,"compareAtPrice":39.99,"image":"https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=600"},{"code":"warranty-1y","name":"1-Year Extended Warranty","description":"Add an extra year of peace of mind for everyday commuting.","price":69.99,"compareAtPrice":89.99,"image":"https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&q=80&w=600"}],"zh":[{"code":"cable-lock","name":"Cable Lock","description":"Keep your S Nova secured during coffee stops and office parking.","price":29.99,"compareAtPrice":39.99,"image":"https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&q=80&w=600"},{"code":"warranty-1y","name":"1-Year Extended Warranty","description":"Add an extra year of peace of mind for everyday commuting.","price":69.99,"compareAtPrice":89.99,"image":"https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&q=80&w=600"}]}',
+ '{"en":[{"label":"Motor","value":"600W peak"},{"label":"Range","value":"Up to 19 miles"},{"label":"Top Speed","value":"20 MPH"},{"label":"Tires","value":"8.5 inch pneumatic"},{"label":"Load Capacity","value":"264 lbs"},{"label":"Climbing Ability","value":"15% grade"}],"zh":[{"label":"Motor","value":"600W peak"},{"label":"Range","value":"Up to 19 miles"},{"label":"Top Speed","value":"20 MPH"},{"label":"Tires","value":"8.5 inch pneumatic"},{"label":"Load Capacity","value":"264 lbs"},{"label":"Climbing Ability","value":"15% grade"}]}',
+ '{"en":["Scooter body","Charger","Toolkit","User manual"],"zh":["Scooter body","Charger","Toolkit","User manual"]}',
+ '{"en":[{"question":"Why is the S Nova so popular?","answer":"Its private-mold design, dual suspension, ambient lights, and commuter-friendly setup make it stand out in this price range."},{"question":"What type of rider is the S Nova designed for?","answer":"It is built for urban commuters and beginners who want a lightweight, comfortable, and easy-to-ride electric scooter."},{"question":"Is the scooter easy to carry and store?","answer":"Yes. The aluminum frame and quick-fold design make it simple to carry into apartments, offices, and car trunks."},{"question":"Does the S Nova have ambient lighting?","answer":"Yes. Riders can control customizable ambient lights through the isinwheel app."},{"question":"What safety features does the S Nova include?","answer":"It includes turn signals, a disc brake system, bright lighting, and UL certification for everyday riding confidence."},{"question":"Does the S Nova support a mobile app?","answer":"Yes. The app can lock the scooter, show ride data, and adjust settings including ambient lighting."}],"zh":[{"question":"Why is the S Nova so popular?","answer":"Its private-mold design, dual suspension, ambient lights, and commuter-friendly setup make it stand out in this price range."},{"question":"What type of rider is the S Nova designed for?","answer":"It is built for urban commuters and beginners who want a lightweight, comfortable, and easy-to-ride electric scooter."},{"question":"Is the scooter easy to carry and store?","answer":"Yes. The aluminum frame and quick-fold design make it simple to carry into apartments, offices, and car trunks."},{"question":"Does the S Nova have ambient lighting?","answer":"Yes. Riders can control customizable ambient lights through the isinwheel app."},{"question":"What safety features does the S Nova include?","answer":"It includes turn signals, a disc brake system, bright lighting, and UL certification for everyday riding confidence."},{"question":"Does the S Nova support a mobile app?","answer":"Yes. The app can lock the scooter, show ride data, and adjust settings including ambient lighting."}]}',
+ TRUE, 14);
+
 INSERT INTO pms_sku (
     id, product_id, sku_code, price, compare_at_price, stock, pic, images, description, specs, status
 ) VALUES
@@ -1010,6 +1034,24 @@ INSERT INTO pms_sku (
  '["https://cdn.shopify.com/s/files/1/0588/3592/7218/files/S9.35_87e54ec1-e4b7-43f7-8bb0-985bf0fab004.jpg?v=1762411995","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/1_9_516d5e51-84c2-4fbe-b2c1-5b9e96fbcef3.jpg?v=1717063302","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/1_8_9711e057-3697-4e3f-8487-58e5260af090.jpg?v=1762411995"]',
  '{"en":"Two-pack S9 Pro 2026 upgraded edition offer","zh":"Two-pack S9 Pro 2026 upgraded edition offer"}',
  '{"en":{"style":"2026 Upgraded Edition","buy more save more":"S9 Pro*2"},"zh":{"style":"2026 Upgraded Edition","buy more save more":"S9 Pro*2"}}',
+ 'ACTIVE'),
+(68, 15, 'SNOVA-COM-BLK', 359.99, 369.99, 18,
+ 'https://www.isinwheel.com/cdn/shop/files/8b9cc7c9808a81fc8db0eaf67a4d79d7_e490986b-ebf2-47fb-b7f1-81aa7cc3aee2.jpg?v=1764156934&width=1600',
+ '["https://www.isinwheel.com/cdn/shop/files/8b9cc7c9808a81fc8db0eaf67a4d79d7_e490986b-ebf2-47fb-b7f1-81aa7cc3aee2.jpg?v=1764156934&width=1600","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/1_c3cd5297-1587-4df5-ab05-5a41dc4fa928.png?v=1763109319","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/f61bfa06bcb545c497bf596234326667.png?v=1768211223"]',
+ '{"en":"Black commuter setup with full lighting package","zh":"Black commuter setup with full lighting package"}',
+ '{"en":{"color":"Black","style":"Standard"},"zh":{"color":"Black","style":"Standard"}}',
+ 'ACTIVE'),
+(69, 15, 'SNOVA-COM-GRY', 369.99, 389.99, 6,
+ 'https://www.isinwheel.com/cdn/shop/files/86d6b6668dd249b94188acb64812e4bf.jpg?v=1764156934&width=1600',
+ '["https://www.isinwheel.com/cdn/shop/files/86d6b6668dd249b94188acb64812e4bf.jpg?v=1764156934&width=1600","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/1_c3cd5297-1587-4df5-ab05-5a41dc4fa928.png?v=1763109319","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/f61bfa06bcb545c497bf596234326667.png?v=1768211223"]',
+ '{"en":"Gray commuter setup with the higher launch price","zh":"Gray commuter setup with the higher launch price"}',
+ '{"en":{"color":"Gray","style":"Standard"},"zh":{"color":"Gray","style":"Standard"}}',
+ 'ACTIVE'),
+(70, 15, 'SNOVA-COM-WHT', 369.99, 389.99, 0,
+ 'https://www.isinwheel.com/cdn/shop/files/d92e076f69cb1a6f81c9bab8cd8f57a2.jpg?v=1764156934&width=1600',
+ '["https://www.isinwheel.com/cdn/shop/files/d92e076f69cb1a6f81c9bab8cd8f57a2.jpg?v=1764156934&width=1600","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/1_c3cd5297-1587-4df5-ab05-5a41dc4fa928.png?v=1763109319","https://cdn.shopify.com/s/files/1/0588/3592/7218/files/f61bfa06bcb545c497bf596234326667.png?v=1768211223"]',
+ '{"en":"White commuter setup currently out of stock","zh":"White commuter setup currently out of stock"}',
+ '{"en":{"color":"White","style":"Standard"},"zh":{"color":"White","style":"Standard"}}',
  'ACTIVE');
 
 INSERT INTO pms_review (id, product_id, user_id, user_name, rating, title, content, images, verified_purchase) VALUES
@@ -1018,6 +1060,16 @@ INSERT INTO pms_review (id, product_id, user_id, user_name, rating, title, conte
 (3, 3, 2, 'Sarah Miller', 4, 'Comfortable city ebike', 'Step-through frame makes downtown riding stress-free.', '[]', TRUE),
 (4, 5, 1, 'Admin User', 5, 'Fun first electric skateboard', 'Stable enough for casual carving and neighborhood rides.', '[]', TRUE),
 (5, 9, 2, 'Sarah Miller', 5, 'Light, easy, and looks great', 'The new U1 feels easy to carry upstairs and is perfect for quick city errands.', '[]', TRUE);
+
+INSERT INTO pms_review (
+    id, product_id, user_id, user_name, rating, title, content, images, verified_purchase, merchant_reply, merchant_reply_time
+) VALUES
+(6, 15, NULL, 'kelly s.', 5, 'Fun', 'Great product. Fun for the family.', '["https://judgeme.imgix.net/isinwheel-official-store/1772872613__lqdpkijfcovgjf3ncadnbhywcrjcxvsqma0jwghq__original.jpg?auto=format&w=1024"]', FALSE, NULL, NULL),
+(7, 15, NULL, 'Donna B.', 5, NULL, 'Finally received my grandson scooter. He loves it. Just one problem I am having trouble with is how do you put the air tag in the anti-theft compartment. I live in New York and have not seen anyone else with that scooter. Very eye catching and I refuse to let him ride it until I find out how to place the air tag. Better safe than sorry.', '["https://judgeme.imgix.net/isinwheel-official-store/1768169279__3103__original.jpg?auto=format&w=1024"]', TRUE, 'Thank you for the thoughtful review. To install the AirTag, twist and unscrew the bell on the handlebar, place the AirTag inside, and screw the bell back on securely. Better safe than sorry is absolutely the right call.', CURRENT_TIMESTAMP - INTERVAL '78 day'),
+(8, 15, NULL, 'Tracy M.', 5, 'Looks amazing at night and rides great', 'Picked this up right before Christmas and it has been awesome so far. The scooter feels stable and smooth, the lights stand out at night, and the battery life has been solid for practical holiday rides.', '["https://judgeme.imgix.net/isinwheel-official-store/1767152725__img_2452__original.JPG?auto=format&w=1024"]', FALSE, NULL, NULL),
+(9, 15, NULL, 'Teresa L.T.', 5, 'Worth it!', 'Bought this as a Christmas gift for my child and it was a huge hit. The scooter feels sturdy, rides smoothly, and the lights make it feel extra fun and safe.', '["https://judgeme.imgix.net/isinwheel-official-store/1767152216__lqdpkiowdrgcdmfna8dnatcw14duv73sjbkjlh1o__original.jpg?auto=format&w=1024"]', FALSE, NULL, NULL),
+(10, 15, NULL, 'LG', 5, 'Wonderful surprise gift', 'Easy to assemble, fun to ride, and the ambient lighting makes every evening ride feel special. It looks much more premium in person than the price suggests.', '["https://judgeme.imgix.net/isinwheel-official-store/1766694445__img_0117__original.jpeg?auto=format&w=1024"]', FALSE, NULL, NULL),
+(11, 15, NULL, 'Ricardo O.', 4, 'Stylish commuter', 'The design looks sharp and the suspension smooths out sidewalk joints well. I would love a little more range, but it has been a reliable city scooter.', '["https://judgeme.imgix.net/isinwheel-official-store/1766642754__81z8gq8hl_sl1600___original.jpg?auto=format&w=1024"]', FALSE, 'Appreciate the honest feedback. For riders who want to stretch range, we recommend eco mode and tire-pressure checks before longer commutes.', CURRENT_TIMESTAMP - INTERVAL '45 day');
 
 INSERT INTO ums_user_address (
     id, user_id, country, first_name, last_name, phone, address_line1, address_line2, city, state, zip_code, is_default
@@ -1047,6 +1099,19 @@ INSERT INTO oms_order (
  'San Francisco', 'CA', '94105', 'credit_card', 'MOCK_TXN_SEED01', 'cart',
  'UPS Ground/FedEx Home Delivery(2-5 Business Days)', 0.00, 10.00, 'Seed paid order', CURRENT_TIMESTAMP);
 
+INSERT INTO oms_order (
+    id, user_id, order_sn, subtotal_amount, tax_amount, total_amount, status, payment_status, currency, country,
+    preview_token, coupon_code, coupon_user_id, coupon_discount_amount, payment_intent_id, receiver_name, receiver_phone,
+    receiver_address, receiver_country, receiver_first_name, receiver_last_name, receiver_address_line1, receiver_address_line2,
+    receiver_city, receiver_state, receiver_zip_code, payment_method, pay_txn_no, checkout_source, shipping_method,
+    shipping_amount, discount_amount, remark, pay_time
+) VALUES
+(2, 1, 'ORD202604050002SNOVA', 359.99, 29.70, 389.69, 'PAID', 'PAID', 'USD', 'US',
+ 'seed-preview-token-snova', NULL, NULL, 0.00, 2, 'Admin User', '4155550123',
+ '100 Market Street, San Francisco, CA, 94105', 'United States', 'Admin', 'User', '100 Market Street', 'Suite 8',
+ 'San Francisco', 'CA', '94105', 'credit_card', 'MOCK_TXN_SEED02', 'cart',
+ 'UPS Ground/FedEx Home Delivery(2-5 Business Days)', 0.00, 0.00, 'Seed paid order for S Nova review verification', CURRENT_TIMESTAMP - INTERVAL '12 day');
+
 INSERT INTO oms_order_item (
     id, order_id, product_id, sku_id, product_name, product_pic, sku_code, sku_attributes_snapshot, addons_snapshot,
     quantity, unit_price, line_amount
@@ -1057,12 +1122,20 @@ INSERT INTO oms_order_item (
  'SNOVA-BLK-STD',
  '{"attributes":{"color":"Graphite Black","bundle":"Standard","style":"Pro"},"attributeDisplay":{"color":"Graphite Black","bundle":"Standard","style":"Pro"},"lang":"en"}',
  '[]',
- 1, 489.99, 489.99);
+ 1, 489.99, 489.99),
+(2, 2, 15, 68,
+ '{"en":"S Nova Commuting Electric Scooter","zh":"S Nova Commuting Electric Scooter"}',
+ 'https://www.isinwheel.com/cdn/shop/files/8b9cc7c9808a81fc8db0eaf67a4d79d7_e490986b-ebf2-47fb-b7f1-81aa7cc3aee2.jpg?v=1764156934&width=1600',
+ 'SNOVA-COM-BLK',
+ '{"attributes":{"color":"Black","style":"Standard"},"attributeDisplay":{"color":"Black","style":"Standard"},"lang":"en"}',
+ '[]',
+ 1, 359.99, 359.99);
 
 INSERT INTO pay_payment_intent (
     id, intent_no, order_id, user_id, amount, currency, method_code, provider_key, status, client_secret, mock_result, paid_time
 ) VALUES
-(1, 'PI_SEED_0001', 1, 1, 519.59, 'USD', 'credit_card', 'mock', 'SUCCEEDED', 'mock_secret_seed_0001', 'success', CURRENT_TIMESTAMP);
+(1, 'PI_SEED_0001', 1, 1, 519.59, 'USD', 'credit_card', 'mock', 'SUCCEEDED', 'mock_secret_seed_0001', 'success', CURRENT_TIMESTAMP),
+(2, 'PI_SEED_0002', 2, 1, 389.69, 'USD', 'credit_card', 'mock', 'SUCCEEDED', 'mock_secret_seed_0002', 'success', CURRENT_TIMESTAMP - INTERVAL '12 day');
 
 SELECT setval('sys_user_id_seq', COALESCE((SELECT MAX(id) FROM sys_user), 1), TRUE);
 SELECT setval('cms_promotion_activity_id_seq', COALESCE((SELECT MAX(id) FROM cms_promotion_activity), 1), TRUE);

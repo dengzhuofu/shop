@@ -424,13 +424,18 @@ onUnmounted(() => {
   z-index: 100;
   width: 100%;
   background: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+ 
+  will-change: transform;
+  box-shadow: none;
+  filter: none;
 }
 
 .top-bar {
   display: block;
   max-height: 116px;
   overflow: hidden;
+  position: relative;
+  z-index: 0;
   padding: 4px 0;
   color: #111;
   font-size: 12px;
@@ -527,11 +532,34 @@ onUnmounted(() => {
   max-height: 0;
   padding: 0;
   opacity: 0;
+  overflow: hidden;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.app-header.is-scrolled {
+  box-shadow: none;
+  filter: none;
+}
+
+:global(body.product-tabs-mode .app-header) {
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(calc(-100% - 12px));
+  pointer-events: none;
 }
 
 .main-nav {
   padding: 16px 0;
-  position: static;
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  box-shadow: 0 16px 24px -24px rgba(15, 23, 42, 0.45);
+  transition:
+    opacity 0.2s ease,
+    padding 0.2s ease,
+    max-height 0.2s ease;
 }
 
 .nav-content {

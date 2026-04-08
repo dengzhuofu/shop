@@ -12,4 +12,8 @@ public class LoginDTO {
 
   @NotBlank(message = "Password cannot be empty")
   private String password;
+
+  public void setEmail(String email) {
+    this.email = email == null ? null : email.trim().toLowerCase();
+  }
 }

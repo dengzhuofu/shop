@@ -83,6 +83,21 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void loginAcceptsTrimmedAndUppercaseEmail() throws Exception {
+    mockMvc.perform(post("/auth/login")
+            .contentType(APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "  ADMIN@ISINWHEEL.LOCAL  ",
+                  "password": "123456"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.code").value(200))
+        .andExpect(jsonPath("$.data.user.email").value("admin@isinwheel.local"));
+  }
+
+  @Test
   void skateboardSeedDataProvidesMultipleSelectableVariantScenarios() throws Exception {
     String token = loginAndGetToken("admin@isinwheel.local", "123456");
 
