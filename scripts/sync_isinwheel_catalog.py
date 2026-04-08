@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import concurrent.futures
+import hashlib
+import http.client
 import json
 import re
 import subprocess
@@ -20,6 +22,7 @@ HTTP_HEADERS = {
     "Accept": "application/json,text/html,*/*",
 }
 DEFAULT_STOCK = 20
+DEFAULT_TARGET_PER_CATEGORY = 50
 
 
 ROOT_CATEGORIES = [
@@ -237,13 +240,37 @@ class CategoryRecord:
     sort_order: int
 
 
-def fetch_json(url: str, retries: int = 3) -> Any:
+@dataclass
+class ProductSeed:
+    slug: str
+    source_handle: str
+    category_id: int
+    category_slug: str
+    category_name: str
+    sort_order: int
+    matched_handles: list[str]
+    derived_index: int
+    derived_label: str
+
+
+def fetch_json(url: str, retries: int = 5) -> Any:
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
             request = urllib.request.Request(url, headers=HTTP_HEADERS)
             with urllib.request.urlopen(request, timeout=30) as response:
                 return json.loads(response.read().decode("utf-8"))
+        except http.client.IncompleteRead as exc:
+            last_error = exc
+            partial = exc.partial.decode("utf-8", errors="ignore").strip()
+            if partial:
+                try:
+                    return json.loads(partial)
+                except json.JSONDecodeError:
+                    pass
+            if attempt == retries:
+                raise
+            time.sleep(1.2 * attempt)
         except Exception as exc:
             last_error = exc
             if attempt == retries:
@@ -332,6 +359,83 @@ def sql_quote(value: Any) -> str:
         return str(value)
     text = str(value).replace("'", "''")
     return f"'{text}'"
+
+
+def slugify(value: str, max_length: int = 180) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", value.lower())
+    normalized = re.sub(r"-{2,}", "-", normalized).strip("-")
+    return normalized[:max_length].rstrip("-") or "catalog-item"
+
+
+def skuify(value: str, max_length: int = 100) -> str:
+    normalized = re.sub(r"[^A-Z0-9]+", "-", value.upper())
+    normalized = re.sub(r"-{2,}", "-", normalized).strip("-")
+    return normalized[:max_length].rstrip("-") or "SKU"
+
+
+def build_unique_sku_code(base_sku: str, product_slug: str, variant_index: int) -> str:
+    prefix = skuify(base_sku, max_length=72)
+    digest = hashlib.sha1(f"{product_slug}:{variant_index}:{base_sku}".encode("utf-8")).hexdigest()[:12].upper()
+    return f"{prefix}-{digest}"
+
+
+def derived_label(category_slug: str, derived_index: int) -> str:
+    presets = {
+        "commuter-electric-scooter": ["Urban Edition", "Metro Plus", "City Flex", "Daily Ride", "Compact Touring"],
+        "all-terrain-electric-scooter": ["Trail Edition", "Adventure Plus", "Summit Ride", "Explorer Build", "Rally Pack"],
+        "electric-scooters-for-kids": ["Youth Edition", "Glow Ride", "Weekend Fun", "Campus Cruise", "Play Mode"],
+        "commuter-ebikes": ["City Edition", "Metro Pack", "Commuter Plus", "Street Build", "Daily Boost"],
+        "all-terrain-electric-bikes": ["Explorer Edition", "Summit Pack", "Trail Build", "Adventure Pro", "Ridge Touring"],
+        "electric-skateboards": ["Street Edition", "Cruise Pack", "Carve Build", "Flex Ride", "Campus Mode"],
+        "all-terrain-electric-skateboards": ["Terrain Edition", "Rally Pack", "Trail Build", "Explorer Deck", "All Surface"],
+        "e-bike-accessories": ["Rider Kit", "Travel Pack", "Commuter Bundle", "Everyday Set", "Safety Pack"],
+        "e-scooter-accessories": ["Scoot Kit", "Storage Pack", "Urban Bundle", "Travel Set", "Daily Carry"],
+    }
+    labels = presets.get(category_slug, ["Series", "Edition", "Bundle", "Set", "Pack"])
+    base = labels[(derived_index - 1) % len(labels)]
+    round_number = ((derived_index - 1) // len(labels)) + 2
+    return f"{base} {round_number}"
+
+
+def shift_images(images: list[str], offset: int) -> list[str]:
+    if not images:
+        return []
+    pivot = offset % len(images)
+    if pivot == 0:
+        return images
+    return images[pivot:] + images[:pivot]
+
+
+def adjust_price(value: str | None, derived_index: int, minimum: Decimal = Decimal("5.00")) -> str | None:
+    if value is None:
+        return None
+    base = Decimal(str(value))
+    offsets = [
+        Decimal("0.02"),
+        Decimal("0.04"),
+        Decimal("0.06"),
+        Decimal("0.08"),
+        Decimal("-0.03"),
+        Decimal("-0.05"),
+        Decimal("0.09"),
+        Decimal("-0.01"),
+    ]
+    offset = offsets[(derived_index - 1) % len(offsets)]
+    adjusted = (base * (Decimal("1.00") + offset)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if adjusted < minimum:
+        adjusted = minimum
+    return str(adjusted)
+
+
+def adjust_compare_at(compare_at_price: str | None, price: str, derived_index: int) -> str | None:
+    if compare_at_price is None:
+        return None
+    adjusted = adjust_price(compare_at_price, derived_index)
+    if adjusted is None:
+        return None
+    if Decimal(adjusted) <= Decimal(price):
+        adjusted = str((Decimal(price) + Decimal("20.00")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return adjusted
 
 
 def build_specs(detail: dict[str, Any], collection_name: str, available_count: int) -> str:
@@ -444,38 +548,103 @@ def build_category_records(collection_index: dict[str, dict[str, Any]]) -> list[
     return records
 
 
-def collect_product_assignments(collection_index: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    assignments: dict[str, dict[str, Any]] = {}
+def build_category_product_seeds(
+    collection_index: dict[str, dict[str, Any]], target_per_category: int
+) -> tuple[list[ProductSeed], list[dict[str, Any]]]:
+    seeds: list[ProductSeed] = []
+    summaries: list[dict[str, Any]] = []
     for root in ROOT_CATEGORIES:
         children = sorted(root["children"], key=lambda child: child.get("sync_priority", child.get("sort_order", 99)))
         for child in children:
+            candidates: list[dict[str, Any]] = []
+            candidate_by_handle: dict[str, dict[str, Any]] = {}
             for source_handle in child["source_handles"]:
                 source_collection = collection_index.get(source_handle)
                 if not source_collection:
                     print(f"[warn] missing source collection: {source_handle}", file=sys.stderr)
                     continue
                 products = fetch_collection_products(source_handle)
-                for position, product in enumerate(products, start=1):
+                for product in products:
                     handle = product.get("handle")
                     if not handle:
                         continue
-                    entry = assignments.setdefault(
-                        handle,
-                        {
-                            "primary_category_id": child["id"],
-                            "primary_category_name": child["name"],
-                            "primary_sort_order": position,
+                    if handle not in candidate_by_handle:
+                        candidate_by_handle[handle] = {
+                            "source_handle": handle,
                             "matched_handles": [],
-                        },
+                        }
+                        candidates.append(candidate_by_handle[handle])
+                    if source_handle not in candidate_by_handle[handle]["matched_handles"]:
+                        candidate_by_handle[handle]["matched_handles"].append(source_handle)
+
+            if target_per_category > 0:
+                selected_candidates = candidates[:target_per_category]
+            else:
+                selected_candidates = candidates
+
+            if not selected_candidates:
+                summaries.append(
+                    {
+                        "categorySlug": child["slug"],
+                        "categoryName": child["name"],
+                        "sourceUniqueProducts": 0,
+                        "generatedProducts": 0,
+                        "derivedProducts": 0,
+                    }
+                )
+                continue
+
+            for sort_order, candidate in enumerate(selected_candidates, start=1):
+                seeds.append(
+                    ProductSeed(
+                        slug=slugify(f"{candidate['source_handle']}-{child['slug']}"),
+                        source_handle=candidate["source_handle"],
+                        category_id=child["id"],
+                        category_slug=child["slug"],
+                        category_name=child["name"],
+                        sort_order=sort_order,
+                        matched_handles=list(candidate["matched_handles"]),
+                        derived_index=0,
+                        derived_label="",
                     )
-                    if source_handle not in entry["matched_handles"]:
-                        entry["matched_handles"].append(source_handle)
-    return assignments
+                )
+
+            derived_products = 0
+            if target_per_category > 0 and len(selected_candidates) < target_per_category:
+                base_count = len(selected_candidates)
+                for next_index in range(base_count + 1, target_per_category + 1):
+                    base_candidate = selected_candidates[(next_index - base_count - 1) % base_count]
+                    derived_index = ((next_index - base_count - 1) // base_count) + 1
+                    seeds.append(
+                        ProductSeed(
+                            slug=slugify(f"{base_candidate['source_handle']}-{child['slug']}-{derived_index + 1}"),
+                            source_handle=base_candidate["source_handle"],
+                            category_id=child["id"],
+                            category_slug=child["slug"],
+                            category_name=child["name"],
+                            sort_order=next_index,
+                            matched_handles=list(base_candidate["matched_handles"]),
+                            derived_index=derived_index,
+                            derived_label=derived_label(child["slug"], derived_index),
+                        )
+                    )
+                    derived_products += 1
+
+            summaries.append(
+                {
+                    "categorySlug": child["slug"],
+                    "categoryName": child["name"],
+                    "sourceUniqueProducts": len(candidates),
+                    "generatedProducts": len(selected_candidates) + derived_products,
+                    "derivedProducts": derived_products,
+                }
+            )
+    return seeds, summaries
 
 
-def load_product_details(assignments: dict[str, dict[str, Any]], max_workers: int) -> dict[str, dict[str, Any]]:
+def load_product_details(product_seeds: list[ProductSeed], max_workers: int) -> dict[str, dict[str, Any]]:
     details: dict[str, dict[str, Any]] = {}
-    handles = list(assignments.keys())
+    handles = sorted({seed.source_handle for seed in product_seeds})
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_map = {executor.submit(fetch_product_detail, handle): handle for handle in handles}
         for future in concurrent.futures.as_completed(future_map):
@@ -487,12 +656,17 @@ def load_product_details(assignments: dict[str, dict[str, Any]], max_workers: in
     return details
 
 
-def build_sql(category_records: list[CategoryRecord], assignments: dict[str, dict[str, Any]], details: dict[str, dict[str, Any]], deactivate_missing: bool) -> tuple[str, dict[str, int]]:
+def build_sql(
+    category_records: list[CategoryRecord],
+    product_seeds: list[ProductSeed],
+    details: dict[str, dict[str, Any]],
+    deactivate_missing: bool,
+) -> tuple[str, dict[str, int]]:
     statements = ["BEGIN;"]
 
     all_category_ids = [record.id for record in category_records]
     if deactivate_missing:
-        synced_slugs = sorted(details.keys())
+        synced_slugs = sorted(seed.slug for seed in product_seeds)
         statements.append(
             "UPDATE pms_product SET published = FALSE, stock = 0, update_time = CURRENT_TIMESTAMP "
             f"WHERE category_id IN ({', '.join(str(category_id) for category_id in all_category_ids)}) "
@@ -518,45 +692,60 @@ def build_sql(category_records: list[CategoryRecord], assignments: dict[str, dic
 
     product_count = 0
     sku_count = 0
-    for handle in sorted(details.keys()):
-        detail = details[handle]
-        assignment = assignments[handle]
-        resolved_category_id = assignment["primary_category_id"]
-        resolved_category_name = assignment["primary_category_name"]
-        skateboard_signal = f"{handle} {(detail.get('title') or '')}".lower()
-        if resolved_category_id in {15, 16}:
-            if "off-road" in skateboard_signal or "off road" in skateboard_signal or "terrain" in skateboard_signal:
-                resolved_category_id = 16
-                resolved_category_name = "Off Road & Terrain"
-            else:
-                resolved_category_id = 15
-                resolved_category_name = "Street & Carving"
+    for seed in product_seeds:
+        detail = details.get(seed.source_handle)
+        if not detail:
+            print(f"[warn] missing product detail for seed: {seed.source_handle}", file=sys.stderr)
+            continue
+        resolved_category_id = seed.category_id
+        resolved_category_name = seed.category_name
         images = [absolute_url(url) for url in detail.get("images", []) if absolute_url(url)]
-        first_image = images[0] if images else absolute_url(detail.get("featured_image"))
+        rotated_images = shift_images(images, seed.derived_index)
+        first_image = rotated_images[0] if rotated_images else absolute_url(detail.get("featured_image"))
         product_pic = bounded_media_url(first_image)
-        variants = detail.get("variants", []) or []
+        raw_variants = detail.get("variants", []) or []
+        variants = raw_variants or [
+            {
+                "id": "default",
+                "sku": seed.source_handle,
+                "price": detail.get("price"),
+                "compare_at_price": detail.get("compare_at_price"),
+                "available": True,
+                "title": "Default",
+                "name": detail.get("title") or seed.source_handle,
+            }
+        ]
         available_count = sum(1 for variant in variants if variant.get("available"))
-        stock = available_count * DEFAULT_STOCK
+        stock = max(1, available_count) * DEFAULT_STOCK
         price = decimal_price(detail.get("price")) or "0.00"
         compare_at_price = decimal_price(detail.get("compare_at_price"))
+        if seed.derived_index > 0:
+            price = adjust_price(price, seed.derived_index) or price
+            compare_at_price = adjust_compare_at(compare_at_price, price, seed.derived_index)
+            stock = max(DEFAULT_STOCK, stock + (seed.derived_index % 4) * 3)
         published_at = detail.get("published_at") or detail.get("created_at") or ""
         is_new = bool(published_at and published_at[:4] >= "2025")
-        title = (detail.get("title") or handle).strip()
-        description_html = detail.get("description") or f"<p>{title}</p>"
-        matched_handles = assignment["matched_handles"]
-        subtitle = resolved_category_name
+        base_title = (detail.get("title") or seed.source_handle).strip()
+        title = base_title if seed.derived_index == 0 else f"{base_title} - {seed.derived_label}"
+        description_html = detail.get("description") or f"<p>{base_title}</p>"
+        if seed.derived_index > 0:
+            description_html = (
+                f"{description_html}<p>{seed.derived_label} for the {resolved_category_name.lower()} catalog.</p>"
+            )
+        matched_handles = seed.matched_handles
+        subtitle = resolved_category_name if seed.derived_index == 0 else f"{resolved_category_name} / {seed.derived_label}"
         statements.append(
             "INSERT INTO pms_product (category_id, slug, name, subtitle, description, price, compare_at_price, stock, pic, is_new, tags, images, app_image, "
             "specs, quick_know, upsells, spec_table, box_items, faqs, published, sort_order) "
-            f"VALUES ({resolved_category_id}, {sql_quote(handle)}, {sql_quote(localized(title))}::jsonb, "
+            f"VALUES ({resolved_category_id}, {sql_quote(seed.slug)}, {sql_quote(localized(title))}::jsonb, "
             f"{sql_quote(localized(subtitle))}::jsonb, {sql_quote(localized(description_html))}::jsonb, {sql_quote(price)}, {sql_quote(compare_at_price)}, "
             f"{stock}, {sql_quote(product_pic)}, {sql_quote(is_new)}, {sql_quote(normalize_tags(detail, is_new, matched_handles))}::jsonb, "
-            f"{sql_quote(json.dumps(images, ensure_ascii=False))}::jsonb, '', "
+            f"{sql_quote(json.dumps(rotated_images or images, ensure_ascii=False))}::jsonb, '', "
             f"{sql_quote(build_specs(detail, resolved_category_name, available_count))}::jsonb, "
             f"{sql_quote(build_quick_know(detail, matched_handles))}::jsonb, "
             f"{sql_quote(localized([]))}::jsonb, "
             f"{sql_quote(build_spec_table(detail, resolved_category_name, matched_handles))}::jsonb, "
-            f"{sql_quote(localized([]))}::jsonb, {sql_quote(localized([]))}::jsonb, TRUE, {assignment['primary_sort_order']}) "
+            f"{sql_quote(localized([]))}::jsonb, {sql_quote(localized([]))}::jsonb, TRUE, {seed.sort_order}) "
             "ON CONFLICT (slug) DO UPDATE SET "
             "category_id = EXCLUDED.category_id, "
             "name = EXCLUDED.name, "
@@ -583,8 +772,10 @@ def build_sql(category_records: list[CategoryRecord], assignments: dict[str, dic
         product_count += 1
 
         sku_codes = []
-        for variant in variants:
-            sku_code = str(variant.get("sku") or f"{handle}-{variant.get('id')}")
+        for variant_index, variant in enumerate(variants, start=1):
+            base_sku = str(variant.get("sku") or f"{seed.source_handle}-{variant.get('id') or variant_index}")
+            sku_suffix = f"{base_sku}-{seed.category_slug}-{seed.sort_order}-{variant_index}"
+            sku_code = build_unique_sku_code(sku_suffix, seed.slug, variant_index)
             sku_codes.append(sku_code)
             variant_image = absolute_url(
                 (variant.get("featured_image") or {}).get("src")
@@ -592,15 +783,20 @@ def build_sql(category_records: list[CategoryRecord], assignments: dict[str, dic
                 or first_image
             )
             variant_pic = bounded_media_url(variant_image)
-            variant_images = [variant_image] if variant_image else images
+            variant_images = [variant_image] if variant_image else (rotated_images or images)
             variant_price = decimal_price(variant.get("price")) or price
             variant_compare_at = decimal_price(variant.get("compare_at_price"))
-            variant_stock = DEFAULT_STOCK if variant.get("available") else 0
+            if seed.derived_index > 0:
+                variant_price = adjust_price(variant_price, seed.derived_index) or price
+                variant_compare_at = adjust_compare_at(variant_compare_at, variant_price, seed.derived_index)
+            variant_stock = DEFAULT_STOCK if variant.get("available") or seed.derived_index > 0 else 0
             variant_description = variant.get("name") or f"{title} - {variant.get('title') or 'Default'}"
-            variant_status = "ACTIVE" if variant.get("available") else "INACTIVE"
+            if seed.derived_index > 0:
+                variant_description = f"{variant_description} / {seed.derived_label}"
+            variant_status = "ACTIVE" if variant_stock > 0 else "INACTIVE"
             statements.append(
                 "INSERT INTO pms_sku (product_id, sku_code, price, compare_at_price, stock, pic, images, description, specs, status) "
-                f"VALUES ((SELECT id FROM pms_product WHERE slug = {sql_quote(handle)}), {sql_quote(sku_code)}, {sql_quote(variant_price)}, "
+                f"VALUES ((SELECT id FROM pms_product WHERE slug = {sql_quote(seed.slug)}), {sql_quote(sku_code)}, {sql_quote(variant_price)}, "
                 f"{sql_quote(variant_compare_at)}, {variant_stock}, {sql_quote(variant_pic)}, "
                 f"{sql_quote(json.dumps(variant_images, ensure_ascii=False))}::jsonb, {sql_quote(localized(variant_description))}::jsonb, "
                 f"{sql_quote(normalize_variant_specs(detail, variant))}::jsonb, {sql_quote(variant_status)}) "
@@ -619,7 +815,7 @@ def build_sql(category_records: list[CategoryRecord], assignments: dict[str, dic
             sku_count += 1
         statements.append(
             f"UPDATE pms_sku SET stock = 0, status = 'INACTIVE', update_time = CURRENT_TIMESTAMP "
-            f"WHERE product_id = (SELECT id FROM pms_product WHERE slug = {sql_quote(handle)}) "
+            f"WHERE product_id = (SELECT id FROM pms_product WHERE slug = {sql_quote(seed.slug)}) "
             f"AND sku_code NOT IN ({', '.join(sql_quote(code) for code in sku_codes)});"
         )
 
@@ -648,13 +844,19 @@ def main() -> int:
     parser.add_argument("--output", help="Optional path to write the generated SQL.")
     parser.add_argument("--max-workers", type=int, default=8, help="Concurrent product detail requests.")
     parser.add_argument("--deactivate-missing", action="store_true", help="Hide synced-category products that are no longer present in the source catalog.")
+    parser.add_argument(
+        "--target-per-category",
+        type=int,
+        default=DEFAULT_TARGET_PER_CATEGORY,
+        help="Number of products to keep per child collection. Values <= 0 keep every unique source product.",
+    )
     args = parser.parse_args()
 
     collection_index = fetch_collections_index()
-    assignments = collect_product_assignments(collection_index)
-    details = load_product_details(assignments, max(1, args.max_workers))
+    product_seeds, category_summaries = build_category_product_seeds(collection_index, args.target_per_category)
+    details = load_product_details(product_seeds, max(1, args.max_workers))
     category_records = build_category_records(collection_index)
-    sql_text, summary = build_sql(category_records, assignments, details, args.deactivate_missing)
+    sql_text, summary = build_sql(category_records, product_seeds, details, args.deactivate_missing)
 
     print(
         json.dumps(
@@ -663,6 +865,8 @@ def main() -> int:
                 "products": summary["products"],
                 "skus": summary["skus"],
                 "sourceCollections": sum(len(child["source_handles"]) for root in ROOT_CATEGORIES for child in root["children"]),
+                "targetPerCategory": args.target_per_category,
+                "childCollections": category_summaries,
             },
             ensure_ascii=False,
             indent=2,

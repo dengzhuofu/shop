@@ -1,6 +1,6 @@
 <template>
   <div class="collection-page">
-    <section class="collection-header container">
+    <!-- <section class="collection-header container">
       <div class="heading-copy">
         <p class="eyebrow">{{ activeRootMenu?.name || t('collections') }}</p>
         <h1 class="title">{{ category?.name || route.params.slug }}</h1>
@@ -11,13 +11,13 @@
       <p class="result-count">
         {{ total }} {{ t('resultsCount') }}
       </p>
-    </section>
+    </section> -->
 
-    <section class="toolbar container">
-      <button type="button" class="filter-trigger" @click="isFilterOpen = true">
+    <section class="toolbar container-fluid">
+      <!-- <button type="button" class="filter-trigger" @click="isFilterOpen = true">
         <SlidersHorizontalIcon class="icon" />
         {{ t('filters') }}
-      </button>
+      </button> -->
 
       <div class="toolbar-right">
         <div v-if="activeFilterLabels.length" class="active-filter-list">
@@ -43,7 +43,7 @@
       </div>
     </section>
 
-    <section class="product-list container">
+    <section class="product-list container-fluid">
       <div v-if="products.length" class="grid">
         <ProductCard
           v-for="product in products"
@@ -605,9 +605,9 @@ watch([sortBy, stockFilter, priceFilter, selectedChildSlug], async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 0 26px;
-  border-top: 1px solid #f0f1f3;
-
+  padding: 18px 160px 26px;
+  // border-top: 1px solid #f0f1f3;
+  
   .filter-trigger {
     display: inline-flex;
     align-items: center;
@@ -633,6 +633,7 @@ watch([sortBy, stockFilter, priceFilter, selectedChildSlug], async () => {
     justify-content: flex-end;
     gap: 14px;
     flex: 1;
+    margin: 40px 0;
   }
 }
 
@@ -696,6 +697,12 @@ watch([sortBy, stockFilter, priceFilter, selectedChildSlug], async () => {
     border-radius: 999px;
     background: #101010;
   }
+}
+
+.container-fluid {
+  max-width: 100%;
+  padding: 0 160px;
+  margin: 0 auto;
 }
 
 .product-list {
