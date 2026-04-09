@@ -8,7 +8,7 @@
     @click="navigateToDetail"
     @keyup.enter="navigateToDetail"
   >
-    <div class="image-wrapper">
+    <div class="image-wrapper" @mousemove="handleImageHoverMove">
       <div v-if="leftTags.length" class="tags-left">
         <span
           v-for="tag in leftTags"
@@ -27,26 +27,27 @@
       </div>
 
       <div class="image-carousel">
-        <img
-          v-for="(img, index) in displayImages"
-          :key="`${img}-${index}`"
-          :src="img"
-          :alt="`${product.title} - ${index + 1}`"
-          class="main-img"
-          :class="{ 'is-active': currentImageIndex === index }"
-        />
+        <div
+          class="image-track"
+          :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }"
+        >
+          <img
+            v-for="(img, index) in displayImages"
+            :key="`${img}-${index}`"
+            :src="img"
+            :alt="`${product.title} - ${index + 1}`"
+            class="main-img"
+          />
+        </div>
       </div>
 
-      <div
-        v-if="displayImages.length > 1 && isHovered"
-        class="carousel-indicators"
-      >
+      <div v-if="displayImages.length > 1" class="carousel-indicators">
         <span
           v-for="(_, index) in displayImages"
           :key="index"
           class="indicator-dot"
           :class="{ 'is-active': currentImageIndex === index }"
-          @mouseenter="currentImageIndex = index"
+          @mouseenter="updateImageIndex(index)"
         />
       </div>
 
@@ -57,10 +58,7 @@
         class="app-preview-img"
       />
 
-      <div
-        class="hover-actions"
-        :class="{ 'is-visible': isHovered }"
-      >
+      <div class="hover-actions" :class="{ 'is-visible': isHovered }">
         <button
           v-if="!isSoldOut"
           type="button"
@@ -68,10 +66,10 @@
           :disabled="actionBusy"
           @click.stop="handleActionClick"
         >
-          {{ actionButtonText }}
+          <span class="btn-text">{{ actionButtonText }}</span>
         </button>
         <button v-else type="button" class="btn-action btn-sold-out" disabled>
-          {{ t("soldOut") }}
+          <span class="btn-text">{{ t("soldOut") }}</span>
         </button>
       </div>
     </div>
@@ -141,7 +139,9 @@ const displayImages = computed(() => {
     props.product.image,
     props.product.pic,
   ).slice(0, 3);
-  return images.length ? images : ["https://via.placeholder.com/600x600?text=isinwheel"];
+  return images.length
+    ? images
+    : ["https://via.placeholder.com/600x600?text=isinwheel"];
 });
 
 const leftTags = computed(() => {
@@ -259,10 +259,22 @@ const handleActionClick = async () => {
 
 let carouselTimer: ReturnType<typeof setInterval> | null = null;
 
+const updateImageIndex = (nextIndex: number) => {
+  const total = displayImages.value.length;
+  if (total <= 1) return;
+
+  const safeIndex = Math.min(total - 1, Math.max(0, nextIndex));
+  if (safeIndex === currentImageIndex.value) return;
+
+  currentImageIndex.value = safeIndex;
+};
+
 const startCarousel = () => {
   if (displayImages.value.length <= 1) return;
   carouselTimer = setInterval(() => {
-    currentImageIndex.value = (currentImageIndex.value + 1) % displayImages.value.length;
+    updateImageIndex(
+      (currentImageIndex.value + 1) % displayImages.value.length,
+    );
   }, 3000);
 };
 
@@ -286,9 +298,27 @@ const handleMouseEnter = () => {
   stopCarousel();
 };
 
+const handleImageHoverMove = (event: MouseEvent) => {
+  const total = displayImages.value.length;
+  if (total <= 1) return;
+
+  const currentTarget = event.currentTarget as HTMLElement | null;
+  if (!currentTarget) return;
+
+  const rect = currentTarget.getBoundingClientRect();
+  const relativeX = event.clientX - rect.left;
+  const segmentWidth = rect.width / total;
+  const nextIndex = Math.min(
+    total - 1,
+    Math.max(0, Math.floor(relativeX / segmentWidth)),
+  );
+
+  updateImageIndex(nextIndex);
+};
+
 const handleMouseLeave = () => {
   isHovered.value = false;
-  currentImageIndex.value = 0;
+  updateImageIndex(0);
   startCarousel();
 };
 </script>
@@ -374,33 +404,34 @@ const handleMouseLeave = () => {
     left: 0;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+
+    .image-track {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.38s ease;
+      will-change: transform;
+    }
 
     .main-img {
-      position: absolute;
-      top: 0;
-      left: 0;
+      flex: 0 0 100%;
       width: 100%;
       height: 100%;
       object-fit: cover;
       padding: 0;
-      opacity: 0;
-      transition: opacity 0.4s ease, transform 0.4s ease;
-
-      &.is-active {
-        opacity: 1;
-        z-index: 1;
-      }
+      display: block;
     }
   }
 
   .carousel-indicators {
     position: absolute;
-    bottom: 8px;
+    bottom: 12px;
     left: 0;
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 12px;
     z-index: 5;
     padding: 10px 0;
 
@@ -408,17 +439,27 @@ const handleMouseLeave = () => {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: transparent;
-      border: 1.5px solid #111;
+      background: #2d2d2d;
+      border: none;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition:
+        width 0.22s ease,
+        height 0.22s ease,
+        background 0.22s ease,
+        border-color 0.22s ease,
+        transform 0.22s ease;
 
       &.is-active {
-        background: #111;
+        width: 18px;
+        height: 10px;
+        border-radius: 999px;
+        background: #fff;
+        border: 2px solid #2d2d2d;
+        transform: translateY(-1px);
       }
 
       &:hover:not(.is-active) {
-        background: rgba(0, 0, 0, 0.2);
+        background: #111;
       }
     }
   }
@@ -439,7 +480,7 @@ const handleMouseLeave = () => {
 
   .hover-actions {
     position: absolute;
-    bottom: 40px;
+    bottom: 52px;
     left: 0;
     width: 100%;
     display: flex;
@@ -455,6 +496,8 @@ const handleMouseLeave = () => {
     }
 
     .btn-action {
+      position: relative;
+      overflow: hidden;
       background: #111;
       color: $white;
       padding: 12px 32px;
@@ -463,13 +506,54 @@ const handleMouseLeave = () => {
       font-size: 15px;
       border: none;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition:
+        color 0.28s ease,
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
+      &::before {
+        content: "";
+        position: absolute;
+        left: -14%;
+        bottom: -250%;
+        width: 128%;
+        height: 240%;
+        background: #fff;
+        border-radius: 44% 56% 0 0 / 18% 18% 0 0;
+        transform: translateY(0);
+        transition: bottom 0.42s ease;
+      }
+
+      &::after {
+        content: "";
+        position: absolute;
+        left: -8%;
+        bottom: -250%;
+        width: 116%;
+        height: 225%;
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 52% 48% 0 0 / 22% 18% 0 0;
+        transition: bottom 0.5s ease;
+      }
+
+      .btn-text {
+        position: relative;
+        z-index: 1;
+      }
+
       &:hover:not(:disabled) {
-        background: #333;
+        color: #111;
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+
+        &::before {
+          bottom: -84%;
+        }
+
+        &::after {
+          bottom: -94%;
+        }
       }
 
       &.btn-sold-out {
@@ -477,6 +561,10 @@ const handleMouseLeave = () => {
         color: $white;
         cursor: not-allowed;
         box-shadow: none;
+
+        &::before {
+          display: none;
+        }
       }
     }
   }
@@ -519,7 +607,7 @@ const handleMouseLeave = () => {
       position: relative;
 
       &::after {
-        content: '';
+        content: "";
         position: absolute;
         left: -2px;
         right: -2px;

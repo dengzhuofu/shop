@@ -60,7 +60,7 @@
           />
           <div class="content">
             <h3>
-              {{ category.name }}
+              <span class="title-text">{{ category.name }}</span>
               <span class="count">{{ category.productCount }}</span>
             </h3>
             <p>{{ category.description }}</p>
@@ -1071,8 +1071,31 @@ onUnmounted(() => {
   );
 }
 .category-card h3 {
-  margin: 0 0 8px;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 0 0 12px;
   font-size: 26px;
+}
+.category-card .title-text {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 14px;
+}
+.category-card .title-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.2s ease-out;
+}
+.category-card:hover .title-text::after {
+  transform: scaleX(1);
 }
 .category-card .count {
   color: #8ad5d0;
@@ -1085,6 +1108,12 @@ onUnmounted(() => {
 .category-card .icon {
   width: 22px;
   height: 22px;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform 0.25s ease-out;
+}
+.category-card:hover .icon {
+  transform: rotate(90deg);
 }
 .section-header {
   display: flex;
