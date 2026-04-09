@@ -8,12 +8,29 @@
       <aside v-if="cart.isOpen.value" class="cart-sidebar" aria-label="Shopping cart">
         <header class="cart-header">
           <div class="cart-tabs" role="tablist" :aria-label="t('cart')">
-            <button type="button" class="tab-button is-active" aria-selected="true">
+            <button
+              type="button"
+              class="tab-button"
+              :class="{ 'is-active': activeTab === 'cart', 'is-muted': activeTab !== 'cart' }"
+              role="tab"
+              :aria-selected="activeTab === 'cart'"
+              @click="activeTab = 'cart'"
+            >
               <span class="tab-label">{{ t('cart') }}</span>
               <span class="tab-count">{{ cart.count.value }}</span>
             </button>
-            <button type="button" class="tab-button is-muted" aria-selected="false">
+            <button
+              type="button"
+              class="tab-button"
+              :class="{ 'is-active': activeTab === 'recent', 'is-muted': activeTab !== 'recent' }"
+              role="tab"
+              :aria-selected="activeTab === 'recent'"
+              @click="activeTab = 'recent'"
+            >
               <span class="tab-label">{{ copy.recentlyViewed }}</span>
+              <span v-if="recentlyViewed.count.value" class="tab-count">
+                {{ recentlyViewed.count.value }}
+              </span>
             </button>
           </div>
 
@@ -22,13 +39,13 @@
           </button>
         </header>
 
-        <div class="cart-body">
-          <div v-if="cart.loading.value && !cart.items.value.length" class="empty-cart is-loading">
+        <div class="cart-body" :class="{ 'is-recent': activeTab === 'recent' }">
+          <div v-if="activeTab === 'cart' && cart.loading.value && !cart.items.value.length" class="empty-cart is-loading">
             <div class="empty-visual" />
             <p>{{ copy.loading }}</p>
           </div>
 
-          <div v-else-if="cart.items.value.length" class="cart-items">
+          <div v-else-if="activeTab === 'cart' && cart.items.value.length" class="cart-items">
             <article v-for="item in cart.items.value" :key="item.cartItemId" class="cart-item">
               <NuxtLink :to="itemLink(item)" class="item-image" @click="handleClose">
                 <img :src="item.productPic" :alt="item.title" loading="lazy" />
@@ -97,15 +114,66 @@
             </article>
           </div>
 
-          <div v-else class="empty-cart">
+          <div v-else-if="activeTab === 'cart'" class="empty-cart">
             <div class="empty-visual">
               <ShoppingBag :size="24" :stroke-width="1.8" />
             </div>
             <p>{{ t('emptyCart') }}</p>
           </div>
+
+          <div v-else-if="recentlyViewed.loading.value && !recentlyViewed.items.value.length" class="empty-cart is-loading">
+            <div class="empty-visual" />
+            <p>{{ copy.loadingRecent }}</p>
+          </div>
+
+          <div v-else-if="recentlyViewed.items.value.length" class="recent-list">
+            <article v-for="item in recentlyViewed.items.value" :key="item.id" class="recent-item">
+              <NuxtLink :to="recentlyViewedLink(item)" class="recent-image" @click="handleClose">
+                <img :src="item.pic" :alt="item.title" loading="lazy" />
+              </NuxtLink>
+
+              <div class="recent-main">
+                <div class="recent-topline">
+                  <span class="recent-meta">
+                    <Clock3 :size="14" :stroke-width="1.9" />
+                    {{ copy.viewedRecently }}
+                  </span>
+                  <span v-if="primaryTag(item)" class="recent-tag">{{ primaryTag(item) }}</span>
+                </div>
+
+                <NuxtLink :to="recentlyViewedLink(item)" class="recent-title" @click="handleClose">
+                  {{ item.title }}
+                </NuxtLink>
+
+                <p v-if="item.subtitle" class="recent-subtitle">{{ item.subtitle }}</p>
+
+                <div class="recent-price-row">
+                  <strong>{{ money(item.price || 0) }}</strong>
+                  <span v-if="item.compareAtPrice" class="recent-old-price">
+                    {{ money(item.compareAtPrice) }}
+                  </span>
+                </div>
+
+                <div class="recent-actions">
+                  <NuxtLink :to="recentlyViewedLink(item)" class="recent-link" @click="handleClose">
+                    <span>{{ copy.viewDetails }}</span>
+                    <ArrowUpRight :size="15" :stroke-width="2" />
+                  </NuxtLink>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div v-else class="empty-cart">
+            <div class="empty-visual">
+              <Clock3 :size="24" :stroke-width="1.8" />
+            </div>
+            <p>{{ copy.emptyRecentlyViewed }}</p>
+          </div>
         </div>
 
         <footer class="cart-footer">
+          <template v-if="activeTab === 'cart'">
           <div class="cart-tools">
             <button type="button" class="tool-button">
               <NotebookText :size="18" :stroke-width="1.9" />
@@ -152,6 +220,29 @@
               {{ t('continueShopping') }}
             </NuxtLink>
           </div>
+          </template>
+
+          <template v-else>
+            <div class="recent-footer-copy">
+              <p>{{ copy.recentHelper }}</p>
+              <span>{{ copy.recentHint }}</span>
+            </div>
+
+            <div class="checkout-actions recent-actions-grid">
+              <NuxtLink
+                v-if="recentlyViewed.items.value[0]"
+                :to="recentlyViewedLink(recentlyViewed.items.value[0])"
+                class="btn-checkout"
+                @click="handleClose"
+              >
+                <ArrowUpRight :size="18" :stroke-width="2" />
+                <span>{{ copy.viewDetails }}</span>
+              </NuxtLink>
+              <NuxtLink to="/" class="btn-secondary" @click="handleClose">
+                {{ copy.browseMore }}
+              </NuxtLink>
+            </div>
+          </template>
         </footer>
       </aside>
     </transition>
@@ -161,9 +252,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
+  ArrowUpRight,
   BadgePercent,
   ChevronDown,
   ChevronUp,
+  Clock3,
   LockKeyhole,
   NotebookText,
   Package,
@@ -174,9 +267,11 @@ import {
 import { clearPageScrollLock, setPageScrollLocked } from '~/utils/scrollLock'
 
 const cart = useShopCart()
+const recentlyViewed = useRecentlyViewed()
 const { lang, t } = useShopLocale()
 const { money, attributeText } = useShopFormat()
 
+const activeTab = ref<'cart' | 'recent'>('cart')
 const shippingProtectionEnabled = ref(true)
 const isUpdating = ref(false)
 
@@ -184,6 +279,7 @@ const copy = computed(() =>
   lang.value === 'zh'
     ? {
         recentlyViewed: '\u6700\u8fd1\u6d4f\u89c8',
+        loadingRecent: '\u6b63\u5728\u52a0\u8f7d\u6d4f\u89c8\u8bb0\u5f55...',
         close: '\u5173\u95ed\u8d2d\u7269\u8f66',
         loading: '\u6b63\u5728\u52a0\u8f7d\u8d2d\u7269\u8f66...',
         orderNote: '\u8ba2\u5355\u5907\u6ce8',
@@ -198,9 +294,16 @@ const copy = computed(() =>
         each: '\u6bcf\u4ef6',
         increase: '\u589e\u52a0\u6570\u91cf',
         decrease: '\u51cf\u5c11\u6570\u91cf',
+        emptyRecentlyViewed: '\u6682\u65e0\u6d4f\u89c8\u8bb0\u5f55',
+        viewedRecently: '\u521a\u521a\u67e5\u770b',
+        viewDetails: '\u67e5\u770b\u8be6\u60c5',
+        browseMore: '\u7ee7\u7eed\u901b\u901b',
+        recentHelper: '\u6700\u8fd1\u6d4f\u89c8\u4f1a\u968f\u4f60\u7684\u6d4f\u89c8\u52a8\u4f5c\u81ea\u52a8\u66f4\u65b0\u3002',
+        recentHint: '\u518d\u6b21\u70b9\u5f00\u5546\u54c1\u9875\uff0c\u5217\u8868\u4f1a\u7acb\u5373\u5237\u65b0\u3002',
       }
     : {
         recentlyViewed: 'Recently viewed',
+        loadingRecent: 'Loading recently viewed...',
         close: 'Close cart',
         loading: 'Loading cart...',
         orderNote: 'Order note',
@@ -215,10 +318,17 @@ const copy = computed(() =>
         each: 'each',
         increase: 'Increase quantity',
         decrease: 'Decrease quantity',
+        emptyRecentlyViewed: 'Your recently viewed list is empty.',
+        viewedRecently: 'Viewed recently',
+        viewDetails: 'View details',
+        browseMore: 'Continue shopping',
+        recentHelper: 'Recently viewed updates automatically every time you open a product.',
+        recentHint: 'Use it as a quick way back to the items that caught your eye.',
       },
 )
 
 const itemLink = (item: any) => `/products/${item.slug || item.productId}`
+const recentlyViewedLink = (item: any) => `/products/${item.slug || item.id}`
 
 const itemMeta = (item: any) => {
   const text = attributeText(item.attributes)
@@ -232,6 +342,13 @@ const addonNames = (addons: any) => {
   return addons
     .map((addon: any) => addon?.name || addon?.title || addon?.code)
     .filter((value: string | undefined) => Boolean(value))
+}
+
+const primaryTag = (item: any) => {
+  if (!Array.isArray(item?.tags) || !item.tags.length) {
+    return ''
+  }
+  return String(item.tags[0] || '').trim()
 }
 
 const linePrice = (item: any) => {
@@ -293,7 +410,7 @@ watch(
   async (newVal) => {
     if (newVal) {
       setPageScrollLocked(true)
-      await cart.refreshCart()
+      await Promise.all([cart.refreshCart(), recentlyViewed.refreshRecentlyViewed()])
     } else {
       clearPageScrollLock()
     }
@@ -430,6 +547,10 @@ watch(
   scrollbar-gutter: stable;
 }
 
+.cart-body.is-recent {
+  padding-top: 22px;
+}
+
 .cart-body::-webkit-scrollbar {
   width: 10px;
 }
@@ -453,6 +574,130 @@ watch(
 .cart-items {
   display: grid;
   gap: 24px;
+}
+
+.recent-list {
+  display: grid;
+  gap: 16px;
+}
+
+.recent-item {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid rgba(17, 17, 17, 0.06);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(251, 249, 246, 0.8), rgba(255, 255, 255, 0.98));
+}
+
+.recent-image {
+  display: block;
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(248, 245, 240, 0.96), rgba(241, 237, 231, 0.8));
+}
+
+.recent-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recent-main {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.recent-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recent-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cart-muted);
+  font-size: 0.8rem;
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+.recent-tag {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #fff2f5;
+  color: var(--cart-danger);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.recent-title {
+  color: #111111;
+  text-decoration: none;
+  font-size: 1.03rem;
+  line-height: 1.28;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.recent-subtitle {
+  margin: -4px 0 0;
+  color: var(--cart-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.recent-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.recent-price-row strong {
+  color: #111111;
+  font-size: 1.12rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.recent-old-price {
+  color: #9a9a9a;
+  font-size: 0.88rem;
+  text-decoration: line-through;
+}
+
+.recent-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.recent-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #111111;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.recent-link:hover,
+.recent-title:hover {
+  color: var(--cart-danger);
 }
 
 .cart-item {
@@ -685,6 +930,34 @@ watch(
     #ffffff;
 }
 
+.recent-footer-copy {
+  display: grid;
+  gap: 6px;
+  padding-top: 14px;
+}
+
+.recent-footer-copy p,
+.recent-footer-copy span {
+  margin: 0;
+}
+
+.recent-footer-copy p {
+  color: #1b1b1b;
+  font-size: 0.98rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.recent-footer-copy span {
+  color: var(--cart-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.recent-actions-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .cart-tools {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -908,6 +1181,9 @@ watch(
 .switch input:focus-visible + .slider,
 .btn-checkout:focus-visible,
 .btn-secondary:focus-visible,
+.recent-image:focus-visible,
+.recent-link:focus-visible,
+.recent-title:focus-visible,
 .item-image:focus-visible,
 .item-title:focus-visible {
   outline: none;
@@ -986,6 +1262,16 @@ watch(
     grid-template-columns: 82px minmax(0, 1fr);
   }
 
+  .recent-item {
+    grid-template-columns: 88px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .recent-image {
+    width: 88px;
+    height: 88px;
+  }
+
   .item-actions {
     grid-column: 2;
     flex-direction: row;
@@ -997,6 +1283,10 @@ watch(
   .checkout-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .recent-topline {
+    flex-wrap: wrap;
   }
 
   .summary-total {

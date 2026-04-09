@@ -492,6 +492,7 @@ const { lang, t } = useShopLocale();
 const cart = useShopCart();
 const session = useShopSession();
 const { money, attributeText } = useShopFormat();
+const recentlyViewed = useRecentlyViewed();
 
 const product = ref<any | null>(null);
 const activeImage = ref("");
@@ -644,6 +645,7 @@ const fetchProduct = async () => {
       selectedAddonCodes.value = [];
       quantity.value = 1;
       syncActiveImage();
+      void recentlyViewed.recordProduct(product.value);
       Object.assign(reviewSummary, {
         averageRating: 0,
         totalReviews: 0,

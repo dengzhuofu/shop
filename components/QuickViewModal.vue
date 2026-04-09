@@ -196,6 +196,7 @@ const { t } = useShopLocale()
 const { money } = useShopFormat()
 const cart = useShopCart()
 const session = useShopSession()
+const recentlyViewed = useRecentlyViewed()
 const { fetchProductDetail } = useProductQuickActions()
 
 const loading = ref(false)
@@ -341,6 +342,7 @@ const loadProduct = async () => {
     quantity.value = 1
     resetSelection()
     syncActiveImage()
+    void recentlyViewed.recordProduct(detailedProduct)
   } finally {
     if (token === requestToken) {
       loading.value = false
