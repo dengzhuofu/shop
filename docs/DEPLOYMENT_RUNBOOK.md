@@ -10,7 +10,7 @@ Deploy the project to a single cloud server with:
 - Nginx reverse proxy
 - Docker Compose orchestration
 
-The production entrypoint is `http://101.200.239.103`.
+The production entrypoint should be the same public domain and protocol configured in your payment callbacks, for example `https://your-domain.example.com`.
 
 ## 2. Target Topology
 

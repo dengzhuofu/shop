@@ -46,6 +46,15 @@ upsert_env_if_present() {
   fi
 }
 
+sync_env_if_defined() {
+  local key="$1"
+  local env_file="$2"
+
+  if [ -n "${!key+x}" ]; then
+    upsert_env "$key" "${!key}" "$env_file"
+  fi
+}
+
 cd "$PROJECT_DIR"
 
 bash deploy/remote/bootstrap-server.sh "$PROJECT_DIR" prepare
@@ -57,16 +66,18 @@ fi
 upsert_env "BACKEND_IMAGE" "$BACKEND_IMAGE" ".env"
 upsert_env "FRONTEND_IMAGE" "$FRONTEND_IMAGE" ".env"
 upsert_env "DEPLOY_SHA" "$DEPLOY_SHA" ".env"
-upsert_env_if_present "PAYMENT_DEFAULT_PROVIDER" "${PAYMENT_DEFAULT_PROVIDER:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_ENABLED" "${PAYMENT_ALIPAY_ENABLED:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_SANDBOX" "${PAYMENT_ALIPAY_SANDBOX:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_FALLBACK_TO_MOCK" "${PAYMENT_ALIPAY_FALLBACK_TO_MOCK:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_APP_ID" "${PAYMENT_ALIPAY_APP_ID:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_APP_PRIVATE_KEY" "${PAYMENT_ALIPAY_APP_PRIVATE_KEY:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_PUBLIC_KEY" "${PAYMENT_ALIPAY_PUBLIC_KEY:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_RETURN_URL" "${PAYMENT_ALIPAY_RETURN_URL:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_NOTIFY_URL" "${PAYMENT_ALIPAY_NOTIFY_URL:-}" ".env"
-upsert_env_if_present "PAYMENT_ALIPAY_SUBJECT_PREFIX" "${PAYMENT_ALIPAY_SUBJECT_PREFIX:-}" ".env"
+sync_env_if_defined "PAYMENT_DEFAULT_PROVIDER" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_ENABLED" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_SANDBOX" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_FALLBACK_TO_MOCK" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_GATEWAY" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_PARTNER" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_APP_ID" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_APP_PRIVATE_KEY" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_PUBLIC_KEY" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_RETURN_URL" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_NOTIFY_URL" ".env"
+sync_env_if_defined "PAYMENT_ALIPAY_SUBJECT_PREFIX" ".env"
 chmod 600 .env
 
 bash deploy/remote/bootstrap-server.sh "$PROJECT_DIR" images

@@ -39,6 +39,10 @@ Create these repository secrets in GitHub:
   Example: `true`
 - `PROD_PAYMENT_ALIPAY_FALLBACK_TO_MOCK`
   Example: `false`
+- `PROD_PAYMENT_ALIPAY_GATEWAY`
+  Optional: override the SDK gateway URL when your Alipay account requires a non-default endpoint
+- `PROD_PAYMENT_ALIPAY_PARTNER`
+  Optional: set this only for cross-border / MAPI-style Alipay accounts
 - `PROD_PAYMENT_ALIPAY_APP_ID`
   Your Alipay app id
 - `PROD_PAYMENT_ALIPAY_APP_PRIVATE_KEY`
@@ -46,11 +50,14 @@ Create these repository secrets in GitHub:
 - `PROD_PAYMENT_ALIPAY_PUBLIC_KEY`
   Your one-line base64 Alipay public key
 - `PROD_PAYMENT_ALIPAY_RETURN_URL`
-  Example: `http://101.200.239.103/payment/alipay-return`
+  Example: `https://your-domain.example.com/payment/alipay-return`
 - `PROD_PAYMENT_ALIPAY_NOTIFY_URL`
-  Example: `http://101.200.239.103/api/payment/alipay/notify`
+  Example: `https://your-domain.example.com/api/payment/alipay/notify`
 - `PROD_PAYMENT_ALIPAY_SUBJECT_PREFIX`
   Example: `isinwheel`
+
+For production, do not leave Alipay return and notify URLs on a bare server IP unless that exact public IP is the real public entrypoint registered in Alipay. These URLs should match the public domain and protocol the browser actually uses.
+The deploy script now syncs these values into the server `.env` even when a secret is blank, so an empty GitHub secret will clear stale server-side Alipay values instead of silently keeping the old ones.
 
 The old SSH secrets are no longer used by the workflow.
 
