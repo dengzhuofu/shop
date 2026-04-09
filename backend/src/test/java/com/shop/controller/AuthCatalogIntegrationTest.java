@@ -83,6 +83,38 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void canLoginWithCredentialsFromEmailRegistration() throws Exception {
+    String email = "returning-rider@isinwheel.local";
+    String password = "abc12345";
+
+    mockMvc.perform(post("/auth/register/email")
+            .contentType(APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "%s",
+                  "password": "%s",
+                  "firstName": "Returning",
+                  "lastName": "Rider"
+                }
+                """.formatted(email, password)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.code").value(200))
+        .andExpect(jsonPath("$.data.user.email").value(email));
+
+    mockMvc.perform(post("/auth/login")
+            .contentType(APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "%s",
+                  "password": "%s"
+                }
+                """.formatted(email, password)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.code").value(200))
+        .andExpect(jsonPath("$.data.user.email").value(email));
+  }
+
+  @Test
   void loginAcceptsTrimmedAndUppercaseEmail() throws Exception {
     mockMvc.perform(post("/auth/login")
             .contentType(APPLICATION_JSON)
