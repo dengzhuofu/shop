@@ -8,6 +8,8 @@ import lombok.Data;
 public class PaymentMethodVO {
   private String code;
   private String name;
+  // private String group;
   private String group;
+
   private Boolean enabled;
 }
