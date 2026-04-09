@@ -1,0 +1,527 @@
+- generic [ref=e2]:
+  - generic:
+    - generic [ref=e3]:
+      - img [ref=e5]
+      - generic [ref=e7]: "Page not found: /api/category/menu?productLimit=4&lang=en"
+      - button "关闭" [ref=e8] [cursor=pointer]:
+        - img [ref=e9]
+    - generic [ref=e11]:
+      - img [ref=e13]
+      - generic [ref=e15]: "Page not found: /api/marketing/activities/current?lang=en"
+      - button "关闭" [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+  - generic [ref=e19]:
+    - generic [ref=e20] [cursor=pointer]: $20 OFF
+    - banner [ref=e21]:
+      - 'link "Easter Sale Save on this week''s hottest rides 06 : 23 : 59 : 59 Days Hours Mins Secs" [ref=e22] [cursor=pointer]':
+        - /url: /collections/electric-bike
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - paragraph [ref=e25]: Easter Sale
+            - paragraph [ref=e26]: Save on this week's hottest rides
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]: "06"
+              - generic [ref=e30]: ":"
+              - generic [ref=e31]: "23"
+              - generic [ref=e32]: ":"
+              - generic [ref=e33]: "59"
+              - generic [ref=e34]: ":"
+              - generic [ref=e35]: "59"
+            - generic [ref=e36]:
+              - generic [ref=e37]: Days
+              - generic [ref=e38]: Hours
+              - generic [ref=e39]: Mins
+              - generic [ref=e40]: Secs
+      - generic [ref=e42]:
+        - link "isinwheel" [ref=e43] [cursor=pointer]:
+          - /url: /
+          - heading "isinwheel" [level=2] [ref=e44]
+        - list [ref=e46]:
+          - listitem [ref=e47]:
+            - link "Electric Scooter" [ref=e48] [cursor=pointer]:
+              - /url: /collections/electric-scooters
+          - listitem [ref=e49]:
+            - link "Electric Bike" [ref=e50] [cursor=pointer]:
+              - /url: /collections/electric-bike
+          - listitem [ref=e51]:
+            - link "Electric Skateboard" [ref=e52] [cursor=pointer]:
+              - /url: /collections/electric-skateboard
+          - listitem [ref=e53]:
+            - link "Accessories" [ref=e54] [cursor=pointer]:
+              - /url: /collections/accessories
+          - listitem [ref=e55]:
+            - button "Support" [ref=e56] [cursor=pointer]
+        - generic [ref=e57]:
+          - button "🇨🇳 中文" [ref=e58] [cursor=pointer]
+          - button "Search" [ref=e59] [cursor=pointer]:
+            - img [ref=e60]
+          - button "Account" [ref=e64] [cursor=pointer]:
+            - img [ref=e65]
+          - button "Cart" [ref=e68] [cursor=pointer]:
+            - img [ref=e69]
+            - generic [ref=e73]: "0"
+    - main [ref=e74]:
+      - generic [ref=e75]:
+        - generic [ref=e96]:
+          - heading "Meet the GT1 Dual Motor Scooter" [level=1] [ref=e97]:
+            - text: Meet the GT1
+            - text: Dual Motor Scooter
+          - paragraph [ref=e98]: Dual Motor Power. Built for the Ride.
+          - generic [ref=e99]:
+            - link "Shop now" [ref=e100] [cursor=pointer]:
+              - /url: https://www.isinwheel.com/products/gt1-dual-motor-off-road-electric-scooter
+            - link "Explore catalog" [ref=e101] [cursor=pointer]:
+              - /url: /collections/electric-scooters
+        - generic [ref=e102]:
+          - heading "Explore isinwheel" [level=2] [ref=e103]
+          - generic [ref=e104]:
+            - link "电动滑板车 7 为城市通勤打造的便携式电动滑板车。" [ref=e105] [cursor=pointer]:
+              - /url: /collections/electric-scooters
+              - generic [ref=e107]:
+                - heading "电动滑板车 7" [level=3] [ref=e108]
+                - paragraph [ref=e109]: 为城市通勤打造的便携式电动滑板车。
+                - img [ref=e110]
+            - link "电动自行车 3 适合通勤与周末骑行的高性能电动自行车。" [ref=e112] [cursor=pointer]:
+              - /url: /collections/electric-bike
+              - generic [ref=e114]:
+                - heading "电动自行车 3" [level=3] [ref=e115]
+                - paragraph [ref=e116]: 适合通勤与周末骑行的高性能电动自行车。
+                - img [ref=e117]
+            - link "电动滑板 2 为 carving 与速度感打造的高响应电动滑板。" [ref=e119] [cursor=pointer]:
+              - /url: /collections/electric-skateboard
+              - generic [ref=e121]:
+                - heading "电动滑板 2" [level=3] [ref=e122]
+                - paragraph [ref=e123]: 为 carving 与速度感打造的高响应电动滑板。
+                - img [ref=e124]
+            - link "配件 3 骑行必备附加配件与替换件。" [ref=e126] [cursor=pointer]:
+              - /url: /collections/accessories
+              - generic [ref=e128]:
+                - heading "配件 3" [level=3] [ref=e129]
+                - paragraph [ref=e130]: 骑行必备附加配件与替换件。
+                - img [ref=e131]
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - heading "Best Sellers" [level=2] [ref=e135]:
+              - text: Best Sellers
+              - img [ref=e136]
+            - link "View current collection" [ref=e138] [cursor=pointer]:
+              - /url: /collections/electric-scooters
+              - text: View current collection
+              - img [ref=e139]
+          - generic [ref=e142]:
+            - button "电动滑板车" [ref=e143] [cursor=pointer]
+            - button "电动自行车" [ref=e144] [cursor=pointer]
+            - button "电动滑板" [ref=e145] [cursor=pointer]
+            - button "配件" [ref=e146] [cursor=pointer]
+          - generic [ref=e147]:
+            - link "NEW isinwheel U1 Folding Electric Scooter - 1 isinwheel U1 Folding Electric Scooter - 2 isinwheel U1 Folding Electric Scooter - 3 isinwheel U1 Folding Electric Scooter app preview Choose options isinwheel U1 Folding Electric Scooter $459.99 $569.99 Save $110.00 500W Motor Capacity 25 Miles Max Range 21 MPH Top Speed 48V 10Ah Battery" [ref=e148] [cursor=pointer]:
+              - generic [ref=e149]:
+                - generic [ref=e151]: NEW
+                - generic [ref=e152]:
+                  - img "isinwheel U1 Folding Electric Scooter - 1" [ref=e153]
+                  - img "isinwheel U1 Folding Electric Scooter - 2" [ref=e154]
+                  - img "isinwheel U1 Folding Electric Scooter - 3" [ref=e155]
+                - img "isinwheel U1 Folding Electric Scooter app preview" [ref=e156]
+                - button "Choose options" [ref=e158]
+              - generic [ref=e159]:
+                - heading "isinwheel U1 Folding Electric Scooter" [level=3] [ref=e160]
+                - generic [ref=e161]:
+                  - generic [ref=e162]: $459.99
+                  - generic [ref=e163]: $569.99
+                  - generic [ref=e164]: Save $110.00
+                - generic [ref=e165]:
+                  - generic [ref=e166]:
+                    - img [ref=e167]
+                    - generic [ref=e169]:
+                      - generic [ref=e170]: 500W
+                      - generic [ref=e171]: Motor Capacity
+                  - generic [ref=e172]:
+                    - img [ref=e173]
+                    - generic [ref=e175]:
+                      - generic [ref=e176]: 25 Miles
+                      - generic [ref=e177]: Max Range
+                  - generic [ref=e178]:
+                    - img [ref=e179]
+                    - generic [ref=e181]:
+                      - generic [ref=e182]: 21 MPH
+                      - generic [ref=e183]: Top Speed
+                  - generic [ref=e184]:
+                    - img [ref=e185]
+                    - generic [ref=e187]:
+                      - generic [ref=e188]: 48V 10Ah
+                      - generic [ref=e189]: Battery
+            - link "Spring Sale isinwheel S9 Pro Pneumatic Tire Electric Scooter - 1 isinwheel S9 Pro Pneumatic Tire Electric Scooter - 2 isinwheel S9 Pro Pneumatic Tire Electric Scooter - 3 Choose options isinwheel S9 Pro Pneumatic Tire Electric Scooter $269.99 $399.99 Save $130.00 350W Motor Capacity 19 Miles Max Range 19 MPH Top Speed 36V 7.5Ah Battery" [ref=e190] [cursor=pointer]:
+              - generic [ref=e191]:
+                - generic [ref=e194]:
+                  - text: Spring
+                  - text: Sale
+                - generic [ref=e196]:
+                  - img "isinwheel S9 Pro Pneumatic Tire Electric Scooter - 1" [ref=e197]
+                  - img "isinwheel S9 Pro Pneumatic Tire Electric Scooter - 2" [ref=e198]
+                  - img "isinwheel S9 Pro Pneumatic Tire Electric Scooter - 3" [ref=e199]
+                - button "Choose options" [ref=e201]
+              - generic [ref=e202]:
+                - heading "isinwheel S9 Pro Pneumatic Tire Electric Scooter" [level=3] [ref=e203]
+                - generic [ref=e204]:
+                  - generic [ref=e205]: $269.99
+                  - generic [ref=e206]: $399.99
+                  - generic [ref=e207]: Save $130.00
+                - generic [ref=e208]:
+                  - generic [ref=e209]:
+                    - img [ref=e210]
+                    - generic [ref=e212]:
+                      - generic [ref=e213]: 350W
+                      - generic [ref=e214]: Motor Capacity
+                  - generic [ref=e215]:
+                    - img [ref=e216]
+                    - generic [ref=e218]:
+                      - generic [ref=e219]: 19 Miles
+                      - generic [ref=e220]: Max Range
+                  - generic [ref=e221]:
+                    - img [ref=e222]
+                    - generic [ref=e224]:
+                      - generic [ref=e225]: 19 MPH
+                      - generic [ref=e226]: Top Speed
+                  - generic [ref=e227]:
+                    - img [ref=e228]
+                    - generic [ref=e230]:
+                      - generic [ref=e231]: 36V 7.5Ah
+                      - generic [ref=e232]: Battery
+            - link "NEW Spring Sale S Nova Pro Commuting Electric Scooter - 1 S Nova Pro Commuting Electric Scooter - 2 Choose options S Nova Pro Commuting Electric Scooter $489.99 $599.99 Save $110.00 1000W Max Power 38 Miles Max Range 28 MPH Top Speed 48V 13Ah Battery" [ref=e233] [cursor=pointer]:
+              - generic [ref=e234]:
+                - generic [ref=e236]: NEW
+                - generic [ref=e239]:
+                  - text: Spring
+                  - text: Sale
+                - generic [ref=e241]:
+                  - img "S Nova Pro Commuting Electric Scooter - 1" [ref=e242]
+                  - img "S Nova Pro Commuting Electric Scooter - 2" [ref=e243]
+                - button "Choose options" [ref=e245]
+              - generic [ref=e246]:
+                - heading "S Nova Pro Commuting Electric Scooter" [level=3] [ref=e247]
+                - generic [ref=e248]:
+                  - generic [ref=e249]: $489.99
+                  - generic [ref=e250]: $599.99
+                  - generic [ref=e251]: Save $110.00
+                - generic [ref=e252]:
+                  - generic [ref=e253]:
+                    - img [ref=e254]
+                    - generic [ref=e256]:
+                      - generic [ref=e257]: 1000W
+                      - generic [ref=e258]: Max Power
+                  - generic [ref=e259]:
+                    - img [ref=e260]
+                    - generic [ref=e262]:
+                      - generic [ref=e263]: 38 Miles
+                      - generic [ref=e264]: Max Range
+                  - generic [ref=e265]:
+                    - img [ref=e266]
+                    - generic [ref=e268]:
+                      - generic [ref=e269]: 28 MPH
+                      - generic [ref=e270]: Top Speed
+                  - generic [ref=e271]:
+                    - img [ref=e272]
+                    - generic [ref=e274]:
+                      - generic [ref=e275]: 48V 13Ah
+                      - generic [ref=e276]: Battery
+            - link "Spring Sale isinwheel Long Range 3 Wheel Kids Electric Scooter - 1 isinwheel Long Range 3 Wheel Kids Electric Scooter - 2 isinwheel Long Range 3 Wheel Kids Electric Scooter - 3 Choose options isinwheel Long Range 3 Wheel Kids Electric Scooter $139.99 $199.99 Save $60.00 Scooter for Kids Collection 10 Variants iSinwheel Official Store Vendor Mixed stock Availability" [ref=e277] [cursor=pointer]:
+              - generic [ref=e278]:
+                - generic [ref=e281]:
+                  - text: Spring
+                  - text: Sale
+                - generic [ref=e283]:
+                  - img "isinwheel Long Range 3 Wheel Kids Electric Scooter - 1" [ref=e284]
+                  - img "isinwheel Long Range 3 Wheel Kids Electric Scooter - 2" [ref=e285]
+                  - img "isinwheel Long Range 3 Wheel Kids Electric Scooter - 3" [ref=e286]
+                - button "Choose options" [ref=e288]
+              - generic [ref=e289]:
+                - heading "isinwheel Long Range 3 Wheel Kids Electric Scooter" [level=3] [ref=e290]
+                - generic [ref=e291]:
+                  - generic [ref=e292]: $139.99
+                  - generic [ref=e293]: $199.99
+                  - generic [ref=e294]: Save $60.00
+                - generic [ref=e295]:
+                  - generic [ref=e296]:
+                    - img [ref=e297]
+                    - generic [ref=e299]:
+                      - generic [ref=e300]: Scooter for Kids
+                      - generic [ref=e301]: Collection
+                  - generic [ref=e302]:
+                    - img [ref=e303]
+                    - generic [ref=e305]:
+                      - generic [ref=e306]: "10"
+                      - generic [ref=e307]: Variants
+                  - generic [ref=e308]:
+                    - img [ref=e309]
+                    - generic [ref=e311]:
+                      - generic [ref=e312]: iSinwheel Official Store
+                      - generic [ref=e313]: Vendor
+                  - generic [ref=e314]:
+                    - img [ref=e315]
+                    - generic [ref=e317]:
+                      - generic [ref=e318]: Mixed stock
+                      - generic [ref=e319]: Availability
+        - generic [ref=e321] [cursor=pointer]:
+          - img "isinwheel homepage video cover" [ref=e324]
+          - button [ref=e326]:
+            - img [ref=e327]
+        - generic [ref=e330]:
+          - 'link "FA Facebook iSinwheel Official Store on Facebook #facebook 5880 reviews" [ref=e331] [cursor=pointer]':
+            - /url: https://www.facebook.com/isinwheel.fans?ref=rfrliuqg
+            - img [ref=e335]
+            - generic [ref=e337]:
+              - generic [ref=e338]:
+                - generic [ref=e339]: FA
+                - generic [ref=e340]: Facebook
+              - paragraph [ref=e341]: iSinwheel Official Store on Facebook
+              - generic [ref=e342]:
+                - generic [ref=e343]: "#facebook"
+                - generic [ref=e344]: 5880 reviews
+          - 'link "IN Instagram iSinwheel Official Store on Instagram #instagram 5880 reviews" [ref=e345] [cursor=pointer]':
+            - /url: https://www.instagram.com/isinwheel_global/
+            - img [ref=e349]
+            - generic [ref=e351]:
+              - generic [ref=e352]:
+                - generic [ref=e353]: IN
+                - generic [ref=e354]: Instagram
+              - paragraph [ref=e355]: iSinwheel Official Store on Instagram
+              - generic [ref=e356]:
+                - generic [ref=e357]: "#instagram"
+                - generic [ref=e358]: 5880 reviews
+          - 'link "YO YouTube iSinwheel Official Store on YouTube #youtube 5880 reviews" [ref=e359] [cursor=pointer]':
+            - /url: https://www.youtube.com/channel/UCSB6-vcjy-AfL3F3fcfCV8A?ref=rfrliuqg
+            - img [ref=e363]
+            - generic [ref=e365]:
+              - generic [ref=e366]:
+                - generic [ref=e367]: YO
+                - generic [ref=e368]: YouTube
+              - paragraph [ref=e369]: iSinwheel Official Store on YouTube
+              - generic [ref=e370]:
+                - generic [ref=e371]: "#youtube"
+                - generic [ref=e372]: 5880 reviews
+          - 'link "TI TikTok iSinwheel Official Store on TikTok #tiktok 5880 reviews" [ref=e373] [cursor=pointer]':
+            - /url: https://www.tiktok.com/@isinwheelglobal
+            - img [ref=e377]
+            - generic [ref=e379]:
+              - generic [ref=e380]:
+                - generic [ref=e381]: TI
+                - generic [ref=e382]: TikTok
+              - paragraph [ref=e383]: iSinwheel Official Store on TikTok
+              - generic [ref=e384]:
+                - generic [ref=e385]: "#tiktok"
+                - generic [ref=e386]: 5880 reviews
+        - generic [ref=e390]:
+          - generic [ref=e391]: "4.85"
+          - heading "What The People Say About Isinwheel" [level=2] [ref=e392]
+          - generic [ref=e393]:
+            - generic [ref=e394]: REV
+            - generic [ref=e395]: from 5880 reviews
+        - generic [ref=e409]:
+          - heading "Why Choose isinwheel" [level=2] [ref=e410]
+          - paragraph [ref=e411]: isinwheel electric scooter and e bike every terrain from urban avenues to rugged trails, e scooter and electric bike delivering an electrifying journey wherever you roam.
+          - generic [ref=e412]:
+            - generic [ref=e413]: "Mon-Fri: 10AM-6PM(PDT)"
+            - generic [ref=e414]: +1(888)293-5788
+            - generic [ref=e415]: support@isinwheel.com
+          - link "Brand Story" [ref=e416] [cursor=pointer]:
+            - /url: https://www.facebook.com/isinwheel.fans?ref=rfrliuqg
+            - text: Brand Story
+            - img [ref=e417]
+        - generic [ref=e419]:
+          - generic [ref=e420]:
+            - heading "What The People Say About Isinwheel" [level=2] [ref=e421]
+            - paragraph [ref=e422]: from 5880 reviews
+          - generic [ref=e423]:
+            - img [ref=e425] [cursor=pointer]
+            - generic [ref=e427]:
+              - generic [ref=e430]:
+                - generic [ref=e431]:
+                  - img [ref=e432]
+                  - img [ref=e434]
+                  - img [ref=e436]
+                  - img [ref=e438]
+                  - img [ref=e440]
+                - heading "Cirkle7 R. Verified" [level=4] [ref=e442]:
+                  - text: Cirkle7 R.
+                  - generic [ref=e443]: Verified
+                - paragraph [ref=e444]: I go to the doctor frequently. This helps in these times when gas is becoming a thing of the past!!! I am going to buy another!
+              - generic [ref=e447]:
+                - generic [ref=e448]:
+                  - img [ref=e449]
+                  - img [ref=e451]
+                  - img [ref=e453]
+                  - img [ref=e455]
+                  - img [ref=e457]
+                - heading "Jonathan M. Verified" [level=4] [ref=e459]:
+                  - text: Jonathan M.
+                  - generic [ref=e460]: Verified
+                - paragraph [ref=e461]: Good and Fast delivery
+              - generic [ref=e464]:
+                - generic [ref=e465]:
+                  - img [ref=e466]
+                  - img [ref=e468]
+                  - img [ref=e470]
+                  - img [ref=e472]
+                  - img [ref=e474]
+                - heading "Kevin S. Verified" [level=4] [ref=e476]:
+                  - text: Kevin S.
+                  - generic [ref=e477]: Verified
+                - paragraph [ref=e478]: Glad I ordered from you guys, you guys were awesome to me and thank you for all of your hard working team.
+              - generic [ref=e481]:
+                - generic [ref=e482]:
+                  - img [ref=e483]
+                  - img [ref=e485]
+                  - img [ref=e487]
+                  - img [ref=e489]
+                  - img [ref=e491]
+                - heading "Henry C. Verified" [level=4] [ref=e493]:
+                  - text: Henry C.
+                  - generic [ref=e494]: Verified
+                - paragraph [ref=e495]: More than what I expected still have a little trouble with the headlight fallen on my hip bumps but I can fix that would recommend it to anybody it's a great scooter I drive mine back and forth to work everyday I work at Goodwill . What I love about the scooter is the display it has a horn turn signals and off-road tires and its dance really enjoy having a basket where it's at wish I had a little one that would fit on the back but besides that it's a great great scooter I give it 10 stars but you only have five
+            - img [ref=e497] [cursor=pointer]
+        - generic [ref=e499]:
+          - generic [ref=e500]:
+            - heading "isinwheel Blog" [level=2] [ref=e501]:
+              - text: isinwheel Blog
+              - img [ref=e502]
+            - link "View all" [ref=e504] [cursor=pointer]:
+              - /url: /collections/electric-scooters
+              - img [ref=e505]
+              - text: View all
+          - generic [ref=e508]:
+            - generic [ref=e513] [cursor=pointer]:
+              - generic [ref=e514]:
+                - generic [ref=e515]:
+                  - img [ref=e516]
+                  - text: Apr 01, 2026
+                - generic [ref=e518]:
+                  - img [ref=e519]
+                  - text: 0 comments
+              - 'heading "Dual Motor Electric Scooter: Why More Riders Are Upgrading to the isinwheel GT1 Dual" [level=3] [ref=e521]'
+              - link "Read more" [ref=e522]:
+                - /url: https://www.isinwheel.com/blogs/news/dual-motor-electric-scooter-why-more-riders-are-upgrading-to-the-isinwheel-gt1-dual
+            - generic [ref=e523]:
+              - generic [ref=e524] [cursor=pointer]:
+                - 'img "3 Best Beginner E-Scooters for Commuting: Maximizing Long Battery Range and Power" [ref=e526]'
+                - generic [ref=e527]:
+                  - generic [ref=e528]:
+                    - generic [ref=e529]:
+                      - img [ref=e530]
+                      - text: Mar 31, 2026
+                    - generic [ref=e532]:
+                      - img [ref=e533]
+                      - text: 0 comments
+                  - 'heading "3 Best Beginner E-Scooters for Commuting: Maximizing Long Battery Range and Power" [level=3] [ref=e535]'
+                  - link "Read more" [ref=e536]:
+                    - /url: https://www.isinwheel.com/blogs/news/best-beginner-e-scooters-for-commuting-long-range-power
+              - generic [ref=e537] [cursor=pointer]:
+                - 'img "Best Suspension for Value Off-Road Scooters: What Matters on Rough Paths" [ref=e539]'
+                - generic [ref=e540]:
+                  - generic [ref=e541]:
+                    - generic [ref=e542]:
+                      - img [ref=e543]
+                      - text: Mar 26, 2026
+                    - generic [ref=e545]:
+                      - img [ref=e546]
+                      - text: 0 comments
+                  - 'heading "Best Suspension for Value Off-Road Scooters: What Matters on Rough Paths" [level=3] [ref=e548]'
+                  - link "Read more" [ref=e549]:
+                    - /url: https://www.isinwheel.com/blogs/news/best-suspension-value-off-road-scooters-rough-paths
+    - contentinfo [ref=e550]:
+      - generic [ref=e551]:
+        - generic [ref=e552]:
+          - generic [ref=e553]:
+            - heading "EXPLORE" [level=4] [ref=e554]
+            - list [ref=e555]:
+              - listitem [ref=e556]:
+                - link "Electric Scooter" [ref=e557] [cursor=pointer]:
+                  - /url: /collections/electric-scooters
+              - listitem [ref=e558]:
+                - link "Electric Bike" [ref=e559] [cursor=pointer]:
+                  - /url: /collections/electric-bike
+              - listitem [ref=e560]:
+                - link "Electric Skateboard" [ref=e561] [cursor=pointer]:
+                  - /url: /collections/electric-skateboard
+              - listitem [ref=e562]:
+                - link "Accessories" [ref=e563] [cursor=pointer]:
+                  - /url: /collections/accessories
+              - listitem [ref=e564]:
+                - link "Home" [ref=e565] [cursor=pointer]:
+                  - /url: /
+          - generic [ref=e566]:
+            - heading "SUPPORT" [level=4] [ref=e567]
+            - list [ref=e568]:
+              - listitem [ref=e569]:
+                - link "Checkout" [ref=e570] [cursor=pointer]:
+                  - /url: /checkout
+              - listitem [ref=e571]:
+                - link "Orders" [ref=e572] [cursor=pointer]:
+                  - /url: /account/orders
+              - listitem [ref=e573]:
+                - link "Profile" [ref=e574] [cursor=pointer]:
+                  - /url: /account/profile
+              - listitem [ref=e575]:
+                - link "Login" [ref=e576] [cursor=pointer]:
+                  - /url: /login
+              - listitem [ref=e577]:
+                - link "Register" [ref=e578] [cursor=pointer]:
+                  - /url: /register
+          - generic [ref=e579]:
+            - heading "COMPANY" [level=4] [ref=e580]
+            - list [ref=e581]:
+              - listitem [ref=e582]:
+                - link "About Us" [ref=e583] [cursor=pointer]:
+                  - /url: /account/profile
+              - listitem [ref=e584]:
+                - link "Contact Us" [ref=e585] [cursor=pointer]:
+                  - /url: /account/profile
+              - listitem [ref=e586]:
+                - link "Privacy Policy" [ref=e587] [cursor=pointer]:
+                  - /url: /account/profile
+              - listitem [ref=e588]:
+                - link "Terms of Service" [ref=e589] [cursor=pointer]:
+                  - /url: /account/profile
+        - generic [ref=e591]:
+          - heading "Stay in the loop with our weekly newsletter" [level=2] [ref=e592]
+          - paragraph [ref=e593]: Phase 1 focuses on real data, bilingual catalog, cart, checkout, coupons, and payment intent placeholders.
+          - generic [ref=e594]:
+            - textbox "Enter your email" [ref=e595]
+            - button [ref=e596] [cursor=pointer]:
+              - img [ref=e597]
+          - generic [ref=e599]:
+            - link [ref=e600] [cursor=pointer]:
+              - /url: https://facebook.com
+              - img [ref=e601]
+            - link [ref=e603] [cursor=pointer]:
+              - /url: https://instagram.com
+              - img [ref=e604]
+            - link [ref=e607] [cursor=pointer]:
+              - /url: https://youtube.com
+              - img [ref=e608]
+      - generic [ref=e611]:
+        - paragraph [ref=e612]: "Mon-Fri: 10AM-6PM(PDT)"
+        - paragraph [ref=e613]: +1(888)293-5788
+        - paragraph [ref=e614]: support@isinwheel.com
+      - generic [ref=e616]:
+        - generic [ref=e617]:
+          - paragraph [ref=e618]: © 2026 isinwheel storefront.
+          - generic [ref=e619]:
+            - link "Privacy Policy" [ref=e620] [cursor=pointer]:
+              - /url: /account/profile
+            - link "Terms of Service" [ref=e621] [cursor=pointer]:
+              - /url: /account/profile
+            - link "Contact Us" [ref=e622] [cursor=pointer]:
+              - /url: /account/profile
+        - button "🇺🇸 United States (USD $)" [ref=e624] [cursor=pointer]:
+          - generic [ref=e625]: 🇺🇸
+          - text: United States (USD $)
+          - img [ref=e626]
+        - generic [ref=e628]:
+          - generic [ref=e629]: Amex
+          - generic [ref=e630]: Apple Pay
+          - generic [ref=e631]: Discover
+          - generic [ref=e632]: Google Pay
+          - generic [ref=e633]: Mastercard
+          - generic [ref=e634]: PayPal
+          - generic [ref=e635]: Visa
