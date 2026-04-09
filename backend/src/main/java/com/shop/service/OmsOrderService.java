@@ -18,4 +18,8 @@ public interface OmsOrderService extends IService<OmsOrder> {
   OrderVO getOrderDetail(Long orderId, Long userId);
 
   boolean cancelOrder(Long orderId, Long userId);
+
+  boolean expireOrderIfNeeded(OmsOrder order);
+
+  int closeExpiredOrders(int batchSize);
 }

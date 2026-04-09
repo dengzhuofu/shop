@@ -1,6 +1,5 @@
 package com.shop.controller;
 
-
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.shop.common.AlipaySignatureUtils;
@@ -17,7 +16,10 @@ import com.shop.service.OmsOrderService;
 import com.shop.service.PayPaymentIntentService;
 import com.shop.vo.PaymentIntentVO;
 import com.shop.vo.PaymentMethodVO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,12 +33,16 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/payment")
+@Slf4j
 @RequiredArgsConstructor
 public class PaymentController {
+
+  private static final Set<String> SUPPORTED_PAYMENT_METHODS = Set.of("alipay", "credit_card");
 
   private final OmsOrderService orderService;
   private final PayPaymentIntentService paymentIntentService;
@@ -48,46 +54,53 @@ public class PaymentController {
     return Result.success(PaymentMethodCatalog.methods(JsonLocaleUtils.currentLanguage()));
   }
 
+  @Transactional(rollbackFor = Exception.class)
   @PostMapping("/intent")
-  public Result<PaymentIntentVO> createIntent(@RequestBody PaymentIntentCreateDTO dto) {
+  public Result<PaymentIntentVO> createIntent(@Valid @RequestBody PaymentIntentCreateDTO dto) {
     Long userId = StpUtil.getLoginIdAsLong();
+    String paymentMethod = normalizePaymentMethod(dto.getPaymentMethod());
     OmsOrder order = orderService.getById(dto.getOrderId());
     if (order == null || !order.getUserId().equals(userId)) {
       return Result.error(404, "Order not found");
     }
-    if (!"PENDING_PAYMENT".equals(order.getStatus()) && !"PAYMENT_PROCESSING".equals(order.getStatus())) {
+    if (orderService.expireOrderIfNeeded(order) || isExpiredState(order)) {
+      return Result.error(400, "Order payment window expired");
+    }
+    if (!isOrderPayable(order)) {
       return Result.error(400, "Order is not payable");
     }
 
-    PayPaymentIntent intent = new PayPaymentIntent();
-    intent.setIntentNo("PI_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase());
-    intent.setOrderId(order.getId());
-    intent.setUserId(userId);
+    PayPaymentIntent intent = findReusableIntent(order.getId(), userId, paymentMethod);
+    boolean newIntent = intent == null;
+    if (newIntent) {
+      intent = new PayPaymentIntent();
+      intent.setIntentNo("PI_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase());
+      intent.setOrderId(order.getId());
+      intent.setUserId(userId);
+      intent.setCreateTime(LocalDateTime.now());
+    }
+
     intent.setAmount(order.getTotalAmount());
     intent.setCurrency(order.getCurrency());
-    intent.setMethodCode(dto.getPaymentMethod());
-    intent.setCreateTime(LocalDateTime.now());
+    intent.setMethodCode(paymentMethod);
     intent.setUpdateTime(LocalDateTime.now());
 
-    PaymentIntentVO response = isAlipayMethod(dto.getPaymentMethod())
+    PaymentIntentVO response = isAlipayMethod(paymentMethod)
         ? prepareAlipayIntent(intent, order)
         : prepareMockIntent(intent, false);
 
-    paymentIntentService.save(intent);
+    if (newIntent) {
+      paymentIntentService.save(intent);
+    } else {
+      paymentIntentService.updateById(intent);
+    }
 
-    order.setPaymentMethod(dto.getPaymentMethod());
-    order.setPaymentIntentId(intent.getId());
-    order.setStatus("PAYMENT_PROCESSING");
-    order.setPaymentStatus("PENDING");
-    order.setUpdateTime(LocalDateTime.now());
+    syncOrderForPendingPayment(order, intent, paymentMethod);
     orderService.updateById(order);
+    log.info("AUDIT payment_intent_prepared orderId={} intentId={} intentNo={} userId={} method={} provider={} newIntent={}",
+        order.getId(), intent.getId(), intent.getIntentNo(), userId, paymentMethod, intent.getProviderKey(), newIntent);
 
-    PaymentIntentVO savedResponse = PaymentIntentVO.from(intent);
-    savedResponse.setNextAction(response.getNextAction());
-    savedResponse.setRedirectUrl(response.getRedirectUrl());
-    savedResponse.setDisplayMessage(response.getDisplayMessage());
-    savedResponse.setSandbox(response.getSandbox());
-    return Result.success(savedResponse);
+    return Result.success(enrichIntentResponse(intent, response));
   }
 
   @GetMapping("/intent/{id}")
@@ -100,6 +113,7 @@ public class PaymentController {
     return Result.success(PaymentIntentVO.from(intent));
   }
 
+  @Transactional(rollbackFor = Exception.class)
   @PostMapping("/mock/complete")
   public Result<PaymentIntentVO> mockComplete(@RequestBody PaymentMockCompleteDTO dto) {
     Long userId = StpUtil.getLoginIdAsLong();
@@ -115,6 +129,9 @@ public class PaymentController {
     if (order == null || !order.getUserId().equals(userId)) {
       return Result.error(404, "Order not found");
     }
+    if (orderService.expireOrderIfNeeded(order) || isExpiredState(order)) {
+      return Result.error(400, "Order payment window expired");
+    }
 
     if ("success".equalsIgnoreCase(dto.getMockResult())) {
       markPaymentSucceeded(intent, order, "MOCK_TXN_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -127,17 +144,20 @@ public class PaymentController {
     return Result.success(PaymentIntentVO.from(intent));
   }
 
+  @Transactional(rollbackFor = Exception.class)
   @PostMapping("/alipay/return/confirm")
   public Result<PaymentIntentVO> confirmAlipayReturn(@RequestBody Map<String, String> params) {
     return Result.success(processAlipayCallback(params, true));
   }
 
+  @Transactional(rollbackFor = Exception.class)
   @PostMapping("/alipay/notify")
   public String handleAlipayNotify(@RequestParam Map<String, String> params) {
     try {
       processAlipayCallback(params, false);
       return "success";
     } catch (Exception ex) {
+      log.warn("AUDIT alipay_notify_failed outTradeNo={} reason={}", params.get("out_trade_no"), ex.getMessage());
       return "fail";
     }
   }
@@ -145,7 +165,10 @@ public class PaymentController {
   private PaymentIntentVO prepareMockIntent(PayPaymentIntent intent, boolean fallbackFromAlipay) {
     intent.setProviderKey("mock");
     intent.setStatus("CREATED");
-    intent.setClientSecret("mock_secret_" + UUID.randomUUID().toString().replace("-", ""));
+    intent.setPaidTime(null);
+    if (!hasText(intent.getClientSecret())) {
+      intent.setClientSecret("mock_secret_" + UUID.randomUUID().toString().replace("-", ""));
+    }
     intent.setMockResult("pending");
 
     PaymentIntentVO response = PaymentIntentVO.from(intent);
@@ -170,6 +193,7 @@ public class PaymentController {
     intent.setStatus("CREATED");
     intent.setClientSecret(null);
     intent.setMockResult(null);
+    intent.setPaidTime(null);
 
     PaymentIntentVO response = PaymentIntentVO.from(intent);
     response.setNextAction("REDIRECT");
@@ -210,6 +234,8 @@ public class PaymentController {
     if (!hasText(outTradeNo)) {
       throw new IllegalArgumentException("Missing out_trade_no");
     }
+    log.info("AUDIT alipay_callback_received outTradeNo={} preferAuthoritativeQuery={} tradeStatus={}",
+        outTradeNo, preferAuthoritativeQuery, normalizedParams.get("trade_status"));
 
     PayPaymentIntent intent = paymentIntentService.getOne(new QueryWrapper<PayPaymentIntent>()
         .eq("intent_no", outTradeNo)
@@ -250,10 +276,25 @@ public class PaymentController {
       throw new IllegalArgumentException("Paid amount mismatch");
     }
 
-    if ("TRADE_SUCCESS".equalsIgnoreCase(tradeStatus) || "TRADE_FINISHED".equalsIgnoreCase(tradeStatus)) {
+    if (!isSuccessfulTrade(tradeStatus) && orderService.expireOrderIfNeeded(order)) {
+      PayPaymentIntent refreshedIntent = paymentIntentService.getById(intent.getId());
+      PaymentIntentVO expiredResponse = PaymentIntentVO.from(refreshedIntent == null ? intent : refreshedIntent);
+      expiredResponse.setDisplayMessage("Order payment window expired.");
+      expiredResponse.setSandbox(alipay.isSandbox());
+      log.info("AUDIT alipay_callback_order_expired orderId={} intentNo={}", order.getId(), intent.getIntentNo());
+      return expiredResponse;
+    }
+
+    if (isExpiredState(order)) {
+      throw new IllegalStateException("Order payment window expired");
+    }
+
+    if (isSuccessfulTrade(tradeStatus)) {
       markPaymentSucceeded(intent, order, tradeNo);
     } else if ("TRADE_CLOSED".equalsIgnoreCase(tradeStatus)) {
       markPaymentFailed(intent, order, "closed");
+    } else {
+      markPaymentProcessing(intent, order);
     }
 
     paymentIntentService.updateById(intent);
@@ -263,6 +304,16 @@ public class PaymentController {
     response.setDisplayMessage(resolveAlipayMessage(tradeStatus));
     response.setSandbox(alipay.isSandbox());
     return response;
+  }
+
+  private PayPaymentIntent findReusableIntent(Long orderId, Long userId, String paymentMethod) {
+    return paymentIntentService.getOne(new QueryWrapper<PayPaymentIntent>()
+        .eq("order_id", orderId)
+        .eq("user_id", userId)
+        .eq("method_code", paymentMethod)
+        .in("status", List.of("CREATED"))
+        .orderByDesc("id")
+        .last("LIMIT 1"), false);
   }
 
   private Map<String, String> normalizeAlipayCallbackParams(Map<String, String> callbackParams) {
@@ -278,35 +329,123 @@ public class PaymentController {
     return normalized;
   }
 
+  private void syncOrderForPendingPayment(OmsOrder order, PayPaymentIntent intent, String paymentMethod) {
+    order.setPaymentMethod(paymentMethod);
+    order.setPaymentIntentId(intent.getId());
+    order.setStatus("PENDING_PAYMENT");
+    order.setPaymentStatus("PROCESSING");
+    order.setUpdateTime(LocalDateTime.now());
+  }
+
   private void markPaymentSucceeded(PayPaymentIntent intent, OmsOrder order, String transactionNo) {
+    if ("PAID".equalsIgnoreCase(order.getPaymentStatus()) && "SUCCEEDED".equalsIgnoreCase(intent.getStatus())) {
+      return;
+    }
+
     LocalDateTime now = LocalDateTime.now();
     intent.setStatus("SUCCEEDED");
     intent.setMockResult("success");
-    intent.setPaidTime(now);
+    intent.setPaidTime(intent.getPaidTime() == null ? now : intent.getPaidTime());
     intent.setUpdateTime(now);
 
     order.setStatus("PAID");
     order.setPaymentStatus("PAID");
+    order.setPaymentMethod(hasText(order.getPaymentMethod()) ? order.getPaymentMethod() : intent.getMethodCode());
     order.setPayTxnNo(hasText(transactionNo)
         ? transactionNo
-        : "PAY_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-    order.setPayTime(now);
+        : (hasText(order.getPayTxnNo())
+            ? order.getPayTxnNo()
+            : "PAY_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase()));
+    order.setPayTime(order.getPayTime() == null ? now : order.getPayTime());
+    order.setPaymentExpireTime(null);
     order.setUpdateTime(now);
+    log.info("AUDIT payment_succeeded orderId={} intentNo={} txnNo={} method={}",
+        order.getId(), intent.getIntentNo(), order.getPayTxnNo(), order.getPaymentMethod());
   }
 
   private void markPaymentFailed(PayPaymentIntent intent, OmsOrder order, String result) {
+    if ("PAID".equalsIgnoreCase(order.getPaymentStatus()) || "SUCCEEDED".equalsIgnoreCase(intent.getStatus())) {
+      return;
+    }
+
     LocalDateTime now = LocalDateTime.now();
     intent.setStatus("FAILED");
     intent.setMockResult(result);
+    intent.setPaidTime(null);
     intent.setUpdateTime(now);
 
     order.setStatus("PENDING_PAYMENT");
     order.setPaymentStatus("FAILED");
+    order.setPayTxnNo(null);
+    order.setPayTime(null);
     order.setUpdateTime(now);
+    log.info("AUDIT payment_failed orderId={} intentNo={} method={} result={}",
+        order.getId(), intent.getIntentNo(), intent.getMethodCode(), result);
+  }
+
+  private void markPaymentProcessing(PayPaymentIntent intent, OmsOrder order) {
+    if ("PAID".equalsIgnoreCase(order.getPaymentStatus()) || "SUCCEEDED".equalsIgnoreCase(intent.getStatus())) {
+      return;
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+    intent.setStatus("CREATED");
+    if (!"success".equalsIgnoreCase(intent.getMockResult())) {
+      intent.setMockResult("pending");
+    }
+    intent.setUpdateTime(now);
+
+    order.setStatus("PENDING_PAYMENT");
+    order.setPaymentStatus("PROCESSING");
+    order.setUpdateTime(now);
+    log.info("AUDIT payment_pending orderId={} intentNo={} method={}",
+        order.getId(), intent.getIntentNo(), intent.getMethodCode());
   }
 
   private boolean isAlipayMethod(String paymentMethod) {
     return "alipay".equalsIgnoreCase(paymentMethod) || "alipay_sandbox".equalsIgnoreCase(paymentMethod);
+  }
+
+  private boolean isOrderPayable(OmsOrder order) {
+    if (order == null) {
+      return false;
+    }
+    if ("PAID".equalsIgnoreCase(order.getStatus()) || "PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+      return false;
+    }
+    if ("CANCELLED".equalsIgnoreCase(order.getStatus()) || "CANCELLED".equalsIgnoreCase(order.getPaymentStatus())) {
+      return false;
+    }
+    return "PENDING_PAYMENT".equalsIgnoreCase(order.getStatus())
+        || "PAYMENT_PROCESSING".equalsIgnoreCase(order.getStatus());
+  }
+
+  private boolean isExpiredState(OmsOrder order) {
+    return "EXPIRED".equalsIgnoreCase(order.getStatus()) || "EXPIRED".equalsIgnoreCase(order.getPaymentStatus());
+  }
+
+  private boolean isSuccessfulTrade(String tradeStatus) {
+    return "TRADE_SUCCESS".equalsIgnoreCase(tradeStatus) || "TRADE_FINISHED".equalsIgnoreCase(tradeStatus);
+  }
+
+  private String normalizePaymentMethod(String paymentMethod) {
+    String normalized = paymentMethod == null ? "" : paymentMethod.trim().toLowerCase();
+    if ("alipay_sandbox".equals(normalized)) {
+      normalized = "alipay";
+    }
+    if (!SUPPORTED_PAYMENT_METHODS.contains(normalized)) {
+      throw new IllegalArgumentException("Unsupported payment method");
+    }
+    return normalized;
+  }
+
+  private PaymentIntentVO enrichIntentResponse(PayPaymentIntent intent, PaymentIntentVO response) {
+    PaymentIntentVO savedResponse = PaymentIntentVO.from(intent);
+    savedResponse.setNextAction(response.getNextAction());
+    savedResponse.setRedirectUrl(response.getRedirectUrl());
+    savedResponse.setDisplayMessage(response.getDisplayMessage());
+    savedResponse.setSandbox(response.getSandbox());
+    return savedResponse;
   }
 
   private String buildAlipaySubject(OmsOrder order, PaymentProperties.AlipayProperties alipay) {

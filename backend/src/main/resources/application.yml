@@ -38,6 +38,8 @@ sa-token:
 
 payment:
   default-provider: ${PAYMENT_DEFAULT_PROVIDER:mock}
+  order-timeout-minutes: ${PAYMENT_ORDER_TIMEOUT_MINUTES:15}
+  expiration-check-batch-size: ${PAYMENT_EXPIRATION_CHECK_BATCH_SIZE:200}
   alipay:
     enabled: ${PAYMENT_ALIPAY_ENABLED:false}
     sandbox: ${PAYMENT_ALIPAY_SANDBOX:true}

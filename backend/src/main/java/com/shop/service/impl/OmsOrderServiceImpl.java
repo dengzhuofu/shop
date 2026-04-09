@@ -9,11 +9,13 @@ import com.shop.common.JsonLocaleUtils;
 import com.shop.common.PaymentMethodCatalog;
 import com.shop.common.PreviewTokenUtils;
 import com.shop.common.ProductAddonUtils;
+import com.shop.config.PaymentProperties;
 import com.shop.dto.OrderCreateDTO;
 import com.shop.dto.OrderPreviewDTO;
 import com.shop.entity.OmsCartItem;
 import com.shop.entity.OmsOrder;
 import com.shop.entity.OmsOrderItem;
+import com.shop.entity.PayPaymentIntent;
 import com.shop.entity.PmsProduct;
 import com.shop.entity.PmsSku;
 import com.shop.entity.SmsCoupon;
@@ -23,8 +25,10 @@ import com.shop.mapper.OmsOrderMapper;
 import com.shop.service.OmsCartItemService;
 import com.shop.service.OmsOrderItemService;
 import com.shop.service.OmsOrderService;
+import com.shop.service.PayPaymentIntentService;
 import com.shop.service.PmsProductService;
 import com.shop.service.PmsSkuService;
+import com.shop.service.AlipayGatewayService;
 import com.shop.service.SmsCouponService;
 import com.shop.service.SmsCouponUserService;
 import com.shop.service.UmsUserAddressService;
@@ -37,6 +41,7 @@ import com.shop.vo.ProductVO;
 import com.shop.vo.SkuVO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +58,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> implements OmsOrderService {
 
@@ -69,6 +75,9 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
   private final UmsUserAddressService userAddressService;
   private final SmsCouponService couponService;
   private final SmsCouponUserService couponUserService;
+  private final PayPaymentIntentService paymentIntentService;
+  private final PaymentProperties paymentProperties;
+  private final AlipayGatewayService alipayGatewayService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
@@ -147,9 +156,12 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     order.setRemark(dto.getRemark());
     order.setCreateTime(LocalDateTime.now());
     order.setUpdateTime(LocalDateTime.now());
+    order.setPaymentExpireTime(LocalDateTime.now().plusMinutes(paymentProperties.getOrderTimeoutMinutes()));
 
     applyAddress(order, dto.getAddressId(), dto.getAddressSnapshot(), userId);
     this.save(order);
+    log.info("AUDIT order_created orderId={} orderSn={} userId={} totalAmount={} expiresAt={}",
+        order.getId(), order.getOrderSn(), userId, order.getTotalAmount(), order.getPaymentExpireTime());
 
     for (ResolvedCheckoutItem item : resolvedItems) {
       PmsSku sku = item.getSku();
@@ -158,6 +170,8 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
       }
       sku.setStock(sku.getStock() - item.getQuantity());
       skuService.updateById(sku);
+      log.info("AUDIT inventory_locked orderId={} skuId={} quantity={} remainingStock={}",
+          order.getId(), sku.getId(), item.getQuantity(), sku.getStock());
 
       OmsOrderItem orderItem = new OmsOrderItem();
       orderItem.setOrderId(order.getId());
@@ -194,6 +208,8 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     wrapper.orderByDesc("create_time");
 
     Page<OmsOrder> orderPage = this.page(page, wrapper);
+    orderPage.getRecords().forEach(this::expireOrderIfNeeded);
+
     Page<OrderVO> voPage = new Page<>(pageNum, pageSize);
     voPage.setTotal(orderPage.getTotal());
     voPage.setCurrent(orderPage.getCurrent());
@@ -209,6 +225,7 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     if (order == null || !order.getUserId().equals(userId)) {
       return null;
     }
+    expireOrderIfNeeded(order);
     return toOrderVO(order);
   }
 
@@ -219,23 +236,90 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     if (order == null || !order.getUserId().equals(userId)) {
       return false;
     }
-    if (!"PENDING_PAYMENT".equals(order.getStatus())) {
+    if (expireOrderIfNeeded(order)) {
+      return false;
+    }
+    if (!"PENDING_PAYMENT".equals(order.getStatus()) && !"PAYMENT_PROCESSING".equals(order.getStatus())) {
       return false;
     }
     order.setStatus("CANCELLED");
     order.setPaymentStatus("CANCELLED");
+    order.setPayTxnNo(null);
+    order.setPayTime(null);
+    order.setPaymentExpireTime(null);
     order.setUpdateTime(LocalDateTime.now());
 
-    List<OmsOrderItem> items = orderItemService.list(new QueryWrapper<OmsOrderItem>().eq("order_id", order.getId()));
-    for (OmsOrderItem item : items) {
-      PmsSku sku = skuService.getById(item.getSkuId());
-      if (sku != null) {
-        sku.setStock(sku.getStock() + item.getQuantity());
-        skuService.updateById(sku);
-      }
+    releaseInventory(order.getId());
+    expireActivePaymentIntents(order.getId(), "cancelled");
+    boolean updated = this.updateById(order);
+    if (updated) {
+      log.info("AUDIT order_cancelled orderId={} userId={}", order.getId(), userId);
+    }
+    return updated;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public boolean expireOrderIfNeeded(OmsOrder order) {
+    if (order == null) {
+      return false;
     }
 
-    return this.updateById(order);
+    OmsOrder currentOrder = this.getById(order.getId());
+    if (currentOrder == null || !isAwaitingPayment(currentOrder) || !isOrderExpired(currentOrder)) {
+      if (currentOrder != null) {
+        BeanUtils.copyProperties(currentOrder, order);
+      }
+      return false;
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+    boolean updated = this.lambdaUpdate()
+        .eq(OmsOrder::getId, currentOrder.getId())
+        .in(OmsOrder::getStatus, List.of("PENDING_PAYMENT", "PAYMENT_PROCESSING"))
+        .set(OmsOrder::getStatus, "EXPIRED")
+        .set(OmsOrder::getPaymentStatus, "EXPIRED")
+        .set(OmsOrder::getPayTxnNo, null)
+        .set(OmsOrder::getPayTime, null)
+        .set(OmsOrder::getPaymentExpireTime, now)
+        .set(OmsOrder::getUpdateTime, now)
+        .update();
+
+    if (!updated) {
+      OmsOrder latestOrder = this.getById(order.getId());
+      if (latestOrder != null) {
+        BeanUtils.copyProperties(latestOrder, order);
+      }
+      return false;
+    }
+
+    releaseInventory(order.getId());
+    expireActivePaymentIntents(order.getId(), "expired");
+
+    applyExpiredOrderState(order, now);
+    log.info("AUDIT order_expired orderId={} userId={} expiredAt={}",
+        order.getId(), currentOrder.getUserId(), now);
+    return true;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public int closeExpiredOrders(int batchSize) {
+    int effectiveBatchSize = batchSize > 0 ? batchSize : paymentProperties.getExpirationCheckBatchSize();
+    List<OmsOrder> expiredOrders = this.list(new QueryWrapper<OmsOrder>()
+        .in("status", List.of("PENDING_PAYMENT", "PAYMENT_PROCESSING"))
+        .isNotNull("payment_expire_time")
+        .lt("payment_expire_time", LocalDateTime.now())
+        .orderByAsc("payment_expire_time")
+        .last("LIMIT " + effectiveBatchSize));
+
+    int closedCount = 0;
+    for (OmsOrder order : expiredOrders) {
+      if (expireOrderIfNeeded(order)) {
+        closedCount++;
+      }
+    }
+    return closedCount;
   }
 
   private List<ResolvedCheckoutItem> resolveCheckoutItems(List<Long> cartItemIds, Long userId, String language) {
@@ -462,6 +546,68 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
 
   private boolean isBlank(String value) {
     return value == null || value.isBlank();
+  }
+
+  private boolean isAwaitingPayment(OmsOrder order) {
+    return "PENDING_PAYMENT".equals(order.getStatus()) || "PAYMENT_PROCESSING".equals(order.getStatus());
+  }
+
+  private boolean isOrderExpired(OmsOrder order) {
+    return order.getPaymentExpireTime() != null && !order.getPaymentExpireTime().isAfter(LocalDateTime.now());
+  }
+
+  private void applyExpiredOrderState(OmsOrder order, LocalDateTime expiredAt) {
+    order.setStatus("EXPIRED");
+    order.setPaymentStatus("EXPIRED");
+    order.setPayTxnNo(null);
+    order.setPayTime(null);
+    order.setUpdateTime(expiredAt);
+    order.setPaymentExpireTime(expiredAt);
+  }
+
+  private void releaseInventory(Long orderId) {
+    List<OmsOrderItem> items = orderItemService.list(new QueryWrapper<OmsOrderItem>().eq("order_id", orderId));
+    for (OmsOrderItem item : items) {
+      PmsSku sku = skuService.getById(item.getSkuId());
+      if (sku != null) {
+        sku.setStock(sku.getStock() + item.getQuantity());
+        skuService.updateById(sku);
+        log.info("AUDIT inventory_released orderId={} skuId={} quantity={} restoredStock={}",
+            orderId, sku.getId(), item.getQuantity(), sku.getStock());
+      }
+    }
+  }
+
+  private void expireActivePaymentIntents(Long orderId, String result) {
+    List<PayPaymentIntent> intents = paymentIntentService.list(new QueryWrapper<PayPaymentIntent>()
+        .eq("order_id", orderId)
+        .in("status", List.of("CREATED")));
+    LocalDateTime now = LocalDateTime.now();
+    for (PayPaymentIntent intent : intents) {
+      closeProviderTradeIfNeeded(intent);
+      intent.setStatus("FAILED");
+      intent.setMockResult(result);
+      intent.setPaidTime(null);
+      intent.setUpdateTime(now);
+      paymentIntentService.updateById(intent);
+      log.info("AUDIT payment_intent_closed orderId={} intentId={} intentNo={} result={}",
+          orderId, intent.getId(), intent.getIntentNo(), result);
+    }
+  }
+
+  private void closeProviderTradeIfNeeded(PayPaymentIntent intent) {
+    if (intent.getProviderKey() == null || !intent.getProviderKey().startsWith("alipay")) {
+      return;
+    }
+    if (!paymentProperties.getAlipay().isConfigured()) {
+      return;
+    }
+
+    try {
+      alipayGatewayService.closeTrade(paymentProperties.getAlipay(), intent.getIntentNo(), null);
+    } catch (Exception ex) {
+      log.warn("Failed to close Alipay trade for expired order intent {}", intent.getIntentNo(), ex);
+    }
   }
 
   @Data

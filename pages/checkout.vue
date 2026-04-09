@@ -33,13 +33,13 @@
                   <p>{{ selectedSavedAddress.phone }}</p>
                 </div>
                 <button type="button" class="ghost-btn" @click="addressListOpen = true">
-                  Change
+                  {{ checkoutCopy.change }}
                 </button>
               </div>
-              
+
               <div v-else class="empty-address-card">
                 <button type="button" class="btn-select-address" @click="addressListOpen = true">
-                  Select Saved Address
+                  {{ checkoutCopy.selectAddress }}
                 </button>
               </div>
             </div>
@@ -90,6 +90,10 @@
                 <label>{{ t('phone') }}</label>
                 <input v-model="addressForm.phone" type="tel" autocomplete="tel" />
               </div>
+
+              <button type="button" class="secondary-btn" @click="saveAddressFromForm">
+                {{ checkoutCopy.saveAddress }}
+              </button>
             </form>
 
             <p class="address-help" :class="{ ready: canPreviewAddress }">
@@ -124,7 +128,6 @@
                   <span class="option-name">Alipay</span>
                   <span class="brand-text alipay">Sandbox</span>
                 </button>
-
                 <div v-if="selectedPaymentMethod === 'alipay'" class="option-body">
                   <p class="payment-hint">{{ paymentUiCopy.alipayHint }}</p>
                 </div>
@@ -142,7 +145,6 @@
                     <span class="card-icon amex">AMEX</span>
                   </div>
                 </button>
-
                 <div v-if="selectedPaymentMethod === 'credit_card'" class="option-body">
                   <div class="card-form">
                     <input type="text" :placeholder="checkoutCopy.cardNumber" />
@@ -155,45 +157,26 @@
                   <p class="payment-hint">{{ paymentUiCopy.mockHint }}</p>
                 </div>
               </div>
-
-              <div class="payment-option disabled">
-                <div class="option-header">
-                  <div class="radio-wrap"></div>
-                  <span class="option-name">PayPal</span>
-                  <span class="brand-text paypal">PayPal</span>
-                </div>
-              </div>
-
-              <div class="payment-option disabled">
-                <div class="option-header">
-                  <div class="radio-wrap"></div>
-                  <span class="option-name">Affirm - Pay Over Time</span>
-                  <span class="brand-text affirm">affirm</span>
-                </div>
-              </div>
-
-              <div class="payment-option disabled">
-                <div class="option-header">
-                  <div class="radio-wrap"></div>
-                  <span class="option-name">Klarna</span>
-                  <span class="brand-text klarna">Klarna</span>
-                </div>
-              </div>
             </div>
-            
+
             <div class="payment-note-container">
-              <div class="save-info-checkbox">
-                <input type="checkbox" id="save-info" />
-                <label for="save-info">Save my information for a faster checkout</label>
-              </div>
               <p class="payment-note">{{ checkoutCopy.secure }}</p>
+              <p v-if="currentOrderId" class="payment-note strong">
+                {{ paymentUiCopy.orderCreated }} #{{ currentOrderId }}
+              </p>
+              <p v-if="currentOrderExpireTime" class="payment-note">
+                {{ paymentUiCopy.payBefore }} {{ dateTime(currentOrderExpireTime) }}
+              </p>
+              <p v-if="showCountdown" class="payment-note countdown" :class="{ expired: currentOrderExpired }">
+                {{ paymentUiCopy.remaining }} {{ currentOrderCountdown }}
+              </p>
             </div>
 
             <div class="action-stack">
               <button
                 type="button"
                 class="pay-now-btn"
-                :disabled="isPayDisabled || isPaying"
+                :disabled="isPayDisabled"
                 @click="startPayment"
               >
                 {{ isPaying ? checkoutCopy.processing : checkoutCopy.payNow }}
@@ -210,13 +193,22 @@
             </div>
 
             <p v-if="message" class="status-message">{{ message }}</p>
+            <p v-if="currentOrderExpired" class="status-message expired-message">
+              {{ paymentUiCopy.expired }}
+            </p>
+
+            <div v-if="currentOrderId" class="resume-box">
+              <NuxtLink class="resume-link" to="/account/orders">
+                {{ paymentUiCopy.goToOrders }}
+              </NuxtLink>
+            </div>
           </section>
         </div>
       </main>
 
       <aside class="checkout-sidebar">
         <div class="sidebar-inner">
-          <div class="cart-items">
+          <div v-if="cart.items.value.length" class="cart-items">
             <div v-for="item in cart.items.value" :key="item.cartItemId" class="cart-item">
               <div class="item-img-wrapper">
                 <img :src="item.productPic" :alt="item.title" class="item-img" />
@@ -226,33 +218,33 @@
                 <h4 class="item-title">{{ item.title }}</h4>
                 <p class="item-variant">{{ attributeText(item.attributes) }}</p>
                 <p v-if="item.addons?.length" class="item-variant">
-                  + {{ item.addons.map((addon: any) => addon.name).join(', ') }}
+                  + {{ item.addons.map((addon: any) => addon.name || addon.code).join(', ') }}
                 </p>
               </div>
               <div class="item-price">{{ money(item.lineAmount) }}</div>
             </div>
           </div>
-
-          <div class="discount-section">
-            <div class="discount-input">
-              <input type="text" placeholder="Discount code" />
-              <button type="button" class="btn-apply">Apply</button>
-            </div>
+          <div v-else class="empty-state">
+            <p>{{ checkoutCopy.emptyCart }}</p>
           </div>
 
           <div class="summary-lines">
             <div class="line">
-              <span>Subtotal</span>
+              <span>{{ checkoutCopy.subtotal }}</span>
               <span>{{ money(preview.subtotal || cart.subtotal.value) }}</span>
             </div>
             <div class="line">
               <span>{{ shippingMethod }}</span>
-              <span>Free</span>
+              <span>{{ money(preview.shippingAmount || 0) }}</span>
+            </div>
+            <div class="line" v-if="preview.taxAmount != null">
+              <span>{{ checkoutCopy.tax }}</span>
+              <span>{{ money(preview.taxAmount) }}</span>
             </div>
           </div>
 
           <div class="total-line">
-            <span>Total</span>
+            <span>{{ checkoutCopy.total }}</span>
             <div class="total-price-group">
               <span class="currency-code">USD</span>
               <strong>{{ money(preview.totalAmount || cart.subtotal.value) }}</strong>
@@ -262,16 +254,13 @@
       </aside>
     </div>
 
-    <!-- Address Selection Modal -->
     <div v-if="addressListOpen" class="modal-overlay" @click.self="addressListOpen = false">
       <div class="modal-content address-list-modal">
         <div class="modal-header">
-          <h2>Select Address</h2>
-          <button class="close-btn" @click="addressListOpen = false">
-            <span>✕</span>
-          </button>
+          <h2>{{ checkoutCopy.selectAddress }}</h2>
+          <button class="close-btn" @click="addressListOpen = false">×</button>
         </div>
-        
+
         <div class="modal-body">
           <div class="saved-addresses-modal">
             <label
@@ -289,16 +278,19 @@
                 <small>{{ item.addressLine1 }}, {{ item.city }}, {{ item.state }} {{ item.zipCode }}</small>
               </span>
             </label>
-            
-            <button type="button" class="btn-add-new-address" @click="openAddAddressModal">
-              + Add new address
+
+            <button type="button" class="btn-select-address" @click="openAddAddressModal">
+              + {{ checkoutCopy.addAddress }}
+            </button>
+
+            <button type="button" class="secondary-btn" @click="selectedAddressId = 'manual'; addressListOpen = false">
+              {{ checkoutCopy.manualAddress }}
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Add New Address Modal -->
     <AddAddressModal
       :is-open="addAddressModalOpen"
       @close="addAddressModalOpen = false"
@@ -308,7 +300,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import {
   addressesMatch,
   createEmptyAddressDraft,
@@ -324,18 +316,20 @@ definePageMeta({
 const shippingMethod = 'UPS Ground/FedEx Home Delivery(2-5 Business Days)'
 
 const { lang, setLang, t } = useShopLocale()
-const { money, attributeText } = useShopFormat()
+const { money, attributeText, dateTime } = useShopFormat()
+const { start: startDeadlineTicker, stop: stopDeadlineTicker, countdownText, isExpired } = usePaymentDeadline()
 const cart = useShopCart()
 const session = useShopSession()
 
 const addresses = ref<any[]>([])
-const availableCoupons = ref<any[]>([])
-const claimableCoupons = ref<any[]>([])
 const selectedAddressId = ref<string>('manual')
-const selectedCouponUserId = ref<number | null>(null)
 const selectedPaymentMethod = ref<'alipay' | 'credit_card'>('alipay')
 const preview = ref<Record<string, any>>({})
 const paymentIntent = ref<Record<string, any> | null>(null)
+const currentOrderId = ref<number | null>(null)
+const currentOrderExpireTime = ref<string | null>(null)
+const currentOrderStatus = ref<string | null>(null)
+const currentOrderPaymentStatus = ref<string | null>(null)
 const message = ref('')
 const bootstrapped = ref(false)
 const previewing = ref(false)
@@ -344,6 +338,243 @@ const completingPayment = ref(false)
 
 const addressListOpen = ref(false)
 const addAddressModalOpen = ref(false)
+let currentOrderPollTimer: ReturnType<typeof setInterval> | null = null
+
+const addressForm = reactive(createEmptyAddressDraft())
+
+const checkoutCopy = computed(() =>
+  lang.value === 'zh'
+    ? {
+        contact: '\u8054\u7cfb\u65b9\u5f0f',
+        shippingAddress: '\u6536\u8d27\u5730\u5740',
+        shippingMethod: '\u914d\u9001\u65b9\u5f0f',
+        paymentTitle: '\u652f\u4ed8',
+        secure: '\u652f\u4ed8\u53d1\u8d77\u540e\u4f1a\u5148\u521b\u5efa\u8ba2\u5355\uff0c\u82e5\u652f\u4ed8\u4e2d\u65ad\u53ef\u5728\u8ba2\u5355\u9875\u7ee7\u7eed\u652f\u4ed8\uff0c\u65e0\u9700\u91cd\u590d\u4e0b\u5355\u3002',
+        cardNumber: '\u5361\u53f7',
+        expiry: '\u6709\u6548\u671f',
+        cvc: '\u5b89\u5168\u7801',
+        nameOnCard: '\u6301\u5361\u4eba\u59d3\u540d',
+        payNow: '\u7acb\u5373\u652f\u4ed8',
+        processing: '\u6b63\u5728\u53d1\u8d77\u652f\u4ed8...',
+        completing: '\u6b63\u5728\u5b8c\u6210\u652f\u4ed8...',
+        defaultAddress: '\u9ed8\u8ba4',
+        manualAddress: '\u624b\u52a8\u586b\u5199\u5730\u5740',
+        addressReady: '\u5f53\u524d\u5730\u5740\u4fe1\u606f\u5b8c\u6574\uff0c\u53ef\u4ee5\u7ee7\u7eed\u9884\u89c8\u5e76\u4e0b\u5355\u3002',
+        addressIncomplete: '\u8bf7\u586b\u5199\u56fd\u5bb6\u3001\u59d3\u540d\u3001\u5730\u5740 1\u3001\u57ce\u5e02\u3001\u5dde/\u7701\u548c\u90ae\u7f16\u540e\u7ee7\u7eed\u3002',
+        addressSaved: '\u5730\u5740\u5df2\u4fdd\u5b58\u3002',
+        addressAlreadySaved: '\u8be5\u5730\u5740\u5df2\u5b58\u5728\uff0c\u5df2\u81ea\u52a8\u4e3a\u4f60\u9009\u4e2d\u3002',
+        addressRequired: '\u8bf7\u5148\u5b8c\u5584\u6536\u8d27\u5730\u5740\u3002',
+        saveAddress: '\u4fdd\u5b58\u5f53\u524d\u5730\u5740',
+        change: '\u66f4\u6362',
+        selectAddress: '\u9009\u62e9\u5df2\u4fdd\u5b58\u5730\u5740',
+        addAddress: '\u65b0\u589e\u5730\u5740',
+        emptyCart: '\u8d2d\u7269\u8f66\u4e3a\u7a7a\uff0c\u8bf7\u5148\u6dfb\u52a0\u5546\u54c1\u3002',
+        subtotal: '\u5c0f\u8ba1',
+        tax: '\u7a0e\u8d39',
+        total: '\u5408\u8ba1',
+      }
+    : {
+        contact: 'Contact',
+        shippingAddress: 'Shipping address',
+        shippingMethod: 'Shipping method',
+        paymentTitle: 'Payment',
+        secure: 'An order is created before payment. If payment is interrupted, you can continue from your orders page.',
+        cardNumber: 'Card number',
+        expiry: 'Expiration date',
+        cvc: 'Security code',
+        nameOnCard: 'Name on card',
+        payNow: 'Pay now',
+        processing: 'Starting payment...',
+        completing: 'Completing payment...',
+        defaultAddress: 'Default',
+        manualAddress: 'Use manual address',
+        addressReady: 'This address is ready for preview and checkout.',
+        addressIncomplete: 'Fill in country, name, address line 1, city, state, and ZIP code to continue.',
+        addressSaved: 'Address saved.',
+        addressAlreadySaved: 'This address is already saved.',
+        addressRequired: 'Complete the shipping address before continuing.',
+        saveAddress: 'Save this address',
+        change: 'Change',
+        selectAddress: 'Select saved address',
+        addAddress: 'Add address',
+        emptyCart: 'Your cart is empty.',
+        subtotal: 'Subtotal',
+        tax: 'Tax',
+        total: 'Total',
+      },
+)
+
+const paymentUiCopy = computed(() =>
+  lang.value === 'zh'
+    ? {
+        alipayHint: '\u4f18\u5148\u8d70\u652f\u4ed8\u5b9d\u6c99\u76d2\u652f\u4ed8\uff0c\u652f\u4ed8\u5b8c\u6210\u540e\u4f1a\u56de\u8df3\u7ad9\u5185\u786e\u8ba4\u7ed3\u679c\u3002',
+        mockHint: '\u5982\u679c\u6c99\u76d2\u914d\u7f6e\u6682\u4e0d\u53ef\u7528\uff0c\u4f1a\u81ea\u52a8\u56de\u9000\u5230 mock \u652f\u4ed8\u6d41\u7a0b\u3002',
+        completeMockPayment: '\u5b8c\u6210 mock \u652f\u4ed8',
+        redirectingToAlipay: '\u6b63\u5728\u8df3\u8f6c\u5230\u652f\u4ed8\u5b9d...',
+        orderCreated: '\u5f53\u524d\u8ba2\u5355\u5df2\u521b\u5efa\uff0c\u53ef\u968f\u65f6\u53bb\u8ba2\u5355\u9875\u7ee7\u7eed\u652f\u4ed8',
+        payBefore: '\u8bf7\u5728',
+        remaining: '\u5269\u4f59\u652f\u4ed8\u65f6\u95f4',
+        expired: '\u8be5\u8ba2\u5355\u5df2\u8d85\u65f6\uff0c\u5e93\u5b58\u5df2\u91ca\u653e\u3002\u5982\u9700\u7ee7\u7eed\u8d2d\u4e70\uff0c\u8bf7\u91cd\u65b0\u4e0b\u5355\u3002',
+        orderCreatedContinueInOrders: '\u8ba2\u5355\u5df2\u521b\u5efa\uff0c\u4f46\u652f\u4ed8\u5c1a\u672a\u6210\u529f\u53d1\u8d77\u3002\u8bf7\u524d\u5f80\u8ba2\u5355\u9875\u7ee7\u7eed\u652f\u4ed8\u3002',
+        goToOrders: '\u524d\u5f80\u8ba2\u5355\u9875\u7ee7\u7eed\u652f\u4ed8',
+      }
+    : {
+        alipayHint: 'Preferred path: redirect to Alipay Sandbox and confirm the result on return.',
+        mockHint: 'If sandbox credentials are unavailable, checkout falls back to the mock flow.',
+        completeMockPayment: 'Complete mock payment',
+        redirectingToAlipay: 'Redirecting to Alipay...',
+        orderCreated: 'This order has been created and can be resumed from your orders page',
+        payBefore: 'Please complete payment before',
+        remaining: 'Time remaining',
+        expired: 'This order has expired and inventory has been released. Create a new order to continue.',
+        orderCreatedContinueInOrders: 'Your order was created, but payment did not start successfully. Continue payment from your orders page.',
+        goToOrders: 'Go to orders to continue payment',
+      },
+)
+
+const cartSignature = computed(() =>
+  cart.items.value.map((item) => `${item.cartItemId}:${item.quantity}:${JSON.stringify(item.addons || [])}`).join(';'),
+)
+const selectedSavedAddress = computed(
+  () => addresses.value.find((item) => String(item.id) === selectedAddressId.value) || null,
+)
+const canPreviewAddress = computed(
+  () => Boolean(selectedSavedAddress.value) || isAddressDraftComplete(addressForm),
+)
+const currentOrderAwaitingPayment = computed(
+  () => currentOrderStatus.value === 'PENDING_PAYMENT'
+    && !['PAID', 'CANCELLED', 'EXPIRED'].includes(currentOrderPaymentStatus.value || ''),
+)
+const currentOrderExpired = computed(
+  () => currentOrderStatus.value === 'EXPIRED'
+    || currentOrderPaymentStatus.value === 'EXPIRED'
+    || (Boolean(currentOrderExpireTime.value) && isExpired(currentOrderExpireTime.value)),
+)
+const currentOrderCountdown = computed(
+  () => currentOrderExpireTime.value ? countdownText(currentOrderExpireTime.value, lang.value) : '',
+)
+const showCountdown = computed(
+  () => Boolean(currentOrderId.value) && Boolean(currentOrderExpireTime.value) && currentOrderAwaitingPayment.value,
+)
+const isPayDisabled = computed(
+  () => !cart.items.value.length
+    || !canPreviewAddress.value
+    || previewing.value
+    || isPaying.value
+    || currentOrderExpired.value,
+)
+const isMockFlow = computed(() => paymentIntent.value?.providerKey === 'mock')
+
+const applyAddress = (address: any) => {
+  Object.assign(addressForm, toAddressDraft(address))
+}
+
+const applyCurrentOrder = (order: any) => {
+  if (!order) {
+    return
+  }
+
+  currentOrderId.value = order.id ?? currentOrderId.value
+  currentOrderExpireTime.value = order.paymentExpireTime || null
+  currentOrderStatus.value = order.status || null
+  currentOrderPaymentStatus.value = order.paymentStatus || null
+
+  if (!currentOrderAwaitingPayment.value) {
+    paymentIntent.value = null
+  }
+}
+
+const resetCurrentOrder = () => {
+  currentOrderId.value = null
+  currentOrderExpireTime.value = null
+  currentOrderStatus.value = null
+  currentOrderPaymentStatus.value = null
+  paymentIntent.value = null
+}
+
+const stopCurrentOrderPolling = () => {
+  if (!currentOrderPollTimer) {
+    return
+  }
+
+  clearInterval(currentOrderPollTimer)
+  currentOrderPollTimer = null
+}
+
+const refreshCurrentOrderStatus = async (silent = false) => {
+  if (!currentOrderId.value) {
+    return null
+  }
+
+  const res = await useHttp(`/api/order/${currentOrderId.value}`, {
+    showError: false,
+  }).catch(() => null)
+
+  if (res?.code !== 200) {
+    return null
+  }
+
+  applyCurrentOrder(res.data)
+
+  if (!silent && currentOrderStatus.value === 'EXPIRED') {
+    message.value = paymentUiCopy.value.expired
+  }
+
+  return res.data
+}
+
+const startCurrentOrderPolling = () => {
+  if (!process.client || currentOrderPollTimer || !currentOrderAwaitingPayment.value) {
+    return
+  }
+
+  currentOrderPollTimer = window.setInterval(() => {
+    refreshCurrentOrderStatus(true)
+  }, 15000)
+}
+
+const syncVisibilityState = () => {
+  if (!process.client || !currentOrderAwaitingPayment.value) {
+    return
+  }
+
+  if (document.visibilityState === 'hidden') {
+    return
+  }
+
+  refreshCurrentOrderStatus(true)
+}
+
+const createIntentForOrder = async (orderId: number) => {
+  const intentRes = await useHttp('/api/payment/intent', {
+    method: 'POST',
+    body: {
+      orderId,
+      paymentMethod: selectedPaymentMethod.value,
+    },
+    showError: false,
+  }).catch(() => null)
+
+  if (intentRes?.code !== 200) {
+    await refreshCurrentOrderStatus(true)
+    message.value = intentRes?.message || paymentUiCopy.value.orderCreatedContinueInOrders
+    if (intentRes?.message === 'Order payment window expired') {
+      message.value = paymentUiCopy.value.expired
+    }
+    return null
+  }
+
+  paymentIntent.value = intentRes.data
+  message.value = intentRes.data?.displayMessage || t('paymentReady')
+
+  if (intentRes.data?.nextAction === 'REDIRECT' && intentRes.data?.redirectUrl && process.client) {
+    message.value = paymentUiCopy.value.redirectingToAlipay
+    window.location.href = intentRes.data.redirectUrl
+    return intentRes.data
+  }
+
+  return intentRes.data
+}
 
 const openAddAddressModal = () => {
   addressListOpen.value = false
@@ -360,102 +591,11 @@ const handleSaveNewAddress = async (formData: any) => {
       isDefault: !addresses.value.length || formData.isDefault,
     },
   })
+
   if (res?.code === 200) {
     await fetchAddresses()
     selectedAddressId.value = String(res.data.id)
   }
-}
-
-const checkoutCopy = computed(() =>
-  lang.value === 'zh'
-    ? {
-        contact: '联系方式',
-        shippingAddress: '收货地址',
-        shippingMethod: '配送方式',
-        paymentTitle: '支付',
-        secure: '当前保留支付层，先以模拟流程完成联调与验收。',
-        cardNumber: '卡号',
-        expiry: '有效期',
-        cvc: '安全码',
-        nameOnCard: '持卡人姓名',
-        pointsTitle: '完成本次下单后可获得积分',
-        pointsSubtitle: '积分逻辑后续会与会员系统打通。',
-        noCoupon: '暂不使用优惠券',
-        previewReady: '订单预览已生成',
-        payNow: '立即支付',
-        processing: '支付处理中...',
-        completing: '完成中...',
-        defaultAddress: '默认',
-        manualAddress: '使用手动填写地址',
-        manualAddressHint: '选择此项后，可直接编辑下方表单且不会重复保存相同地址。',
-        addressReady: '当前地址信息完整，可以继续预览与结算。',
-        addressIncomplete: '请补全国家、姓名、地址 1、城市、州/省和邮编后继续。',
-        addressSaved: '地址已保存。',
-        addressAlreadySaved: '该地址已存在，已自动为你选中。',
-        addressRequired: '请先完善收货地址。',
-      }
-    : {
-        contact: 'Contact',
-        shippingAddress: 'Shipping address',
-        shippingMethod: 'Shipping method',
-        paymentTitle: 'Payment',
-        secure: 'The payment layer is preserved and currently runs as a mock flow.',
-        cardNumber: 'Card number',
-        expiry: 'Expiration date',
-        cvc: 'Security code',
-        nameOnCard: 'Name on card',
-        pointsTitle: 'Complete this purchase to earn reward points',
-        pointsSubtitle: 'Reward logic will connect to the member system later.',
-        noCoupon: 'No coupon selected',
-        previewReady: 'Order preview ready',
-        payNow: 'Pay now',
-        processing: 'Processing...',
-        completing: 'Completing...',
-        defaultAddress: 'Default',
-        manualAddress: 'Use manual address',
-        manualAddressHint: 'Select this to edit the form below without creating a duplicate saved address.',
-        addressReady: 'This address is ready for preview and checkout.',
-        addressIncomplete: 'Fill in country, name, address line 1, city, state, and ZIP code to continue.',
-        addressSaved: 'Address saved.',
-        addressAlreadySaved: 'This address is already saved.',
-        addressRequired: 'Complete the shipping address before continuing.',
-      },
-)
-
-const paymentUiCopy = computed(() =>
-  lang.value === 'zh'
-    ? {
-        alipayHint: '优先走支付宝沙盒；支付完成后会回跳并在站内确认结果。',
-        mockHint: '如果沙盒凭证还没配置好，会自动回退到 mock 支付流程。',
-        completeMockPayment: '完成 mock 支付',
-        redirectingToAlipay: '正在跳转到支付宝...',
-      }
-    : {
-        alipayHint: 'Preferred path: redirect to Alipay Sandbox and confirm the result on return.',
-        mockHint: 'If sandbox credentials are not ready yet, checkout can fall back to mock completion.',
-        completeMockPayment: 'Complete mock payment',
-        redirectingToAlipay: 'Redirecting to Alipay...',
-      },
-)
-
-const addressForm = reactive(createEmptyAddressDraft())
-
-const cartSignature = computed(() =>
-  cart.items.value.map((item) => `${item.cartItemId}:${item.quantity}:${(item.addons || []).join('|')}`).join(';'),
-)
-const selectedSavedAddress = computed(
-  () => addresses.value.find((item) => String(item.id) === selectedAddressId.value) || null,
-)
-const canPreviewAddress = computed(
-  () => Boolean(selectedSavedAddress.value) || isAddressDraftComplete(addressForm),
-)
-const isPayDisabled = computed(
-  () => !cart.items.value.length || !canPreviewAddress.value || previewing.value,
-)
-const isMockFlow = computed(() => paymentIntent.value?.providerKey === 'mock')
-
-const applyAddress = (address: any) => {
-  Object.assign(addressForm, toAddressDraft(address))
 }
 
 const fetchAddresses = async () => {
@@ -475,18 +615,6 @@ const fetchAddresses = async () => {
   }
 
   selectedAddressId.value = 'manual'
-}
-
-const refreshCoupons = async () => {
-  const [myRes, availableRes] = await Promise.all([useHttp('/api/coupon/my'), useHttp('/api/coupon/available')])
-  availableCoupons.value = myRes?.code === 200 ? myRes.data || [] : []
-  claimableCoupons.value =
-    availableRes?.code === 200 ? (availableRes.data || []).filter((coupon: any) => !coupon.claimed) : []
-}
-
-const claimCoupon = async (couponId: number) => {
-  await useHttp(`/api/coupon/${couponId}/claim`, { method: 'POST' })
-  await refreshCoupons()
 }
 
 const findExistingAddress = () => addresses.value.find((item) => addressesMatch(item, addressForm)) || null
@@ -525,7 +653,6 @@ const buildPreviewPayload = () => ({
   cartItemIds: cart.items.value.map((item) => item.cartItemId),
   addressId: selectedSavedAddress.value?.id,
   shippingMethod,
-  couponUserId: selectedCouponUserId.value || undefined,
 })
 
 const previewOrder = async () => {
@@ -543,7 +670,7 @@ const previewOrder = async () => {
 
     if (res?.code === 200) {
       preview.value = res.data
-      message.value = t('paymentPending')
+      message.value = lang.value === 'zh' ? '\u8ba2\u5355\u9884\u89c8\u5df2\u66f4\u65b0\u3002' : 'Order preview updated.'
     }
   } finally {
     previewing.value = false
@@ -553,6 +680,22 @@ const previewOrder = async () => {
 const startPayment = async () => {
   if (!canPreviewAddress.value) {
     message.value = checkoutCopy.value.addressRequired
+    return
+  }
+
+  if (currentOrderId.value && currentOrderAwaitingPayment.value) {
+    if (currentOrderExpired.value) {
+      await refreshCurrentOrderStatus()
+      message.value = paymentUiCopy.value.expired
+      return
+    }
+
+    isPaying.value = true
+    try {
+      await createIntentForOrder(currentOrderId.value)
+    } finally {
+      isPaying.value = false
+    }
     return
   }
 
@@ -566,7 +709,7 @@ const startPayment = async () => {
 
   isPaying.value = true
   try {
-    const res = await useHttp('/api/order/create', {
+    const orderRes = await useHttp('/api/order/create', {
       method: 'POST',
       body: {
         ...buildPreviewPayload(),
@@ -574,28 +717,22 @@ const startPayment = async () => {
         addressSnapshot: selectedSavedAddress.value ? undefined : toAddressDraft(addressForm),
         remark: 'Checkout creates order on pay action',
       },
-    })
+      showError: false,
+    }).catch(() => null)
 
-    if (res?.code === 200) {
-      const intentRes = await useHttp('/api/payment/intent', {
-        method: 'POST',
-        body: {
-          orderId: res.data.id,
-          paymentMethod: selectedPaymentMethod.value,
-        },
-      })
+    if (orderRes?.code !== 200) {
+      message.value = orderRes?.message || (lang.value === 'zh'
+        ? '\u8ba2\u5355\u521b\u5efa\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002'
+        : 'Failed to create order.')
+      return
+    }
 
-      if (intentRes?.code === 200) {
-        paymentIntent.value = intentRes.data
-        message.value = intentRes.data?.displayMessage || t('paymentReady')
-        if (intentRes.data?.nextAction === 'REDIRECT' && intentRes.data?.redirectUrl && process.client) {
-          message.value = paymentUiCopy.value.redirectingToAlipay
-          window.location.href = intentRes.data.redirectUrl
-          return
-        }
-      }
+    applyCurrentOrder(orderRes.data)
+    const intentRes = await createIntentForOrder(orderRes.data.id)
 
-      await cart.refreshCart()
+    if (!intentRes) {
+      await navigateTo('/account/orders')
+      return
     }
   } finally {
     isPaying.value = false
@@ -603,7 +740,9 @@ const startPayment = async () => {
 }
 
 const completePayment = async () => {
-  if (!paymentIntent.value?.id) return
+  if (!paymentIntent.value?.id) {
+    return
+  }
 
   completingPayment.value = true
   try {
@@ -617,6 +756,7 @@ const completePayment = async () => {
 
     if (res?.code === 200) {
       paymentIntent.value = res.data
+      await refreshCurrentOrderStatus(true)
       message.value = t('orderSuccess')
       await cart.refreshCart()
       await navigateTo('/account/orders')
@@ -644,25 +784,52 @@ watch(selectedAddressId, (value) => {
   }
 })
 
-watch([selectedAddressId, selectedCouponUserId, cartSignature], async () => {
+watch([selectedAddressId, cartSignature], async () => {
   if (!bootstrapped.value) {
     return
   }
 
-  paymentIntent.value = null
+  resetCurrentOrder()
   await previewOrder()
 })
 
 watch(
   () => getAddressSignature(addressForm),
-  () => {
-    if (!bootstrapped.value || !selectedSavedAddress.value) {
+  async () => {
+    if (!bootstrapped.value) {
       return
     }
 
-    if (!addressesMatch(selectedSavedAddress.value, addressForm)) {
+    if (selectedSavedAddress.value && !addressesMatch(selectedSavedAddress.value, addressForm)) {
       selectedAddressId.value = 'manual'
     }
+
+    if (selectedAddressId.value === 'manual') {
+      resetCurrentOrder()
+      await previewOrder()
+    }
+  },
+)
+
+watch(currentOrderAwaitingPayment, (active) => {
+  if (active) {
+    startDeadlineTicker()
+    startCurrentOrderPolling()
+    return
+  }
+
+  stopCurrentOrderPolling()
+  stopDeadlineTicker()
+})
+
+watch(
+  () => currentOrderExpireTime.value ? isExpired(currentOrderExpireTime.value) : false,
+  async (expired) => {
+    if (!expired || !currentOrderId.value || currentOrderStatus.value === 'EXPIRED') {
+      return
+    }
+
+    await refreshCurrentOrderStatus()
   },
 )
 
@@ -673,9 +840,22 @@ onMounted(async () => {
     return
   }
 
-  await Promise.all([cart.refreshCart(), fetchAddresses(), refreshCoupons()])
+  await Promise.all([cart.refreshCart(), fetchAddresses()])
+  if (process.client) {
+    window.addEventListener('focus', syncVisibilityState)
+    document.addEventListener('visibilitychange', syncVisibilityState)
+  }
   bootstrapped.value = true
   await previewOrder()
+})
+
+onBeforeUnmount(() => {
+  stopCurrentOrderPolling()
+  stopDeadlineTicker()
+  if (process.client) {
+    window.removeEventListener('focus', syncVisibilityState)
+    document.removeEventListener('visibilitychange', syncVisibilityState)
+  }
 })
 </script>
 
@@ -687,34 +867,34 @@ onMounted(async () => {
 
 .checkout-container {
   display: flex;
-  margin: 0 auto;
-  padding: 0;
   min-height: 100vh;
   border-top: 1px solid #e4e7ec;
 }
 
+.checkout-main,
+.checkout-sidebar {
+  padding: 56px 48px;
+}
+
 .checkout-main {
   flex: 1.12;
-  padding: 56px 48px;
-  background: #fff;
   display: flex;
   justify-content: flex-end;
 }
 
-.checkout-main-inner {
-  width: 100%;
-  max-width: 640px;
-}
-
 .checkout-sidebar {
   flex: 0.88;
-  padding: 56px 48px;
   background: #f9fafb;
   border-left: 1px solid #e4e7ec;
 }
 
+.checkout-main-inner,
 .sidebar-inner {
   width: 100%;
+  max-width: 640px;
+}
+
+.sidebar-inner {
   max-width: 480px;
   position: sticky;
   top: 56px;
@@ -726,7 +906,6 @@ onMounted(async () => {
 
 .section-head {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
@@ -737,10 +916,10 @@ onMounted(async () => {
     line-height: 1.1;
     color: #111827;
   }
+}
 
-  &.compact h2 {
-    font-size: 20px;
-  }
+.section-head.compact h2 {
+  font-size: 20px;
 }
 
 .step-label {
@@ -752,7 +931,15 @@ onMounted(async () => {
   text-transform: uppercase;
 }
 
-.ghost-btn {
+.ghost-btn,
+.secondary-btn,
+.pay-now-btn,
+.btn-select-address {
+  cursor: pointer;
+}
+
+.ghost-btn,
+.secondary-btn {
   min-height: 42px;
   padding: 0 16px;
   border: 1px solid #d0d5dd;
@@ -761,190 +948,40 @@ onMounted(async () => {
   color: #111827;
   font-size: 14px;
   font-weight: 700;
-  cursor: pointer;
 }
 
-.address-selector-area {
-  margin-bottom: 24px;
+.secondary-btn {
+  width: fit-content;
+}
+
+.selected-address-card,
+.info-box,
+.resume-box,
+.empty-state {
+  padding: 16px 18px;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  background: #fff;
 }
 
 .selected-address-card {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px;
-  border: 1px solid #e4e7ec;
-  border-radius: 12px;
-  background: #fff;
+  gap: 16px;
 }
 
-.address-details {
-  strong {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 15px;
-    color: #111827;
-  }
-  p {
-    margin: 0 0 2px;
-    font-size: 14px;
-    color: #475467;
-  }
-}
-
-.empty-address-card {
-  text-align: center;
-}
-
-.btn-select-address, .btn-add-new-address {
-  width: 100%;
-  padding: 14px;
-  border: 1px dashed #d0d5dd;
-  border-radius: 12px;
-  background: transparent;
-  color: #111827;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    border-color: #111827;
-    background: #f9fafb;
-  }
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content.address-list-modal {
-  background: #fff;
-  width: 100%;
-  max-width: 500px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #eaeaea;
-
-  h2 {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0;
-    color: #111;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: #666;
-    padding: 4px;
-  }
-}
-
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-}
-
-.saved-addresses-modal {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.saved-addresses {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.saved-address {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 12px;
-  padding: 16px 18px;
-  border: 1px solid #e4e7ec;
-  border-radius: 20px;
-  background: #fbfbfb;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-
-  input {
-    margin-top: 3px;
-  }
-
-  &:hover {
-    transform: translateY(-1px);
-    border-color: #111827;
-  }
-
-  &.is-selected {
-    border-color: #111827;
-    background: #f7fdf2;
-    box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.04);
-  }
-
-  small {
-    margin-top: 6px;
-    display: block;
-    color: #667085;
-    line-height: 1.5;
-  }
-}
-
-.saved-address__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  strong {
-    color: #111827;
-    font-size: 15px;
-  }
-
-  em {
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: #111827;
-    color: #fff;
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 700;
-  }
-}
-
-.saved-address__body {
-  min-width: 0;
+.address-details p,
+.payment-hint,
+.payment-note,
+.status-message,
+.item-variant {
+  color: #475467;
+  line-height: 1.6;
 }
 
 .address-form,
-.card-form {
+.card-form,
+.saved-addresses-modal {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -956,7 +993,7 @@ onMounted(async () => {
   gap: 14px;
 }
 
-.form-row.three-cols {
+.three-cols {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -966,14 +1003,13 @@ onMounted(async () => {
   gap: 8px;
 
   label {
-    color: #344054;
     font-size: 13px;
     font-weight: 700;
+    color: #344054;
   }
 
-  input,
-  select {
-    min-height: 50px;
+  input {
+    min-height: 48px;
     padding: 0 14px;
     border: 1px solid #d0d5dd;
     border-radius: 16px;
@@ -983,51 +1019,25 @@ onMounted(async () => {
     outline: none;
   }
 
-  input:focus,
-  select:focus {
+  input:focus {
     border-color: #111827;
     box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.08);
   }
 }
 
-.address-help {
-  margin: 14px 0 0;
-  color: #b54708;
-  font-size: 13px;
-  line-height: 1.6;
-
-  &.ready {
-    color: #027a48;
-  }
-}
-
-.info-box {
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
-  color: #475467;
+.address-help.ready {
+  color: #027a48;
 }
 
 .payment-methods {
   border: 1px solid #d0d5dd;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   background: #fff;
 }
 
-.payment-option {
-  border-bottom: 1px solid #eaecf0;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &.disabled {
-    opacity: 0.5;
-  }
+.payment-option + .payment-option {
+  border-top: 1px solid #eaecf0;
 }
 
 .option-header {
@@ -1038,12 +1048,11 @@ onMounted(async () => {
   padding: 16px 18px;
   border: none;
   background: #fafafa;
-  cursor: pointer;
   text-align: left;
 }
 
 .payment-option.selected .option-header {
-  background: #fdfdfd;
+  background: #fff;
 }
 
 .radio-wrap {
@@ -1072,8 +1081,17 @@ onMounted(async () => {
 .option-name {
   flex: 1;
   font-weight: 600;
-  font-size: 14px;
   color: #111827;
+}
+
+.option-body {
+  padding: 18px;
+  background: #fafafa;
+}
+
+.brand-text.alipay {
+  color: #1677ff;
+  font-weight: 800;
 }
 
 .card-icons {
@@ -1090,92 +1108,28 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-.brand-text {
-  font-weight: 800;
-
-  &.shop {
-    color: #5a31f4;
-  }
-
-  &.paypal {
-    color: #003087;
-    font-style: italic;
-  }
-
-  &.alipay {
-    color: #1677ff;
-  }
-
-  &.affirm {
-    color: #000;
-  }
-
-  &.klarna {
-    color: #ffb3c7;
-  }
-}
-
-.option-body {
-  padding: 18px;
-  background: #fafafa;
-  border-top: 1px solid #eaecf0;
-}
-
-.card-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.card-form input {
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid #d0d5dd;
-  border-radius: 4px;
-  background: #fff;
-  font-size: 14px;
-  color: #111;
-  outline: none;
-}
-
-.card-form input:focus {
-  border-color: #111;
-}
-
-.payment-hint {
-  margin: 0;
-  color: #475467;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.payment-note-container {
+.payment-note-container,
+.action-stack {
   margin-top: 18px;
 }
 
-.save-info-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+.payment-note.strong {
+  color: #111827;
+  font-weight: 700;
+}
 
-  input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    border: 1px solid #d0d5dd;
-    border-radius: 4px;
-    cursor: pointer;
-  }
+.payment-note.countdown {
+  color: #b54708;
+  font-weight: 700;
+}
 
-  label {
-    font-size: 14px;
-    color: #111;
-    cursor: pointer;
-  }
+.payment-note.countdown.expired,
+.expired-message {
+  color: #b42318;
+  font-weight: 700;
 }
 
 .action-stack {
-  margin-top: 18px;
   display: grid;
   gap: 12px;
 }
@@ -1188,31 +1142,33 @@ onMounted(async () => {
   color: #fff;
   font-size: 15px;
   font-weight: 800;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  &.ghost {
-    background: #eef2f6;
-    color: #111827;
-  }
 }
 
-.status-message {
-  margin: 12px 0 0;
-  color: #475467;
-  font-size: 14px;
-  line-height: 1.6;
+.pay-now-btn.ghost {
+  background: #eef2f6;
+  color: #111827;
+}
+
+.pay-now-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.resume-box {
+  margin-top: 16px;
+}
+
+.resume-link {
+  color: #111827;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .cart-items {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .cart-item {
@@ -1262,66 +1218,10 @@ onMounted(async () => {
   color: #111827;
 }
 
-.item-variant {
-  margin: 0;
-  color: #667085;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.item-price {
+.item-price,
+.total-line {
   font-weight: 800;
   color: #111827;
-}
-
-.points-banner,
-.preview-state,
-.payment-state {
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #e4e7ec;
-  margin-bottom: 18px;
-
-  p {
-    margin: 6px 0 0;
-    color: #667085;
-    font-size: 13px;
-    line-height: 1.55;
-    word-break: break-all;
-  }
-}
-
-.discount-section {
-  padding-bottom: 20px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #dde3ea;
-}
-
-.discount-input select {
-  width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid #d0d5dd;
-  border-radius: 16px;
-  background: #fff;
-  font-size: 14px;
-}
-
-.claimable-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.claim-btn {
-  border: 1px solid #111827;
-  border-radius: 999px;
-  background: #fff;
-  padding: 8px 12px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .summary-lines {
@@ -1345,19 +1245,81 @@ onMounted(async () => {
   color: #475467;
 }
 
-.line.discount {
-  color: #c5221f;
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
 }
 
-.total-line {
-  font-size: 20px;
-  font-weight: 800;
-  color: #111827;
+.modal-content {
+  width: min(520px, calc(100vw - 32px));
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.modal-header,
+.modal-body,
+.saved-address {
+  display: flex;
+}
+
+.modal-header {
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.saved-address {
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  background: #fbfbfb;
+}
+
+.saved-address.is-selected {
+  border-color: #111827;
+  background: #f7fdf2;
+}
+
+.saved-address__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saved-address__header em {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
 }
 
 @media (max-width: 1100px) {
   .checkout-container {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .sidebar-inner {
@@ -1366,33 +1328,23 @@ onMounted(async () => {
 }
 
 @media (max-width: 720px) {
-  .checkout-container {
-    padding: 20px 16px 36px;
-  }
-
   .checkout-main,
   .checkout-sidebar {
-    padding: 22px 18px;
-    border-radius: 24px;
+    padding: 24px 16px;
   }
 
-  .section-head {
+  .section-head,
+  .selected-address-card,
+  .cart-item,
+  .line,
+  .total-line {
     flex-direction: column;
     align-items: flex-start;
-
-    h2 {
-      font-size: 24px;
-    }
   }
 
   .form-row,
-  .form-row.three-cols,
-  .cart-item {
+  .three-cols {
     grid-template-columns: 1fr;
-  }
-
-  .item-price {
-    justify-self: start;
   }
 }
 </style>

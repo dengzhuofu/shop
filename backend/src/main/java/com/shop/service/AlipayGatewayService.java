@@ -5,9 +5,12 @@ import com.alipay.api.AlipayConfig;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.domain.AlipayTradePagePayModel;
+import com.alipay.api.domain.AlipayTradeCloseModel;
 import com.alipay.api.domain.AlipayTradeQueryModel;
+import com.alipay.api.request.AlipayTradeCloseRequest;
 import com.alipay.api.request.AlipayTradePagePayRequest;
 import com.alipay.api.request.AlipayTradeQueryRequest;
+import com.alipay.api.response.AlipayTradeCloseResponse;
 import com.alipay.api.response.AlipayTradePagePayResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.shop.config.PaymentProperties;
@@ -73,6 +76,25 @@ public class AlipayGatewayService {
       );
     } catch (Exception ex) {
       throw new IllegalStateException("Failed to query Alipay trade status", ex);
+    }
+  }
+
+  public boolean closeTrade(PaymentProperties.AlipayProperties alipay, String outTradeNo, String tradeNo) {
+    try {
+      AlipayTradeCloseRequest request = new AlipayTradeCloseRequest();
+      AlipayTradeCloseModel model = new AlipayTradeCloseModel();
+      if (hasText(outTradeNo)) {
+        model.setOutTradeNo(outTradeNo);
+      }
+      if (hasText(tradeNo)) {
+        model.setTradeNo(tradeNo);
+      }
+      request.setBizModel(model);
+
+      AlipayTradeCloseResponse response = buildClient(alipay).execute(request);
+      return response != null && response.isSuccess();
+    } catch (Exception ex) {
+      throw new IllegalStateException("Failed to close Alipay trade", ex);
     }
   }
 

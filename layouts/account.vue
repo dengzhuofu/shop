@@ -1,7 +1,7 @@
 <template>
   <div class="layout-account">
     <header class="account-header">
-      <div class="container header-inner">
+      <div class="account-container header-inner">
         <NuxtLink to="/" class="brand-mark">
           <span class="brand-logo">◎</span>
           <span class="brand-word">isinwheel</span>
@@ -54,10 +54,10 @@
           <h1>{{ pageTitle }}</h1>
         </div>
 
-        <nav class="page-tabs">
+        <!-- <nav class="page-tabs">
           <NuxtLink to="/account/profile" active-class="active">{{ t('profile') }}</NuxtLink>
           <NuxtLink to="/account/orders" active-class="active">{{ t('orders') }}</NuxtLink>
-        </nav>
+        </nav> -->
 
         <slot />
       </div>
@@ -203,6 +203,12 @@ onBeforeUnmount(() => {
   z-index: 60;
   background: #fff;
   border-bottom: 1px solid #ececec;
+}
+
+.account-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .header-inner {
@@ -379,7 +385,7 @@ onBeforeUnmount(() => {
 
 .account-main {
   flex: 1;
-  padding: 34px 0 64px;
+  padding: 34px 200px 64px;
 }
 
 .account-main.is-checkout {

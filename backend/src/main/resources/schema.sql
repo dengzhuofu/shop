@@ -202,11 +202,14 @@ CREATE TABLE oms_order (
     discount_amount DECIMAL(10,2) DEFAULT 0,
     remark VARCHAR(255),
     pay_time TIMESTAMP,
+    payment_expire_time TIMESTAMP,
     delivery_company VARCHAR(64),
     delivery_sn VARCHAR(64),
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_oms_order_payment_expire_time ON oms_order (status, payment_expire_time);
 
 CREATE TABLE oms_order_item (
     id BIGSERIAL PRIMARY KEY,

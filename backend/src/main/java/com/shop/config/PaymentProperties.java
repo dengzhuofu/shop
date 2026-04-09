@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 public class PaymentProperties {
 
   private String defaultProvider = "mock";
+  private int orderTimeoutMinutes = 15;
+  private int expirationCheckBatchSize = 200;
   private AlipayProperties alipay = new AlipayProperties();
 
   @Data

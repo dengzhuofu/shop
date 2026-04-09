@@ -38,6 +38,7 @@ public class OrderVO {
     private Long paymentIntentId;
     private String remark;
     private LocalDateTime payTime;
+    private LocalDateTime paymentExpireTime;
     private String deliveryCompany;
     private String deliverySn;
     private LocalDateTime createTime;

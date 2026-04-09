@@ -14,24 +14,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const route = useRoute()
 const cart = useShopCart()
 const { lang } = useShopLocale()
 
 const message = ref('')
+const checking = ref(false)
+const confirmAttempts = ref(0)
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+let redirectTimer: ReturnType<typeof setTimeout> | null = null
+const maxConfirmAttempts = 5
 
 const ui = computed(() =>
   lang.value === 'zh'
     ? {
-        title: '正在确认支付结果',
-        orders: '查看订单',
-        checkout: '返回结算',
-        success: '支付宝支付已确认，正在同步订单状态。',
-        pending: '已收到回跳参数，正在校验签名与交易结果。',
-        failed: '支付回跳已收到，但暂时未能确认，请稍后在订单页查看。',
-        invalid: '缺少必要的回跳参数，暂时无法确认支付。',
+        title: '\u6b63\u5728\u786e\u8ba4\u652f\u4ed8\u7ed3\u679c',
+        orders: '\u67e5\u770b\u8ba2\u5355',
+        checkout: '\u8fd4\u56de\u7ed3\u7b97\u9875',
+        success: '\u652f\u4ed8\u5b9d\u652f\u4ed8\u5df2\u786e\u8ba4\uff0c\u6b63\u5728\u540c\u6b65\u8ba2\u5355\u72b6\u6001\u3002',
+        pending: '\u5df2\u6536\u5230\u56de\u8df3\u53c2\u6570\uff0c\u6b63\u5728\u6821\u9a8c\u7b7e\u540d\u5e76\u6838\u5b9e\u4ea4\u6613\u72b6\u6001\u3002',
+        retrying: '\u652f\u4ed8\u7ed3\u679c\u4ecd\u5728\u540c\u6b65\u4e2d\uff0c\u7cfb\u7edf\u6b63\u5728\u518d\u6b21\u786e\u8ba4...',
+        failed: '\u5df2\u6536\u5230\u652f\u4ed8\u56de\u8df3\uff0c\u4f46\u6682\u65f6\u8fd8\u65e0\u6cd5\u786e\u8ba4\u652f\u4ed8\u7ed3\u679c\uff0c\u8bf7\u524d\u5f80\u8ba2\u5355\u9875\u7ee7\u7eed\u67e5\u770b\u3002',
+        expired: '\u8be5\u8ba2\u5355\u5df2\u8d85\u65f6\uff0c\u7cfb\u7edf\u5df2\u81ea\u52a8\u5173\u5355\u3002',
+        invalid: '\u7f3a\u5c11\u5fc5\u8981\u7684\u56de\u8df3\u53c2\u6570\uff0c\u6682\u65f6\u65e0\u6cd5\u786e\u8ba4\u652f\u4ed8\u3002',
       }
     : {
         title: 'Confirming your payment',
@@ -39,7 +46,9 @@ const ui = computed(() =>
         checkout: 'Back to checkout',
         success: 'Alipay payment confirmed. Syncing your order now.',
         pending: 'Return parameters received. Verifying signature and trade result.',
-        failed: 'The return reached us, but payment could not be confirmed yet.',
+        retrying: 'Payment confirmation is still syncing. Retrying now.',
+        failed: 'The payment return reached us, but the result could not be confirmed yet.',
+        expired: 'This order has expired and was closed automatically.',
         invalid: 'Missing required return parameters, so payment cannot be confirmed yet.',
       },
 )
@@ -87,6 +96,7 @@ const normalizeQuery = () => {
       }
       return
     }
+
     if (value != null) {
       params[key] = String(value)
     }
@@ -100,14 +110,44 @@ const normalizeQuery = () => {
   return params
 }
 
-onMounted(async () => {
+const clearTimers = () => {
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
+  if (redirectTimer) {
+    clearTimeout(redirectTimer)
+    redirectTimer = null
+  }
+}
+
+const scheduleRedirect = (delay = 1200) => {
+  if (!process.client) {
+    return
+  }
+
+  if (redirectTimer) {
+    clearTimeout(redirectTimer)
+  }
+
+  redirectTimer = window.setTimeout(() => navigateTo('/account/orders'), delay)
+}
+
+const isPendingIntent = (status: string | null | undefined) => status === 'CREATED'
+
+const isExpiredMessage = (value: string | null | undefined) =>
+  (value || '').toLowerCase().includes('expired')
+
+const confirmReturn = async () => {
   const params = normalizeQuery()
   if (!params.out_trade_no || !params.sign) {
     message.value = ui.value.invalid
     return
   }
 
-  message.value = ui.value.pending
+  checking.value = true
+  confirmAttempts.value += 1
+  message.value = confirmAttempts.value > 1 ? ui.value.retrying : ui.value.pending
 
   const res = await useHttp('/api/payment/alipay/return/confirm', {
     method: 'POST',
@@ -117,13 +157,68 @@ onMounted(async () => {
   }).catch(() => null)
 
   if (res?.code === 200) {
-    message.value = res.data?.displayMessage || ui.value.success
-    await cart.refreshCart()
-    setTimeout(() => navigateTo('/account/orders'), 1200)
+    const intentStatus = res.data?.status
+    const displayMessage = res.data?.displayMessage || ''
+
+    if (intentStatus === 'SUCCEEDED') {
+      message.value = displayMessage || ui.value.success
+      await cart.refreshCart()
+      scheduleRedirect()
+      checking.value = false
+      return
+    }
+
+    if (isExpiredMessage(displayMessage)) {
+      message.value = ui.value.expired
+      scheduleRedirect(1800)
+      checking.value = false
+      return
+    }
+
+    if (isPendingIntent(intentStatus) && confirmAttempts.value < maxConfirmAttempts && process.client) {
+      message.value = displayMessage || ui.value.retrying
+      retryTimer = window.setTimeout(confirmReturn, 3000)
+      checking.value = false
+      return
+    }
+
+    message.value = displayMessage || ui.value.failed
+    scheduleRedirect(1800)
+    checking.value = false
     return
   }
 
   message.value = res?.message || ui.value.failed
+  scheduleRedirect(1800)
+  checking.value = false
+}
+
+const refreshOnVisibility = () => {
+  if (!process.client || document.visibilityState !== 'visible' || checking.value) {
+    return
+  }
+
+  if (confirmAttempts.value > 0 && confirmAttempts.value < maxConfirmAttempts) {
+    clearTimers()
+    confirmReturn()
+  }
+}
+
+onMounted(async () => {
+  if (process.client) {
+    window.addEventListener('focus', refreshOnVisibility)
+    document.addEventListener('visibilitychange', refreshOnVisibility)
+  }
+
+  await confirmReturn()
+})
+
+onBeforeUnmount(() => {
+  clearTimers()
+  if (process.client) {
+    window.removeEventListener('focus', refreshOnVisibility)
+    document.removeEventListener('visibilitychange', refreshOnVisibility)
+  }
 })
 </script>
 

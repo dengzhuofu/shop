@@ -33,6 +33,8 @@ export function useShopFormat() {
         return t('statusPaid')
       case 'CANCELLED':
         return t('statusCancelled')
+      case 'EXPIRED':
+        return lang.value === 'zh' ? '\u5df2\u8d85\u65f6' : 'Expired'
       default:
         return status || '--'
     }

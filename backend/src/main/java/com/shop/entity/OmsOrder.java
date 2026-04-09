@@ -46,6 +46,7 @@ public class OmsOrder {
   private BigDecimal discountAmount;
   private String remark;
   private LocalDateTime payTime;
+  private LocalDateTime paymentExpireTime;
   private String deliveryCompany;
   private String deliverySn;
 

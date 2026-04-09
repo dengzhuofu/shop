@@ -13,24 +13,21 @@ export const useHttp = async (url: string, options: any = {}) => {
   const config = useRuntimeConfig()
   const { success, error } = useMessage()
 
-  // NOTE: useShopLocale() uses useState and must be called during setup/component init.
-  // When useHttp is called inside a component setup, this will work.
-  // For safety in async contexts, we fallback to English/Chinese if it's not available.
   let t: (key: string) => string
   try {
     const locale = useShopLocale()
     t = locale.t as (key: string) => string
-  } catch (e) {
+  } catch {
     t = (key: string) => {
       const isZh = langCookie.value === 'zh'
-      if (key === 'requestFailed') return isZh ? '请求失败' : 'Request failed'
-      if (key === 'networkError') return isZh ? '网络错误，请稍后重试' : 'Network error, please try again later'
+      if (key === 'requestFailed') return isZh ? '\u8bf7\u6c42\u5931\u8d25' : 'Request failed'
+      if (key === 'networkError') return isZh ? '\u7f51\u7edc\u9519\u8bef\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5' : 'Network error, please try again later'
       return key
     }
   }
 
   const getSessionExpiredMessage = () =>
-    langCookie.value === 'zh' ? '登录已失效，请重新登录' : 'Login expired, please sign in again'
+    langCookie.value === 'zh' ? '\u767b\u5f55\u5df2\u5931\u6548\uff0c\u8bf7\u91cd\u65b0\u767b\u5f55' : 'Login expired, please sign in again'
 
   const notifySessionExpired = () => {
     const now = Date.now()
@@ -67,9 +64,7 @@ export const useHttp = async (url: string, options: any = {}) => {
     onRequest({ request, options }: any) {
       const currentLang =
         langCookie.value ||
-        (process.client && navigator.language?.toLowerCase().startsWith('en')
-          ? 'en'
-          : 'zh')
+        (process.client && navigator.language?.toLowerCase().startsWith('en') ? 'en' : 'zh')
 
       options.headers = options.headers || {}
       options.headers['Accept-Language'] = currentLang
