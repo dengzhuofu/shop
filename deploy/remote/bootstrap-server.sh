@@ -103,6 +103,10 @@ POSTGRES_DB=shop
 POSTGRES_USER=shop
 POSTGRES_PASSWORD=${DB_PASSWORD}
 HTTP_PORT=80
+HTTPS_PORT=443
+HTTPS_ENABLED=false
+TLS_CERT_PATH=/etc/nginx/certs/fullchain.pem
+TLS_CERT_KEY_PATH=/etc/nginx/certs/privkey.pem
 JAVA_OPTS=-Xms256m -Xmx768m
 EOF
 fi
@@ -142,11 +146,13 @@ sync_db_from_schema() {
 
 if [ "$IS_ROOT" = "true" ] && systemctl is-active --quiet firewalld; then
   firewall-cmd --permanent --add-service=http
+  firewall-cmd --permanent --add-service=https
   firewall-cmd --reload
 fi
 
 if [ "$IS_ROOT" = "true" ] && command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
   ufw allow 80/tcp
+  ufw allow 443/tcp
 fi
 
 if [ "$DEPLOY_MODE" = "prepare" ]; then
