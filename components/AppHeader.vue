@@ -228,6 +228,9 @@ const copy = computed(() =>
         about: '关于我们',
         contact: '联系我们',
         faq: '常见问题',
+        photos: '照片',
+        blog: '博客',
+        videos: 'Video Labs',
         orders: '订单追踪',
         dealers: '成为经销商',
       }
@@ -237,15 +240,21 @@ const copy = computed(() =>
         about: 'About Us',
         contact: 'Contact Us',
         faq: 'FAQ',
+        photos: 'Photos',
+        blog: 'Blog',
+        videos: 'Video Labs',
         orders: 'Track Your Order',
         dealers: 'Become A Dealer',
       },
 )
 
 const supportLinks = computed(() => [
-  { title: copy.value.about, url: '/account/profile' },
-  { title: copy.value.contact, url: '/account/profile' },
-  { title: copy.value.faq, url: '/account/profile' },
+  { title: copy.value.about, url: '/pages/about-us-1' },
+  { title: copy.value.contact, url: '/pages/contact-us' },
+  { title: copy.value.faq, url: '/pages/support-faq' },
+  { title: copy.value.photos, url: '/pages/photos' },
+  { title: copy.value.blog, url: '/blogs/news' },
+  { title: copy.value.videos, url: '/pages/isinwheel-videos' },
   { title: copy.value.orders, url: '/account/orders' },
   { title: copy.value.dealers, url: '/account/profile' },
 ])

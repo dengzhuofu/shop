@@ -1,98 +1,113 @@
 <template>
   <footer class="app-footer">
-    <div class="main-footer container">
-      <div class="links-section">
-        <div class="link-group">
-          <h4>{{ copy.explore }}</h4>
-          <ul>
-            <li><NuxtLink to="/collections/electric-scooters">{{ t('electricScooters') }}</NuxtLink></li>
-            <li><NuxtLink to="/collections/electric-bike">{{ t('electricBike') }}</NuxtLink></li>
-            <li><NuxtLink to="/collections/electric-skateboard">{{ t('electricSkateboard') }}</NuxtLink></li>
-            <li><NuxtLink to="/collections/accessories">{{ t('accessories') }}</NuxtLink></li>
-            <li><NuxtLink to="/">{{ copy.home }}</NuxtLink></li>
-          </ul>
+    <section class="footer-community">
+      <div class="container community-shell">
+        <div class="service-grid">
+          <article
+            v-for="item in serviceCards"
+            :key="item.title"
+            class="service-card"
+          >
+            <div class="service-icon">
+              <img :src="item.icon" alt="" loading="lazy" />
+            </div>
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.description }}</p>
+            </div>
+          </article>
         </div>
-        <div class="link-group">
-          <h4>{{ copy.support }}</h4>
-          <ul>
-            <li><NuxtLink to="/checkout">{{ t('checkout') }}</NuxtLink></li>
-            <li><NuxtLink to="/account/orders">{{ t('orders') }}</NuxtLink></li>
-            <li><NuxtLink to="/account/profile">{{ t('profile') }}</NuxtLink></li>
-            <li><NuxtLink to="/login">{{ t('login') }}</NuxtLink></li>
-            <li><NuxtLink to="/register">{{ t('register') }}</NuxtLink></li>
-          </ul>
-        </div>
-        <div class="link-group">
-          <h4>{{ copy.company }}</h4>
-          <ul>
-            <li><NuxtLink to="/account/profile">{{ copy.about }}</NuxtLink></li>
-            <li><NuxtLink to="/account/profile">{{ copy.contact }}</NuxtLink></li>
-            <li><NuxtLink to="/account/profile">{{ copy.privacy }}</NuxtLink></li>
-            <li><NuxtLink to="/account/profile">{{ copy.terms }}</NuxtLink></li>
-          </ul>
+
+        <div class="community-copy">
+          <h2>{{ copy.communityTitle }}</h2>
+          <a
+            class="community-button"
+            href="https://www.facebook.com/groups/isinwheel"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span class="community-button__icon">+</span>
+            <span>{{ copy.communityCta }}</span>
+            <ArrowRightIcon class="community-button__arrow" />
+          </a>
         </div>
       </div>
+    </section>
 
-      <div class="divider" />
-
-      <div class="newsletter-section">
-        <h2>{{ copy.newsletterTitle }}</h2>
-        <p class="newsletter-note">{{ t('footerNote') }}</p>
-        <div class="input-group">
-          <input type="email" :placeholder="copy.placeholder" />
-          <button class="btn-submit" type="button">
-            <ArrowRightIcon class="icon" />
-          </button>
+    <section class="footer-contact">
+      <div class="container footer-contact__inner">
+        <div class="footer-contact__meta">
+          <p>{{ copy.hours }}</p>
+          <a href="tel:+18882935788">+1(888)293-5788</a>
+          <a href="mailto:support@isinwheel.com">support@isinwheel.com</a>
         </div>
-        <div class="social-links">
-          <a href="https://facebook.com" target="_blank" rel="noreferrer" class="social-icon">
+
+        <div class="footer-socials">
+          <a
+            href="https://www.facebook.com/groups/isinwheel"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Facebook"
+          >
             <FacebookIcon />
           </a>
-          <a href="https://instagram.com" target="_blank" rel="noreferrer" class="social-icon">
+          <a
+            href="https://www.instagram.com/isinwheel/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Instagram"
+          >
             <InstagramIcon />
           </a>
-          <a href="https://youtube.com" target="_blank" rel="noreferrer" class="social-icon">
+          <a
+            href="https://www.youtube.com/@isinwheel"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="YouTube"
+          >
             <YoutubeIcon />
+          </a>
+          <a
+            href="https://www.tiktok.com/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="TikTok"
+            class="footer-socials__text"
+          >
+            t
           </a>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="contact-info container">
-      <p class="time">Mon-Fri: 10AM-6PM(PDT)</p>
-      <p class="phone">+1(888)293-5788</p>
-      <p class="email">support@isinwheel.com</p>
-    </div>
-
-    <div class="bottom-bar">
-      <div class="container bottom-content">
-        <div class="copyright-area">
-          <p class="copyright">&copy; 2026 isinwheel storefront.</p>
-          <div class="bottom-links">
+    <section class="footer-bottom">
+      <div class="container footer-bottom__inner">
+        <div class="footer-bottom__legal">
+          <p>{{ copy.copyright }}</p>
+          <div class="footer-bottom__links">
+            <NuxtLink to="/account/profile">{{ copy.refund }}</NuxtLink>
             <NuxtLink to="/account/profile">{{ copy.privacy }}</NuxtLink>
             <NuxtLink to="/account/profile">{{ copy.terms }}</NuxtLink>
-            <NuxtLink to="/account/profile">{{ copy.contact }}</NuxtLink>
+            <NuxtLink to="/pages/contact-us">{{ copy.contact }}</NuxtLink>
           </div>
         </div>
 
-        <div class="region-selector">
-          <button class="btn-region" type="button">
-            <span class="flag">🇺🇸</span> United States (USD $)
-            <ChevronDownIcon class="icon-down" />
-          </button>
-        </div>
+        <button type="button" class="footer-region">
+          <span>United States (USD $)</span>
+          <ChevronDownIcon />
+        </button>
 
-        <div class="payment-methods">
-          <span class="pay-icon amex">Amex</span>
-          <span class="pay-icon apple">Apple Pay</span>
-          <span class="pay-icon discover">Discover</span>
-          <span class="pay-icon google">Google Pay</span>
-          <span class="pay-icon mastercard">Mastercard</span>
-          <span class="pay-icon paypal">PayPal</span>
-          <span class="pay-icon visa">Visa</span>
+        <div class="footer-payments">
+          <span
+            v-for="method in paymentMethods"
+            :key="method"
+            class="payment-badge"
+          >
+            {{ method }}
+          </span>
         </div>
       </div>
-    </div>
+    </section>
   </footer>
 </template>
 
@@ -106,321 +121,408 @@ import {
   YoutubeIcon,
 } from 'lucide-vue-next'
 
-const { lang, t } = useShopLocale()
+const { lang } = useShopLocale()
+
+const serviceCards = computed(() =>
+  lang.value === 'zh'
+    ? [
+        {
+          title: '快速配送',
+          description: '2-5 个工作日 UPS/FedEx 送达',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJw6ECy5xnu8yMrDe9EqOZZlckwkTWuPGFHcC_50_50.png?v=1765524567',
+        },
+        {
+          title: '1 年保修服务',
+          description: '享受 isinwheel 有限保修支持',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJxLr0S33Hu8yMrCQIEE417wfBAkTWuPGFHcE_50_50.png?v=1765524567',
+        },
+        {
+          title: '美国本地支持',
+          description: '在线聊天和电话服务',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPKG07iq9XX-8yMrAo-xE02uGvNAkTWuPGFHcD_50_50.png?v=1765524567',
+        },
+        {
+          title: '安全支付',
+          description: '支持 PayPal / 信用卡 / 分期付款',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJxnibT25nu8yMrD6FoVHdv_MjQkTWuPGFHcF_50_50.png?v=1765524566',
+        },
+      ]
+    : [
+        {
+          title: 'Fast & Reliable Shipping',
+          description: '2-5 Business Days UPS/FedEx Delivery',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJw6ECy5xnu8yMrDe9EqOZZlckwkTWuPGFHcC_50_50.png?v=1765524567',
+        },
+        {
+          title: '1-Year Warranty Service',
+          description: 'Backed by isinwheel Limited Warranty',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJxLr0S33Hu8yMrCQIEE417wfBAkTWuPGFHcE_50_50.png?v=1765524567',
+        },
+        {
+          title: 'US-Based Support',
+          description: 'Live Chat and Phone Service',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPKG07iq9XX-8yMrAo-xE02uGvNAkTWuPGFHcD_50_50.png?v=1765524567',
+        },
+        {
+          title: 'Secure Payments',
+          description: 'PayPal / Credit Card / Installment Payments',
+          icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJxnibT25nu8yMrD6FoVHdv_MjQkTWuPGFHcF_50_50.png?v=1765524566',
+        },
+      ],
+)
+
+const paymentMethods = [
+  'Amex',
+  'Apple Pay',
+  'Discover',
+  'Google Pay',
+  'Mastercard',
+  'PayPal',
+  'Shop Pay',
+  'Visa',
+]
 
 const copy = computed(() =>
   lang.value === 'zh'
     ? {
-        explore: '探索',
-        support: '支持',
-        company: '公司',
-        home: '首页',
-        about: '关于我们',
-        contact: '联系我们',
+        communityTitle: '加入我们的社区',
+        communityCta: '立即加入',
+        hours: '周一至周五 10AM-6PM(PDT)',
+        copyright: '© 2026 isinwheel 官方商店',
+        refund: '退款政策',
         privacy: '隐私政策',
         terms: '服务条款',
-        newsletterTitle: '订阅我们的每周快讯',
-        placeholder: '输入你的邮箱',
+        contact: '联系我们',
       }
     : {
-        explore: 'EXPLORE',
-        support: 'SUPPORT',
-        company: 'COMPANY',
-        home: 'Home',
-        about: 'About Us',
-        contact: 'Contact Us',
-        privacy: 'Privacy Policy',
-        terms: 'Terms of Service',
-        newsletterTitle: 'Stay in the loop with our weekly newsletter',
-        placeholder: 'Enter your email',
+        communityTitle: 'Join Our Community',
+        communityCta: 'Join Now',
+        hours: 'Mon-Fri: 10AM-6PM(PDT)',
+        copyright: '© 2026 isinwheel Official Store.',
+        refund: 'Refund policy',
+        privacy: 'Privacy policy',
+        terms: 'Terms of service',
+        contact: 'Contact information',
       },
 )
 </script>
 
 <style scoped lang="scss">
 .app-footer {
-  background-color: #1a1a1a;
   color: #fff;
-  padding-top: 80px;
+  background: #1f1f1f;
+}
 
-  .main-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 60px;
-    position: relative;
-    gap: 40px;
+.footer-community {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(55, 109, 201, 0.94), rgba(105, 180, 233, 0.82)),
+    url('https://www.isinwheel.com/cdn/shop/files/8_da6db915-51f1-4fa5-8ac2-0a26b20c2281.png?v=1765433912')
+      center bottom / cover no-repeat;
 
-    @media (max-width: 1024px) {
-      flex-direction: column;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(15, 43, 88, 0.42), rgba(15, 43, 88, 0));
+    pointer-events: none;
+  }
+}
+
+.community-shell {
+  position: relative;
+  z-index: 1;
+  min-height: 340px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  align-items: center;
+  gap: 48px;
+  padding-top: 38px;
+  padding-bottom: 38px;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.service-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.25;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.service-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  flex-shrink: 0;
+
+  img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+}
+
+.community-copy {
+  justify-self: end;
+  max-width: 360px;
+
+  h2 {
+    font-family: inherit;
+    font-size: clamp(34px, 4vw, 56px);
+    line-height: 0.95;
+    font-weight: 700;
+    margin-bottom: 28px;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  }
+}
+
+.community-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px 8px 8px;
+  border-radius: 999px;
+  color: #101010;
+  background: #fff;
+  font-weight: 700;
+  box-shadow: 0 12px 25px rgba(17, 29, 56, 0.16);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(17, 29, 56, 0.22);
+  }
+}
+
+.community-button__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #6fd43c;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.community-button__arrow {
+  width: 16px;
+  height: 16px;
+}
+
+.footer-contact {
+  background: #212121;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-contact__inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.footer-contact__meta {
+  display: grid;
+  gap: 6px;
+
+  p,
+  a {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  a {
+    width: fit-content;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+}
+
+.footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  a {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    color: rgba(255, 255, 255, 0.86);
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
+
+    &:hover {
+      color: #fff;
+      transform: translateY(-1px);
     }
   }
 
-  .links-section {
-    display: flex;
-    gap: 80px;
-    flex: 1;
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
 
-    @media (max-width: 768px) {
-      flex-wrap: wrap;
-      gap: 40px;
-    }
+.footer-socials__text {
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: lowercase;
+}
 
-    .link-group {
-      h4 {
-        font-size: 14px;
-        font-weight: 700;
-        margin-bottom: 24px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-      }
+.footer-bottom {
+  background: #141414;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
 
-      ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
+.footer-bottom__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
 
-      li {
-        margin-bottom: 16px;
-      }
+.footer-bottom__legal {
+  display: grid;
+  gap: 8px;
 
-      a {
-        color: #d1d1d1;
-        text-decoration: none;
-        font-size: 14px;
-        transition: color 0.3s ease;
+  p {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.88);
+  }
+}
 
-        &:hover {
-          color: #fff;
-          text-decoration: underline;
-        }
-      }
+.footer-bottom__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  a {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.62);
+
+    &:hover {
+      color: #fff;
     }
   }
+}
 
-  .divider {
-    width: 1px;
-    background-color: #333;
-    height: 300px;
-    margin: 0 40px;
+.footer-region {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
 
-    @media (max-width: 1024px) {
-      display: none;
-    }
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.footer-payments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.payment-badge {
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (max-width: 1100px) {
+  .community-shell {
+    grid-template-columns: 1fr;
   }
 
-  .newsletter-section {
-    flex: 1;
-    max-width: 450px;
+  .community-copy {
+    justify-self: start;
+    max-width: none;
+  }
+}
 
-    h2 {
-      font-size: 36px;
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 18px;
-    }
-
-    .newsletter-note {
-      font-size: 14px;
-      line-height: 1.7;
-      color: #b8b8b8;
-      margin-bottom: 24px;
-    }
-
-    .input-group {
-      display: flex;
-      align-items: center;
-      background-color: #2a2a2a;
-      border-radius: 30px;
-      padding: 6px 6px 6px 20px;
-      margin-bottom: 40px;
-
-      input {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: #fff;
-        font-size: 14px;
-        outline: none;
-
-        &::placeholder {
-          color: #888;
-        }
-      }
-
-      .btn-submit {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #fff;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.3s ease;
-
-        &:hover {
-          transform: scale(1.05);
-        }
-
-        .icon {
-          color: #000;
-          width: 20px;
-          height: 20px;
-        }
-      }
-    }
-
-    .social-links {
-      display: flex;
-      gap: 20px;
-
-      .social-icon {
-        color: #fff;
-        transition:
-          color 0.3s ease,
-          transform 0.3s ease;
-
-        svg {
-          width: 20px;
-          height: 20px;
-        }
-
-        &:hover {
-          color: #58cc02;
-          transform: translateY(-2px);
-        }
-      }
-    }
+@media (max-width: 768px) {
+  .community-shell {
+    min-height: auto;
+    gap: 24px;
+    padding-top: 28px;
+    padding-bottom: 28px;
   }
 
-  .contact-info {
-    padding-bottom: 40px;
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .time {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
+  .service-card {
+    padding: 18px 16px;
 
-    .phone {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .email {
+    h3 {
       font-size: 16px;
-      color: #d1d1d1;
-      text-decoration: underline;
     }
   }
 
-  .bottom-bar {
-    border-top: 1px solid #333;
-    padding: 20px 0;
-    font-size: 12px;
-    color: #888;
+  .community-copy h2 {
+    margin-bottom: 18px;
+  }
 
-    .bottom-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 20px;
+  .footer-contact__inner,
+  .footer-bottom__inner {
+    grid-template-columns: 1fr;
+    display: grid;
+    justify-items: start;
+  }
 
-      @media (max-width: 768px) {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-    }
-
-    .copyright-area {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .copyright {
-        font-weight: 600;
-        color: #fff;
-      }
-
-      .bottom-links {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-
-        a {
-          color: #888;
-          text-decoration: none;
-
-          &:hover {
-            color: #fff;
-          }
-        }
-      }
-    }
-
-    .region-selector {
-      .btn-region {
-        background: transparent;
-        border: 1px solid #444;
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        font-size: 12px;
-        transition: border-color 0.3s ease;
-
-        &:hover {
-          border-color: #666;
-        }
-
-        .flag {
-          font-size: 14px;
-        }
-
-        .icon-down {
-          width: 14px;
-          height: 14px;
-        }
-      }
-    }
-
-    .payment-methods {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-
-      .pay-icon {
-        background-color: #222;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-        color: #fff;
-        border: 1px solid #333;
-        display: inline-block;
-
-        &.amex {
-          color: #007bc1;
-        }
-
-        &.paypal {
-          color: #003087;
-        }
-
-        &.visa {
-          color: #1a1f71;
-        }
-      }
-    }
+  .footer-payments {
+    justify-content: flex-start;
   }
 }
 </style>
