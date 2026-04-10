@@ -41,15 +41,19 @@
         <div class="desktop-nav" @mouseleave="scheduleMenuClose">
           <ul class="nav-list">
             <li
-              v-for="item in navItems"
+              v-for="item in displayNavItems"
               :key="item.slug"
               class="nav-item"
-              :class="{ 'is-active': activeMenu?.slug === item.slug }"
+              :class="{
+                'is-active': activeMenu?.slug === item.slug,
+                'promo-item': item.slug === 'isinwheel-sale',
+              }"
               @mouseenter="handleNavEnter(item)"
             >
-              <NuxtLink :to="`/collections/${item.slug}`">{{
-                item.name
-              }}</NuxtLink>
+              <NuxtLink :to="item.linkUrl || `/collections/${item.slug}`">
+                <span>{{ item.name }}</span>
+                <span v-if="item.slug === 'isinwheel-sale'" class="nav-badge">HOT</span>
+              </NuxtLink>
             </li>
 
             <li
@@ -114,11 +118,12 @@
     <div class="mobile-strip">
       <div class="container mobile-links">
         <NuxtLink
-          v-for="item in navItems"
+          v-for="item in displayNavItems"
           :key="`mobile-${item.slug}`"
-          :to="`/collections/${item.slug}`"
+          :to="item.linkUrl || `/collections/${item.slug}`"
         >
-          {{ item.name }}
+          <span>{{ item.name }}</span>
+          <span v-if="item.slug === 'isinwheel-sale'" class="nav-badge">HOT</span>
         </NuxtLink>
       </div>
     </div>
@@ -151,6 +156,12 @@ const fallbackCategories = computed(() => [
   { slug: 'electric-skateboard', name: t('electricSkateboard') },
   { slug: 'accessories', name: t('accessories') },
 ])
+
+const springSaleItem = computed(() => ({
+  slug: 'isinwheel-sale',
+  name: copy.value.springSale || 'Spring Sale',
+  linkUrl: '/collections/isinwheel-sale',
+}))
 
 const normalizeMenuProducts = (products: unknown) =>
   Array.isArray(products) ? products.slice(0, 4) : []
@@ -199,6 +210,25 @@ const hasUsableMenuData = computed(() => categoryMenu.value.length > 0)
 const navItems = computed(() =>
   hasUsableMenuData.value ? categoryMenu.value : fallbackCategories.value,
 )
+const displayNavItems = computed(() => {
+  const source = Array.isArray(navItems.value) ? [...navItems.value] : []
+  const existingIndex = source.findIndex(
+    (item: any) => item?.slug === springSaleItem.value.slug,
+  )
+
+  if (existingIndex !== -1) {
+    source[existingIndex] = {
+      ...source[existingIndex],
+      linkUrl: source[existingIndex]?.linkUrl || springSaleItem.value.linkUrl,
+      name: source[existingIndex]?.name || springSaleItem.value.name,
+    }
+    return source
+  }
+
+  const insertAt = source.length > 1 ? 1 : source.length
+  source.splice(insertAt, 0, springSaleItem.value)
+  return source
+})
 const megaMenuItems = computed(() =>
   categoryMenu.value.filter(
     (item) => Array.isArray(item?.children) && item.children.length > 0,
@@ -240,6 +270,7 @@ const copy = computed(() =>
         about: 'About Us',
         contact: 'Contact Us',
         faq: 'FAQ',
+        springSale: 'Spring Sale',
         photos: 'Photos',
         blog: 'Blog',
         videos: 'Video Labs',
@@ -394,8 +425,8 @@ const handleLogout = async () => {
 }
 
 const handleCartClick = async () => {
-  cart.openCart()
   await cart.refreshCart()
+  await router.push('/cart')
 }
 
 const toggleLang = () => {
@@ -628,6 +659,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 50px;
   padding: 8px 16px;
   border: none;
@@ -648,6 +680,22 @@ onUnmounted(() => {
   background: #111;
   color: #fff;
   border-radius: 200px;
+}
+
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e62332;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .mega-menus-container {
@@ -744,6 +792,9 @@ onUnmounted(() => {
 }
 
 .mobile-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   color: #111;
   text-decoration: none;
