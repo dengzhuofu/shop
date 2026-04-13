@@ -1,7 +1,7 @@
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
     <NuxtLink
-      v-if="resolvedActivity"
+      v-if="showHeaderPromo && resolvedActivity"
       :to="resolvedActivity.linkUrl || '/'"
       class="top-bar"
       :style="activityStyle"
@@ -134,6 +134,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { SearchIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
 
+// Keep these promo switches in code so the Spring Sale experience can be restored quickly later.
+const showHeaderPromo = false
+const showSpringSaleNavItem = false
+
 const { lang, t, setLang } = useShopLocale()
 const session = useShopSession()
 const cart = useShopCart()
@@ -215,6 +219,10 @@ const displayNavItems = computed(() => {
   const existingIndex = source.findIndex(
     (item: any) => item?.slug === springSaleItem.value.slug,
   )
+
+  if (!showSpringSaleNavItem) {
+    return source.filter((item: any) => item?.slug !== springSaleItem.value.slug)
+  }
 
   if (existingIndex !== -1) {
     source[existingIndex] = {
@@ -439,13 +447,21 @@ const toggleLang = () => {
 onMounted(async () => {
   handleScroll()
   window.addEventListener('scroll', handleScroll)
-  await Promise.allSettled([
+  const startupTasks = [
     fetchCategoryMenu(),
-    fetchActivity(),
     session.fetchMe(),
     cart.refreshCart(),
-  ])
-  countdownTimer = window.setInterval(updateCountdown, 1000)
+  ]
+
+  if (showHeaderPromo) {
+    startupTasks.push(fetchActivity())
+  }
+
+  await Promise.allSettled(startupTasks)
+
+  if (showHeaderPromo) {
+    countdownTimer = window.setInterval(updateCountdown, 1000)
+  }
 })
 
 onUnmounted(() => {

@@ -121,7 +121,7 @@
       </div>
     </section>
 
-    <section class="video-section container">
+    <section class="video-section">
       <div class="video-container" @click="toggleVideo">
         <iframe
           v-if="featureVideoEmbedUrl && isPlaying"
@@ -889,7 +889,7 @@ onUnmounted(() => {
 }
 .hero-section {
   position: relative;
-  min-height: 85vh;
+  min-height: 92vh;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -1187,8 +1187,22 @@ onUnmounted(() => {
 }
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(260px, 1fr));
   gap: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 12px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.product-grid > * {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+.product-grid::-webkit-scrollbar {
+  display: none;
 }
 .products-empty-state {
   min-height: 280px;
@@ -1215,6 +1229,8 @@ onUnmounted(() => {
   color: $primary-color;
 }
 .video-container {
+  max-width: 1280px;
+  margin: 0 auto;
   position: relative;
   width: 100%;
   aspect-ratio: 16/9;
@@ -1818,9 +1834,6 @@ onUnmounted(() => {
   gap: 16px;
 }
 @media (min-width: 768px) {
-  .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .review-card {
     flex: 0 0 calc(50% - 12px);
   }
@@ -1844,9 +1857,6 @@ onUnmounted(() => {
   }
 }
 @media (min-width: $bp-lg) {
-  .product-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .influencer-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1872,10 +1882,6 @@ onUnmounted(() => {
   }
 }
 @media (min-width: $bp-xl) {
-  .product-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 32px;
-  }
   .video-container {
     aspect-ratio: 21/9;
   }
@@ -1905,7 +1911,6 @@ onUnmounted(() => {
     font-size: 16px;
   }
   .category-grid,
-  .product-grid,
   .influencer-grid {
     grid-template-columns: 1fr;
   }

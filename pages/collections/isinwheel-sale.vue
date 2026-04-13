@@ -221,6 +221,16 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+// Keep the page implementation intact so it can be restored by flipping this flag later.
+const springSalePageEnabled = false
+
+if (!springSalePageEnabled) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Page Not Found',
+  })
+}
+
 type SaleTab = 'scooter' | 'bike' | 'skateboard'
 type SectionId =
   | 'sale-overview'

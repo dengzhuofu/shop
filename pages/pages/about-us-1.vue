@@ -1,11 +1,11 @@
 <template>
   <div class="brand-page about-page">
     <section
-      class="about-hero"
+      class="about-hero full-bleed"
       :style="{ backgroundImage: `url(${heroImage})` }"
     >
       <div class="about-hero__overlay" />
-      <div class="container about-hero__content">
+      <div class="about-hero__content">
         <div>
           <p class="about-hero__eyebrow">About isinwheel</p>
           <h1>BRING FUN TO YOUR WAY</h1>
@@ -15,27 +15,65 @@
 
     <section class="container about-section">
       <div class="section-heading">
-        <h2>Timeline</h2>
-        <p>Key milestones that shaped isinwheel into a global smart-mobility brand.</p>
+        <div>
+          <h2>Timeline</h2>
+          <p>Key milestones that shaped isinwheel into a global smart-mobility brand.</p>
+        </div>
+
+        <div class="timeline-nav">
+          <button
+            type="button"
+            class="timeline-nav__btn"
+            aria-label="Previous timeline item"
+            @click="stepTimeline(-1)"
+          >
+            <ChevronLeftIcon />
+          </button>
+          <button
+            type="button"
+            class="timeline-nav__btn"
+            aria-label="Next timeline item"
+            @click="stepTimeline(1)"
+          >
+            <ChevronRightIcon />
+          </button>
+        </div>
       </div>
 
-      <div class="timeline-track">
-        <article
-          v-for="item in timeline"
-          :key="item.year"
-          class="timeline-card"
+      <div class="timeline-stage">
+        <div class="timeline-carousel" :style="timelineStyle">
+          <article
+            v-for="(item, index) in timeline"
+            :key="item.year"
+            class="timeline-slide"
+            :class="timelineSlideClass(index)"
+            @click="setActiveTimeline(index)"
+          >
+            <div class="timeline-card">
+              <div class="timeline-card__media">
+                <img :src="item.image" :alt="item.title" loading="lazy" />
+              </div>
+              <div class="timeline-card__copy">
+                <p class="timeline-card__year">{{ item.year }}</p>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.text }}</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="timeline-years">
+        <button
+          v-for="(item, index) in timeline"
+          :key="`${item.year}-label`"
+          type="button"
+          class="timeline-years__item"
+          :class="{ 'is-active': index === activeTimelineIndex }"
+          @click="setActiveTimeline(index)"
         >
-          <img :src="item.image" :alt="item.title" loading="lazy" />
-          <div class="timeline-card__copy">
-            <p class="timeline-card__year">{{ item.year }}</p>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.text }}</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="timeline-years" aria-hidden="true">
-        <span v-for="item in timeline" :key="`${item.year}-label`">{{ item.year }}</span>
+          {{ item.year }}
+        </button>
       </div>
     </section>
 
@@ -95,7 +133,8 @@
 </template>
 
 <script setup lang="ts">
-import { PlayIcon } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { ChevronLeftIcon, ChevronRightIcon, PlayIcon } from 'lucide-vue-next'
 
 useSeoMeta({
   title: 'About Us',
@@ -144,6 +183,31 @@ const timeline = [
       'In 2024, isinwheel launched the S10MAX across Europe, North America, and South America, earning quick recognition for performance, durability, and value.',
   },
 ]
+
+const activeTimelineIndex = ref(0)
+
+const timelineStyle = computed(() => ({
+  transform:
+    activeTimelineIndex.value === 0
+      ? 'translateX(0)'
+      : `translateX(calc(50% - 22rem - ${activeTimelineIndex.value * 58}rem))`,
+}))
+
+const setActiveTimeline = (index: number) => {
+  activeTimelineIndex.value = index
+}
+
+const stepTimeline = (direction: number) => {
+  const total = timeline.length
+  activeTimelineIndex.value =
+    (activeTimelineIndex.value + direction + total) % total
+}
+
+const timelineSlideClass = (index: number) => ({
+  'is-active': index === activeTimelineIndex.value,
+  'is-before': index < activeTimelineIndex.value,
+  'is-after': index > activeTimelineIndex.value,
+})
 
 const storySections = [
   {
@@ -197,11 +261,18 @@ const momentImages = [
 <style scoped lang="scss">
 .about-page {
   padding-bottom: 28px;
+  background: #fff;
+}
+
+.full-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 .about-hero {
   position: relative;
-  min-height: clamp(340px, 54vw, 620px);
+  height:90vh;
   background-position: center;
   background-size: cover;
   overflow: hidden;
@@ -210,7 +281,9 @@ const momentImages = [
 .about-hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 16, 28, 0.28), rgba(8, 16, 28, 0.48));
+  background:
+    linear-gradient(90deg, rgba(7, 13, 24, 0.62) 0%, rgba(7, 13, 24, 0.28) 36%, rgba(7, 13, 24, 0.16) 100%),
+    linear-gradient(180deg, rgba(8, 16, 28, 0.12), rgba(8, 16, 28, 0.48));
 }
 
 .about-hero__content {
@@ -219,25 +292,29 @@ const momentImages = [
   min-height: inherit;
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 72px 0;
+  text-align: left;
   color: #fff;
 
   h1 {
     font-family: inherit;
-    font-size: clamp(34px, 6vw, 72px);
-    line-height: 0.95;
-    letter-spacing: 0.06em;
+    max-width: 9ch;
+    font-size: clamp(44px, 7vw, 98px);
+    line-height: 0.92;
+    letter-spacing: 0.04em;
     font-weight: 800;
   }
 }
 
 .about-hero__eyebrow {
-  margin-bottom: 14px;
-  font-size: 13px;
-  letter-spacing: 0.3em;
+  margin-bottom: 18px;
+  font-size: 12px;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  opacity: 0.9;
+  opacity: 0.84;
 }
 
 .about-section,
@@ -252,13 +329,14 @@ const momentImages = [
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 22px;
+  margin-bottom: 30px;
 
   h2 {
     font-family: inherit;
-    font-size: clamp(30px, 3vw, 46px);
-    line-height: 1;
+    font-size: clamp(36px, 4vw, 64px);
+    line-height: 0.94;
     font-weight: 800;
+    margin-bottom: 8px;
   }
 
   p {
@@ -269,77 +347,162 @@ const momentImages = [
   }
 }
 
-.timeline-track {
+.timeline-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline-nav__btn {
+  width: 48px;
+  height: 48px;
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(320px, 76vw);
-  gap: 20px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scroll-snap-type: x proximity;
+  place-items: center;
+  border: 1px solid rgba(18, 18, 18, 0.88);
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 
-  &::-webkit-scrollbar {
-    height: 8px;
+  &:hover {
+    transform: translateY(-1px);
+    background: #111;
+    color: #fff;
+    border-color: #111;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.16);
-    border-radius: 999px;
+  svg {
+    width: 18px;
+    height: 18px;
   }
+}
+
+.timeline-stage {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 0 10px;
+}
+
+.timeline-carousel {
+  display: flex;
+  align-items: stretch;
+  gap: 32px;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.timeline-slide {
+  flex: 0 0 56rem;
+  cursor: pointer;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease,
+    filter 0.45s ease;
+  opacity: 0.24;
+  filter: saturate(0.7);
+  transform: scale(0.92);
+}
+
+.timeline-slide.is-active {
+  opacity: 1;
+  filter: none;
+  transform: scale(1);
+}
+
+.timeline-slide.is-before,
+.timeline-slide.is-after {
+  pointer-events: auto;
 }
 
 .timeline-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  min-height: 340px;
-  background: #f5f5f2;
-  border-radius: 22px;
+  grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr);
+  min-height: 520px;
+  background: linear-gradient(180deg, #faf9f7 0%, #f5f4f1 100%);
+  border-radius: 26px;
   overflow: hidden;
-  scroll-snap-align: start;
+  box-shadow: 0 28px 60px rgba(17, 17, 17, 0.08);
+}
+
+.timeline-card__media {
+  position: relative;
+  overflow: hidden;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
   }
 }
 
 .timeline-card__copy {
-  padding: 28px 28px 30px;
+  padding: 54px 64px 54px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 
   h3 {
     font-family: inherit;
-    font-size: 34px;
+    font-size: clamp(32px, 3vw, 46px);
     line-height: 1;
     font-weight: 800;
-    margin-bottom: 14px;
+    margin-bottom: 24px;
   }
 
   p {
-    color: #555;
-    font-size: 15px;
-    line-height: 1.75;
+    max-width: 34ch;
+    color: #5b5b5b;
+    font-size: 16px;
+    line-height: 1.62;
   }
 }
 
 .timeline-card__year {
-  margin-bottom: 10px;
-  color: #7a7a7a;
-  font-size: 13px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin-bottom: 18px;
+  color: #7c7c7c;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .timeline-years {
-  display: flex;
-  gap: 18px;
-  margin-top: 16px;
-  color: #888;
-  font-size: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: center;
+  margin-top: 28px;
+}
+
+.timeline-years__item {
+  position: relative;
+  padding-top: 20px;
+  border: none;
+  background: transparent;
+  color: #b8b8b8;
+  font-size: clamp(18px, 2vw, 24px);
   font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.25s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: rgba(17, 17, 17, 0.18);
+  }
+
+  &.is-active {
+    color: #111;
+  }
 }
 
 .about-video__frame {
@@ -469,13 +632,13 @@ const momentImages = [
 @media (max-width: 900px) {
   .section-heading,
   .about-story,
-  .about-story--reverse,
-  .timeline-card {
+  .about-story--reverse {
     grid-template-columns: 1fr;
   }
 
-  .timeline-card {
-    min-height: auto;
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .about-story--reverse {
@@ -488,6 +651,46 @@ const momentImages = [
   .about-video__title {
     white-space: normal;
     width: calc(100% - 48px);
+  }
+
+  .timeline-stage {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .timeline-stage::-webkit-scrollbar {
+    display: none;
+  }
+
+  .timeline-carousel {
+    gap: 18px;
+    transform: none !important;
+  }
+
+  .timeline-slide {
+    flex-basis: min(90vw, 40rem);
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .timeline-card {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .timeline-card__media {
+    min-height: 280px;
+  }
+
+  .timeline-card__copy {
+    padding: 28px 24px 32px;
+  }
+
+  .timeline-years {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .about-moments__grid {
