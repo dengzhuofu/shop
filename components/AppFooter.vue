@@ -34,48 +34,85 @@
       </div>
     </section>
 
-    <section class="footer-contact">
-      <div class="container footer-contact__inner">
-        <div class="footer-contact__meta">
-          <p>{{ copy.hours }}</p>
-          <a href="tel:+18882935788">+1(888)293-5788</a>
-          <a href="mailto:support@isinwheel.com">support@isinwheel.com</a>
+    <section class="footer-main">
+      <div class="container footer-main__inner">
+        <div class="footer-main__left">
+          <div class="footer-link-columns">
+            <div
+              v-for="group in footerNavGroups"
+              :key="group.title"
+              class="footer-link-group"
+            >
+              <h3>{{ group.title }}</h3>
+              <div class="footer-link-list">
+                <NuxtLink
+                  v-for="link in group.links"
+                  :key="link.label"
+                  :to="link.to"
+                >
+                  {{ link.label }}
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-contact__meta">
+            <p>{{ copy.hours }}</p>
+            <a href="tel:+18882935788">+1(888)293-5788</a>
+            <a href="mailto:support@isinwheel.com">support@isinwheel.com</a>
+          </div>
         </div>
 
-        <div class="footer-socials">
-          <a
-            href="https://www.facebook.com/groups/isinwheel"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Facebook"
-          >
-            <FacebookIcon />
-          </a>
-          <a
-            href="https://www.instagram.com/isinwheel/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Instagram"
-          >
-            <InstagramIcon />
-          </a>
-          <a
-            href="https://www.youtube.com/@isinwheel"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="YouTube"
-          >
-            <YoutubeIcon />
-          </a>
-          <a
-            href="https://www.tiktok.com/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="TikTok"
-            class="footer-socials__text"
-          >
-            t
-          </a>
+        <div class="footer-main__right">
+          <div class="footer-newsletter">
+            <h3>{{ copy.newsletterTitle }}</h3>
+            <div class="footer-newsletter__form">
+              <input
+                type="email"
+                :placeholder="copy.newsletterPlaceholder"
+                aria-label="Email"
+              />
+              <button type="button" aria-label="Subscribe newsletter">
+                <ArrowRightIcon />
+              </button>
+            </div>
+          </div>
+
+          <div class="footer-socials">
+            <a
+              href="https://www.facebook.com/groups/isinwheel"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Facebook"
+            >
+              <FacebookIcon />
+            </a>
+            <a
+              href="https://www.instagram.com/isinwheel/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+            >
+              <InstagramIcon />
+            </a>
+            <a
+              href="https://www.youtube.com/@isinwheel"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="YouTube"
+            >
+              <YoutubeIcon />
+            </a>
+            <a
+              href="https://www.tiktok.com/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="TikTok"
+              class="footer-socials__text"
+            >
+              t
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -127,18 +164,18 @@ const serviceCards = computed(() =>
   lang.value === 'zh'
     ? [
         {
-          title: '快速配送',
+          title: '快速可靠配送',
           description: '2-5 个工作日 UPS/FedEx 送达',
           icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJw6ECy5xnu8yMrDe9EqOZZlckwkTWuPGFHcC_50_50.png?v=1765524567',
         },
         {
           title: '1 年保修服务',
-          description: '享受 isinwheel 有限保修支持',
+          description: '由 isinwheel 有限保修提供支持',
           icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPJxLr0S33Hu8yMrCQIEE417wfBAkTWuPGFHcE_50_50.png?v=1765524567',
         },
         {
           title: '美国本地支持',
-          description: '在线聊天和电话服务',
+          description: '在线聊天与电话服务',
           icon: 'https://www.isinwheel.com/cdn/shop/files/lQLPKG07iq9XX-8yMrAo-xE02uGvNAkTWuPGFHcD_50_50.png?v=1765524567',
         },
         {
@@ -171,6 +208,46 @@ const serviceCards = computed(() =>
       ],
 )
 
+const footerNavGroups = computed(() => [
+  {
+    title: 'EXPLORE',
+    links: [
+      { label: 'All Electric Scooter', to: '/collections/electric-scooters' },
+      { label: 'Off Road Electric Scooter', to: '/collections/electric-scooters' },
+      { label: 'Commuter Electric Scooter', to: '/collections/electric-scooters' },
+      { label: 'Electric Bicycle', to: '/collections/electric-bike' },
+      { label: 'Electric Skateboards', to: '/collections/electric-skateboard' },
+      { label: 'Kids Scooter', to: '/collections/electric-scooters' },
+      { label: 'Accessories', to: '/collections/accessories' },
+      { label: 'Exclusive Discount', to: '/pages/contact-us' },
+    ],
+  },
+  {
+    title: 'SUPPORT',
+    links: [
+      { label: 'Shipping Policy', to: '/pages/contact-us' },
+      { label: 'Refund & Return Policy', to: '/pages/contact-us' },
+      { label: 'Warranty', to: '/pages/contact-us' },
+      { label: 'Order Status', to: '/account/orders' },
+      { label: 'Payment Methods', to: '/pages/contact-us' },
+      { label: 'Buy Now Pay Later', to: '/pages/contact-us' },
+      { label: 'Unauthorized Warning', to: '/pages/contact-us' },
+      { label: 'FAQ', to: '/pages/support-faq' },
+    ],
+  },
+  {
+    title: 'COMPANY',
+    links: [
+      { label: 'About Us', to: '/pages/about-us-1' },
+      { label: 'Contact Us', to: '/pages/contact-us' },
+      { label: 'Terms Of Conditions', to: '/account/profile' },
+      { label: 'Privacy Policy', to: '/account/profile' },
+      { label: 'Become A Dealer', to: '/account/profile' },
+      { label: 'Affiliate Program', to: '/account/profile' },
+    ],
+  },
+])
+
 const paymentMethods = [
   'Amex',
   'Apple Pay',
@@ -193,6 +270,8 @@ const copy = computed(() =>
         privacy: '隐私政策',
         terms: '服务条款',
         contact: '联系我们',
+        newsletterTitle: '订阅我们的每周资讯，获取最新动态',
+        newsletterPlaceholder: '输入你的邮箱',
       }
     : {
         communityTitle: 'Join Our Community',
@@ -203,6 +282,8 @@ const copy = computed(() =>
         privacy: 'Privacy policy',
         terms: 'Terms of service',
         contact: 'Contact information',
+        newsletterTitle: 'Stay in the loop with our weekly newsletter',
+        newsletterPlaceholder: 'Enter your email',
       },
 )
 </script>
@@ -217,15 +298,15 @@ const copy = computed(() =>
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(90deg, rgba(55, 109, 201, 0.94), rgba(105, 180, 233, 0.82)),
+    linear-gradient(90deg, rgba(44, 92, 179, 0.94), rgba(127, 200, 243, 0.72)),
     url('https://www.isinwheel.com/cdn/shop/files/8_da6db915-51f1-4fa5-8ac2-0a26b20c2281.png?v=1765433912')
-      center bottom / cover no-repeat;
+      center center / cover no-repeat;
 
   &::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(15, 43, 88, 0.42), rgba(15, 43, 88, 0));
+    background: linear-gradient(90deg, rgba(15, 43, 88, 0.36), rgba(15, 43, 88, 0.04));
     pointer-events: none;
   }
 }
@@ -235,26 +316,27 @@ const copy = computed(() =>
   z-index: 1;
   min-height: 340px;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
   align-items: center;
   gap: 48px;
-  padding-top: 38px;
-  padding-bottom: 38px;
+  padding-top: 28px;
+  padding-bottom: 28px;
 }
 
 .service-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 
 .service-card {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 20px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 18px;
+  gap: 20px;
+  min-height: 126px;
+  padding: 22px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(8px);
 
@@ -262,51 +344,50 @@ const copy = computed(() =>
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 6px;
-    line-height: 1.25;
+    line-height: 1.3;
   }
 
   p {
-    color: rgba(255, 255, 255, 0.84);
+    color: rgba(255, 255, 255, 0.92);
     font-size: 13px;
     line-height: 1.5;
   }
 }
 
 .service-icon {
-  width: 58px;
-  height: 58px;
+  width: 74px;
+  height: 74px;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.96);
   flex-shrink: 0;
 
   img {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     object-fit: contain;
   }
 }
 
 .community-copy {
   justify-self: end;
-  max-width: 360px;
+  max-width: 500px;
 
   h2 {
-    font-family: inherit;
-    font-size: clamp(34px, 4vw, 56px);
-    line-height: 0.95;
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 0.94;
     font-weight: 700;
-    margin-bottom: 28px;
-    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    margin-bottom: 30px;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
   }
 }
 
 .community-button {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 18px 8px 8px;
+  gap: 14px;
+  padding: 10px 20px 10px 10px;
   border-radius: 999px;
   color: #101010;
   background: #fff;
@@ -323,8 +404,8 @@ const copy = computed(() =>
 }
 
 .community-button__icon {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -340,32 +421,61 @@ const copy = computed(() =>
   height: 16px;
 }
 
-.footer-contact {
-  background: #212121;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+.footer-main {
+  background: #1f1f1f;
 }
 
-.footer-contact__inner {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  padding-top: 18px;
-  padding-bottom: 18px;
-}
-
-.footer-contact__meta {
+.footer-main__inner {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+  align-items: start;
+  gap: 42px;
+  padding-top: 18px;
+  padding-bottom: 14px;
+}
 
-  p,
-  a {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.88);
+.footer-main__left {
+  display: grid;
+  gap: 54px;
+  min-width: 0;
+  padding-right: 42px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.footer-link-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 28px;
+}
+
+.footer-link-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+
+  h3 {
+    margin-bottom: 24px;
+    font-size: 18px;
+    font-weight: 800;
   }
+}
+
+.footer-link-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
 
   a {
-    width: fit-content;
+    display: block;
+    width: 100%;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    line-height: 1.25;
+    transition: color 0.2s ease;
 
     &:hover {
       color: #fff;
@@ -373,17 +483,102 @@ const copy = computed(() =>
   }
 }
 
+.footer-contact__meta {
+  display: grid;
+  gap: 14px;
+
+  p {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  a {
+    width: fit-content;
+    font-size: 24px;
+    line-height: 1.1;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 7px;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.84;
+    }
+  }
+}
+
+.footer-main__right {
+  display: grid;
+  align-content: space-between;
+  align-items: start;
+  gap: 36px;
+  min-width: 0;
+  padding-left: 18px;
+}
+
+.footer-newsletter {
+  width: 100%;
+  max-width: 390px;
+
+  h3 {
+    margin-bottom: 28px;
+    font-size: clamp(34px, 4vw, 58px);
+    line-height: 0.98;
+    font-weight: 700;
+  }
+}
+
+.footer-newsletter__form {
+  position: relative;
+  width: 100%;
+
+  input {
+    display: block;
+    width: 100%;
+    height: 56px;
+    padding: 0 72px 0 22px;
+    border: none;
+    border-radius: 14px;
+    background: #2c2c2c;
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+  }
+
+  input::placeholder {
+    color: rgba(255, 255, 255, 0.56);
+  }
+
+  button {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 999px;
+    transform: translateY(-50%);
+    background: #fff;
+    color: #111;
+    cursor: pointer;
+  }
+}
+
 .footer-socials {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 22px;
 
   a {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     display: grid;
     place-items: center;
-    color: rgba(255, 255, 255, 0.86);
+    color: rgba(255, 255, 255, 0.9);
     transition:
       color 0.2s ease,
       transform 0.2s ease;
@@ -395,20 +590,20 @@ const copy = computed(() =>
   }
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
   }
 }
 
 .footer-socials__text {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
   text-transform: lowercase;
 }
 
 .footer-bottom {
   background: #141414;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .footer-bottom__inner {
@@ -416,8 +611,8 @@ const copy = computed(() =>
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 20px;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  padding-top: 16px;
+  padding-bottom: 16px;
 }
 
 .footer-bottom__legal {
@@ -425,7 +620,7 @@ const copy = computed(() =>
   gap: 8px;
 
   p {
-    font-size: 11px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.88);
   }
 }
@@ -433,11 +628,11 @@ const copy = computed(() =>
 .footer-bottom__links {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
 
   a {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.62);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.66);
 
     &:hover {
       color: #fff;
@@ -479,14 +674,26 @@ const copy = computed(() =>
   line-height: 1;
 }
 
-@media (max-width: 1100px) {
-  .community-shell {
+@media (max-width: 1180px) {
+  .community-shell,
+  .footer-main__inner {
     grid-template-columns: 1fr;
   }
 
   .community-copy {
     justify-self: start;
     max-width: none;
+  }
+
+  .footer-main__left {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 28px;
+  }
+
+  .footer-main__right {
+    padding-left: 0;
   }
 }
 
@@ -498,11 +705,22 @@ const copy = computed(() =>
     padding-bottom: 28px;
   }
 
-  .service-grid {
+  .service-grid,
+  .footer-link-columns {
     grid-template-columns: 1fr;
   }
 
+  .footer-main__left,
+  .footer-main__right {
+    gap: 28px;
+  }
+
+  .footer-link-group h3 {
+    margin-bottom: 14px;
+  }
+
   .service-card {
+    min-height: auto;
     padding: 18px 16px;
 
     h3 {
@@ -514,10 +732,27 @@ const copy = computed(() =>
     margin-bottom: 18px;
   }
 
-  .footer-contact__inner,
+  .footer-main__inner,
+  .footer-bottom__inner {
+    gap: 24px;
+  }
+
+  .footer-contact__meta {
+    p {
+      font-size: 18px;
+    }
+
+    a {
+      font-size: 18px;
+    }
+  }
+
+  .footer-newsletter h3 {
+    margin-bottom: 20px;
+  }
+
   .footer-bottom__inner {
     grid-template-columns: 1fr;
-    display: grid;
     justify-items: start;
   }
 
