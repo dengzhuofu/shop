@@ -194,17 +194,24 @@
     <section class="media-review-section">
       <div class="media-bg"><div class="overlay" /></div>
       <div class="container media-content">
-        <div class="quote-icon">{{ reviewSummary.rating || '4.8' }}</div>
-        <h2 class="review-title">{{ reviewSummary.title || copy.mediaReviewTitle }}</h2>
+        <div class="quote-icon">{{ activeMediaReview.rating }}</div>
+        <h2 class="review-title">{{ activeMediaReview.title }}</h2>
+        <p class="media-review-text">{{ activeMediaReview.text }}</p>
         <div class="media-logo">
           <span class="logo-circle">REV</span
-          ><span class="logo-text">{{ reviewSummary.countText || copy.customerReviewsSubtitle }}</span>
+          ><span class="logo-text">{{
+            activeMediaReview.name
+          }}<span v-if="activeMediaReview.verified"> · {{ copy.verified }}</span></span>
         </div>
         <div class="pagination-dots">
-          <span class="dot active" /><span
-            v-for="dot in 6"
-            :key="dot"
+          <button
+            v-for="(review, index) in mediaReviewSlides"
+            :key="review.id"
+            type="button"
             class="dot"
+            :class="{ active: index === activeMediaReviewIndex }"
+            :aria-label="`Go to review ${index + 1}`"
+            @click="setActiveMediaReview(index)"
           />
         </div>
       </div>
@@ -299,7 +306,7 @@
             />
           </svg>
         </h2>
-        <NuxtLink to="/collections/electric-scooters" class="btn-view-all"
+        <NuxtLink to="/blogs/news" class="btn-view-all"
           ><FileTextIcon class="icon-left" /> {{ copy.viewAll }}</NuxtLink
         >
       </div>
@@ -381,6 +388,7 @@ const products = ref<any[]>([])
 const homeContent = ref<Record<string, any>>({})
 const currentHeroIndex = ref(0)
 const currentTab = ref('electric-scooters')
+const activeMediaReviewIndex = ref(0)
 const isPlaying = ref(false)
 const videoRef = ref<HTMLVideoElement | null>(null)
 let heroTimer: ReturnType<typeof window.setInterval> | null = null
@@ -775,6 +783,49 @@ const customerReviews = computed(() => {
   }))
 })
 
+const mediaReviewSlides = computed(() => {
+  const reviews = customerReviews.value.length
+    ? customerReviews.value
+    : fallbackCustomerReviews.value
+
+  return reviews.map((review: any, index: number) => ({
+    id: review.id || index + 1,
+    rating: reviewSummary.value?.rating || '4.8',
+    title: review.title || reviewSummary.value?.title || copy.value.mediaReviewTitle,
+    text: review.text || reviewSummary.value?.countText || copy.value.customerReviewsSubtitle,
+    name: review.name || `Review ${index + 1}`,
+    verified: Boolean(review.verified),
+  }))
+})
+
+const activeMediaReview = computed(
+  () =>
+    mediaReviewSlides.value[activeMediaReviewIndex.value] || {
+      rating: reviewSummary.value?.rating || '4.8',
+      title: reviewSummary.value?.title || copy.value.mediaReviewTitle,
+      text: reviewSummary.value?.countText || copy.value.customerReviewsSubtitle,
+      name: 'isinwheel rider',
+      verified: false,
+    },
+)
+
+const setActiveMediaReview = (index: number) => {
+  activeMediaReviewIndex.value = index
+}
+
+const goToPrevMediaReview = () => {
+  if (!mediaReviewSlides.value.length) return
+  activeMediaReviewIndex.value =
+    (activeMediaReviewIndex.value - 1 + mediaReviewSlides.value.length) %
+    mediaReviewSlides.value.length
+}
+
+const goToNextMediaReview = () => {
+  if (!mediaReviewSlides.value.length) return
+  activeMediaReviewIndex.value =
+    (activeMediaReviewIndex.value + 1) % mediaReviewSlides.value.length
+}
+
 const blogCards = computed(() => {
   const cards = Array.isArray(homeContent.value?.blogCards)
     ? homeContent.value.blogCards
@@ -832,6 +883,9 @@ watchEffect(() => {
   }
   if (currentHeroIndex.value >= heroSlides.value.length) {
     currentHeroIndex.value = 0
+  }
+  if (activeMediaReviewIndex.value >= mediaReviewSlides.value.length) {
+    activeMediaReviewIndex.value = 0
   }
 })
 
@@ -1439,7 +1493,8 @@ onUnmounted(() => {
 }
 .media-review-section {
   position: relative;
-  min-height: 400px;
+  min-height: 0;
+  height: 620px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1459,27 +1514,43 @@ onUnmounted(() => {
   position: relative;
   z-index: 2;
   max-width: 800px;
-  padding: 60px 20px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 28px 20px 36px;
 }
 .quote-icon {
-  margin-bottom: 20px;
+  margin-bottom: 0;
   color: $secondary-color;
   font-size: 80px;
   line-height: 1;
   font-family: Georgia, serif;
 }
 .review-title {
-  margin-bottom: 40px;
+  margin-bottom: 0;
   font-size: 28px;
   font-weight: 700;
   line-height: 1.4;
+}
+.media-review-text {
+  max-width: 640px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 16px;
+  line-height: 1.65;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .media-logo {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  margin-bottom: 40px;
+  margin-bottom: 0;
 }
 .logo-circle {
   width: 60px;
@@ -1506,8 +1577,11 @@ onUnmounted(() => {
 .pagination-dots .dot {
   width: 8px;
   height: 8px;
+  padding: 0;
+  border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
   transition: all 0.25s ease;
 }
 .why-choose-section,

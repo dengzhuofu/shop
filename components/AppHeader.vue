@@ -103,6 +103,7 @@
 
     <div
       class="mega-menus-container"
+      :class="{ 'has-open-menu': Boolean(activeMenu) }"
       @mouseenter="handleMegaMenuEnter"
       @mouseleave="handleMegaMenuLeave"
     >
@@ -698,6 +699,22 @@ onUnmounted(() => {
   border-radius: 200px;
 }
 
+.support-item > .support-trigger {
+  min-height: 46px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  // box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+
+.support-item:hover > .support-trigger {
+  background: #111;
+  color: #fff;
+  transform: none;
+  box-shadow:
+    0 8px 18px rgba(17, 17, 17, 0.12),
+    inset 0 0 0 1px rgba(17, 17, 17, 0.04);
+}
+
 .nav-badge {
   display: inline-flex;
   align-items: center;
@@ -717,12 +734,21 @@ onUnmounted(() => {
 .mega-menus-container {
   position: relative;
   z-index: 110;
+  overflow: hidden;
+  min-height: 0;
+  transition:
+    min-height 0.32s ease,
+    opacity 0.28s ease;
+}
+
+.mega-menus-container.has-open-menu {
+  min-height: 520px;
 }
 
 .support-item:hover :deep(.nav-dropdown) {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(-50%) translateY(0) scale(1);
   pointer-events: auto;
 }
 
@@ -821,14 +847,22 @@ onUnmounted(() => {
 .fade-enter-active,
 .fade-leave-active {
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    clip-path 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease,
+    filter 0.22s ease;
+  will-change: clip-path, opacity, filter;
 }
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
+  opacity: 0.72;
+  filter: blur(3px);
+  clip-path: inset(0 100% 0 0);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  clip-path: inset(0 0 0 0);
 }
 
 @media (max-width: 1100px) {
