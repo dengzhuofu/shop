@@ -732,17 +732,22 @@ onUnmounted(() => {
 }
 
 .mega-menus-container {
-  position: relative;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
   z-index: 110;
   overflow: hidden;
-  min-height: 0;
+  height: 0;
+  pointer-events: none;
   transition:
-    min-height 0.32s ease,
+    height 0.32s ease,
     opacity 0.28s ease;
 }
 
 .mega-menus-container.has-open-menu {
-  min-height: 520px;
+  height: 520px;
+  pointer-events: auto;
 }
 
 .support-item:hover :deep(.nav-dropdown) {
