@@ -28,7 +28,8 @@ The database is not published to the public internet.
 - `compose.yml`: production compose stack
 - `Dockerfile.frontend`: Nuxt production image
 - `backend/Dockerfile`: Spring Boot production image
-- `deploy/nginx/default.conf`: Nginx reverse proxy
+- `deploy/nginx/http.conf.template`: HTTP Nginx template
+- `deploy/nginx/https.conf.template`: HTTPS Nginx template
 - `deploy/.env.example`: production environment template
 - `deploy/remote/bootstrap-server.sh`: server bootstrap and deploy script
 - `deploy/remote/deploy_remote.py`: upload and remote deploy helper

@@ -96,7 +96,8 @@ jobs:
         run: |
           tar -czf "${{ steps.vars.outputs.deploy_bundle }}" \
             compose.prod.yml \
-            deploy/nginx/default.conf \
+            deploy/nginx/http.conf.template \
+            deploy/nginx/https.conf.template \
             deploy/remote/bootstrap-server.sh \
             deploy/remote/deploy_registry.sh \
             backend/src/main/resources/schema.sql

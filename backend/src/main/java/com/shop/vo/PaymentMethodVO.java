@@ -11,5 +11,7 @@ public class PaymentMethodVO {
   // private String group;
   private String group;
 
+  // private Boolean enabled;
   private Boolean enabled;
+
 }
