@@ -1,11 +1,28 @@
 FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /app
 
+ARG MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
+
+RUN cat <<EOF >/tmp/settings.xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>repo-mirror</id>
+      <name>Repository Mirror</name>
+      <url>${MAVEN_MIRROR_URL}</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
 COPY pom.xml ./
-RUN mvn -q -DskipTests dependency:go-offline
+RUN mvn -s /tmp/settings.xml -B -ntp -DskipTests dependency:go-offline
 
 COPY src ./src
-RUN mvn -q -DskipTests package
+RUN mvn -s /tmp/settings.xml -B -ntp -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
