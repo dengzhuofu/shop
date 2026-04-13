@@ -1,7 +1,7 @@
 FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /app
 
-ARG MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
+ARG MAVEN_MIRROR_URL=https://repo.huaweicloud.com/repository/maven/
 
 RUN cat <<EOF >/tmp/settings.xml
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"

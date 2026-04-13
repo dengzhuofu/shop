@@ -75,7 +75,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           build-args: |
-            MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
+            MAVEN_MIRROR_URL=https://repo.huaweicloud.com/repository/maven/
           tags: ${{ steps.meta_backend.outputs.tags }}
           labels: ${{ steps.meta_backend.outputs.labels }}
           cache-from: type=gha,scope=backend
@@ -98,8 +98,7 @@ jobs:
         run: |
           tar -czf "${{ steps.vars.outputs.deploy_bundle }}" \
             compose.prod.yml \
-            deploy/nginx/http.conf.template \
-            deploy/nginx/https.conf.template \
+            deploy/nginx/default.conf \
             deploy/remote/bootstrap-server.sh \
             deploy/remote/deploy_registry.sh \
             backend/src/main/resources/schema.sql
