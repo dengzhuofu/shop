@@ -5,94 +5,205 @@
     </transition>
 
     <transition name="slide-right">
-      <div v-if="cart.isOpen.value" class="cart-sidebar">
-        <div class="cart-header">
-          <h2>
-            {{ t('cart') }}
-            <span class="count">{{ cart.count.value }}</span>
-          </h2>
-          <button type="button" class="btn-recently-viewed">{{ copy.recentlyViewed }}</button>
-          <button type="button" class="btn-close" @click="handleClose">
-            <span class="icon">✕</span>
-          </button>
-        </div>
+      <aside v-if="cart.isOpen.value" class="cart-sidebar" aria-label="Shopping cart">
+        <header class="cart-header">
+          <div class="cart-tabs" role="tablist" :aria-label="t('cart')">
+            <button
+              type="button"
+              class="tab-button"
+              :class="{ 'is-active': activeTab === 'cart', 'is-muted': activeTab !== 'cart' }"
+              role="tab"
+              :aria-selected="activeTab === 'cart'"
+              @click="activeTab = 'cart'"
+            >
+              <span class="tab-label">{{ t('cart') }}</span>
+              <span class="tab-count">{{ cart.count.value }}</span>
+            </button>
+            <button
+              type="button"
+              class="tab-button"
+              :class="{ 'is-active': activeTab === 'recent', 'is-muted': activeTab !== 'recent' }"
+              role="tab"
+              :aria-selected="activeTab === 'recent'"
+              @click="activeTab = 'recent'"
+            >
+              <span class="tab-label">{{ copy.recentlyViewed }}</span>
+              <span v-if="recentlyViewed.count.value" class="tab-count">
+                {{ recentlyViewed.count.value }}
+              </span>
+            </button>
+          </div>
 
-        <div class="cart-body">
-          <div v-if="cart.items.value.length" class="cart-items">
-            <div v-for="item in cart.items.value" :key="item.cartItemId" class="cart-item">
-              <NuxtLink :to="`/products/${item.slug || item.productId}`" class="item-image" @click="handleClose">
-                <img :src="item.productPic" :alt="item.title" />
+          <button type="button" class="btn-close" :aria-label="copy.close" @click="handleClose">
+            <X :size="20" :stroke-width="1.9" />
+          </button>
+        </header>
+
+        <div class="cart-body" :class="{ 'is-recent': activeTab === 'recent' }">
+          <div v-if="activeTab === 'cart' && cart.loading.value && !cart.items.value.length" class="empty-cart is-loading">
+            <div class="empty-visual" />
+            <p>{{ copy.loading }}</p>
+          </div>
+
+          <div v-else-if="activeTab === 'cart' && cart.items.value.length" class="cart-items">
+            <article v-for="item in cart.items.value" :key="item.cartItemId" class="cart-item">
+              <NuxtLink :to="itemLink(item)" class="item-image" @click="handleClose">
+                <img :src="item.productPic" :alt="item.title" loading="lazy" />
               </NuxtLink>
 
-              <div class="item-details">
-                <NuxtLink
-                  :to="`/products/${item.slug || item.productId}`"
-                  class="title"
-                  @click="handleClose"
-                >
+              <div class="item-main">
+                <NuxtLink :to="itemLink(item)" class="item-title" @click="handleClose">
                   {{ item.title }}
                 </NuxtLink>
+
+                <p v-if="itemMeta(item)" class="item-meta">{{ itemMeta(item) }}</p>
+
                 <div class="price-row">
-                  <span class="current-price">{{ money(item.unitPrice) }}</span>
-                </div>
-                <p class="meta">{{ attributeText(item.attributes) }}</p>
-                <p v-if="item.addons?.length" class="bundle-sale">
-                  <span class="tag">{{ copy.addons }}</span>
-                  <span class="discount-amount">
-                    + {{ item.addons.map((addon: any) => addon.name).join(', ') }}
+                  <span class="current-price">{{ linePrice(item) }}</span>
+                  <span v-if="showUnitPrice(item)" class="unit-price">
+                    {{ copy.qtyLabel }} {{ item.quantity }} &middot; {{ money(item.unitPrice || 0) }} {{ copy.each }}
                   </span>
-                </p>
+                </div>
+
+                <div v-if="addonNames(item.addons).length" class="addon-pills">
+                  <span class="addon-badge">{{ copy.addons }}</span>
+                  <span
+                    v-for="name in addonNames(item.addons)"
+                    :key="`${item.cartItemId}-${name}`"
+                    class="addon-pill"
+                  >
+                    {{ name }}
+                  </span>
+                </div>
               </div>
 
               <div class="item-actions">
-                <div class="quantity-selector">
-                  <span class="qty">{{ item.quantity }}</span>
-                  <div class="controls">
-                    <button type="button" class="btn-up" @click="changeQty(item, item.quantity + 1)">^</button>
+                <div class="quantity-box" :aria-label="`${copy.quantity}: ${item.quantity}`">
+                  <span class="quantity-value">{{ item.quantity }}</span>
+                  <div class="quantity-buttons">
                     <button
                       type="button"
-                      class="btn-down"
-                      @click="changeQty(item, Math.max(1, item.quantity - 1))"
+                      class="qty-btn"
+                      :aria-label="copy.increase"
+                      :disabled="isUpdating.value || !canIncrease(item)"
+                      @click="changeQty(item, item.quantity + 1)"
                     >
-                      v
+                      <ChevronUp :size="15" :stroke-width="2" />
+                    </button>
+                    <button
+                      type="button"
+                      class="qty-btn"
+                      :aria-label="copy.decrease"
+                      :disabled="isUpdating.value || item.quantity <= 1"
+                      @click="changeQty(item, item.quantity - 1)"
+                    >
+                      <ChevronDown :size="15" :stroke-width="2" />
                     </button>
                   </div>
                 </div>
-                <button type="button" class="btn-remove" @click="remove(item.cartItemId)">Remove</button>
+
+                <button
+                  type="button"
+                  class="btn-remove"
+                  :disabled="isUpdating.value"
+                  @click="remove(item.cartItemId)"
+                >
+                  {{ copy.remove }}
+                </button>
               </div>
+            </article>
+          </div>
+
+          <div v-else-if="activeTab === 'cart'" class="empty-cart">
+            <div class="empty-visual">
+              <ShoppingBag :size="24" :stroke-width="1.8" />
             </div>
+            <p>{{ t('emptyCart') }}</p>
+          </div>
+
+          <div v-else-if="recentlyViewed.loading.value && !recentlyViewed.items.value.length" class="empty-cart is-loading">
+            <div class="empty-visual" />
+            <p>{{ copy.loadingRecent }}</p>
+          </div>
+
+          <div v-else-if="recentlyViewed.items.value.length" class="recent-list">
+            <article v-for="item in recentlyViewed.items.value" :key="item.id" class="recent-item">
+              <NuxtLink :to="recentlyViewedLink(item)" class="recent-image" @click="handleClose">
+                <img :src="item.pic" :alt="item.title" loading="lazy" />
+              </NuxtLink>
+
+              <div class="recent-main">
+                <div class="recent-topline">
+                  <span class="recent-meta">
+                    <Clock3 :size="14" :stroke-width="1.9" />
+                    {{ copy.viewedRecently }}
+                  </span>
+                  <span v-if="primaryTag(item)" class="recent-tag">{{ primaryTag(item) }}</span>
+                </div>
+
+                <NuxtLink :to="recentlyViewedLink(item)" class="recent-title" @click="handleClose">
+                  {{ item.title }}
+                </NuxtLink>
+
+                <p v-if="item.subtitle" class="recent-subtitle">{{ item.subtitle }}</p>
+
+                <div class="recent-price-row">
+                  <strong>{{ money(item.price || 0) }}</strong>
+                  <span v-if="item.compareAtPrice" class="recent-old-price">
+                    {{ money(item.compareAtPrice) }}
+                  </span>
+                </div>
+
+                <div class="recent-actions">
+                  <NuxtLink :to="recentlyViewedLink(item)" class="recent-link" @click="handleClose">
+                    <span>{{ copy.viewDetails }}</span>
+                    <ArrowUpRight :size="15" :stroke-width="2" />
+                  </NuxtLink>
+                </div>
+              </div>
+            </article>
           </div>
 
           <div v-else class="empty-cart">
-            <p>{{ t('emptyCart') }}</p>
+            <div class="empty-visual">
+              <Clock3 :size="24" :stroke-width="1.8" />
+            </div>
+            <p>{{ copy.emptyRecentlyViewed }}</p>
           </div>
         </div>
 
-        <div class="cart-footer">
-          <div class="cart-options">
-            <button type="button" class="btn-option">
-              <span class="icon">📝</span> {{ copy.orderNote }}
+        <footer class="cart-footer">
+          <template v-if="activeTab === 'cart'">
+          <div class="cart-tools">
+            <button type="button" class="tool-button">
+              <NotebookText :size="18" :stroke-width="1.9" />
+              <span>{{ copy.orderNote }}</span>
             </button>
-            <button type="button" class="btn-option">
-              <span class="icon">🏷️</span> {{ t('coupon') }}
+            <button type="button" class="tool-button">
+              <BadgePercent :size="18" :stroke-width="1.9" />
+              <span>{{ t('coupon') }}</span>
             </button>
           </div>
 
-          <div class="subtotal-row">
-            <div class="taxes-note">{{ copy.taxesNote }}</div>
-            <div class="subtotal">
-              <span class="label">{{ t('subtotal') }}</span>
-              <span class="amount">{{ money(cart.subtotal.value) }}</span>
+          <div class="summary-row">
+            <p class="tax-note">{{ copy.taxesNote }}</p>
+            <div class="summary-total">
+              <span class="summary-label">{{ t('subtotal') }}</span>
+              <strong class="summary-amount">{{ money(cart.subtotal.value) }}</strong>
             </div>
           </div>
 
-          <div class="shipping-protection">
-            <div class="icon-box">📦</div>
-            <div class="content">
-              <div class="header">
+          <div class="protection-card">
+            <div class="protection-icon" aria-hidden="true">
+              <Package :size="30" :stroke-width="1.9" />
+              <ShieldCheck class="protection-shield" :size="18" :stroke-width="2" />
+            </div>
+
+            <div class="protection-copy">
+              <div class="protection-topline">
                 <strong>{{ copy.protection }}</strong>
                 <label class="switch">
-                  <input checked type="checkbox" />
+                  <input v-model="shippingProtectionEnabled" type="checkbox" />
                   <span class="slider" />
                 </label>
               </div>
@@ -102,53 +213,183 @@
 
           <div class="checkout-actions">
             <NuxtLink to="/checkout" class="btn-checkout" @click="handleClose">
-              <span class="icon">🔒</span> {{ t('checkout') }}
+              <LockKeyhole :size="18" :stroke-width="2" />
+              <span>{{ t('checkout') }}</span>
             </NuxtLink>
-            <NuxtLink to="/" class="btn-view-cart" @click="handleClose">
+            <NuxtLink to="/" class="btn-secondary" @click="handleClose">
               {{ t('continueShopping') }}
             </NuxtLink>
           </div>
-        </div>
-      </div>
+          </template>
+
+          <template v-else>
+            <div class="recent-footer-copy">
+              <p>{{ copy.recentHelper }}</p>
+              <span>{{ copy.recentHint }}</span>
+            </div>
+
+            <div class="checkout-actions recent-actions-grid">
+              <NuxtLink
+                v-if="recentlyViewed.items.value[0]"
+                :to="recentlyViewedLink(recentlyViewed.items.value[0])"
+                class="btn-checkout"
+                @click="handleClose"
+              >
+                <ArrowUpRight :size="18" :stroke-width="2" />
+                <span>{{ copy.viewDetails }}</span>
+              </NuxtLink>
+              <NuxtLink to="/" class="btn-secondary" @click="handleClose">
+                {{ copy.browseMore }}
+              </NuxtLink>
+            </div>
+          </template>
+        </footer>
+      </aside>
     </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  ArrowUpRight,
+  BadgePercent,
+  ChevronDown,
+  ChevronUp,
+  Clock3,
+  LockKeyhole,
+  NotebookText,
+  Package,
+  ShieldCheck,
+  ShoppingBag,
+  X,
+} from 'lucide-vue-next'
 import { clearPageScrollLock, setPageScrollLocked } from '~/utils/scrollLock'
 
 const cart = useShopCart()
+const recentlyViewed = useRecentlyViewed()
 const { lang, t } = useShopLocale()
 const { money, attributeText } = useShopFormat()
+
+const activeTab = ref<'cart' | 'recent'>('cart')
+const shippingProtectionEnabled = ref(true)
+const isUpdating = ref(false)
 
 const copy = computed(() =>
   lang.value === 'zh'
     ? {
-        recentlyViewed: '最近浏览',
-        orderNote: '订单备注',
-        taxesNote: '税费和运费将在结账时计算',
-        protection: '配送保障',
-        protectionNote: '建议保留配送保障，用于覆盖运输丢失、损坏或被盗的情况。',
-        addons: '附加项',
+        recentlyViewed: '\u6700\u8fd1\u6d4f\u89c8',
+        loadingRecent: '\u6b63\u5728\u52a0\u8f7d\u6d4f\u89c8\u8bb0\u5f55...',
+        close: '\u5173\u95ed\u8d2d\u7269\u8f66',
+        loading: '\u6b63\u5728\u52a0\u8f7d\u8d2d\u7269\u8f66...',
+        orderNote: '\u8ba2\u5355\u5907\u6ce8',
+        taxesNote: '\u7a0e\u8d39\u4e0e\u8fd0\u8d39\u5c06\u5728\u7ed3\u8d26\u65f6\u8ba1\u7b97',
+        protection: '\u914d\u9001\u4fdd\u969c',
+        protectionNote:
+          '\u5efa\u8bae\u5f00\u542f\u914d\u9001\u4fdd\u969c\uff0c\u4ee5\u4fbf\u5728\u5305\u88f9\u4e22\u5931\u3001\u7834\u635f\u6216\u88ab\u76d7\u65f6\u83b7\u5f97\u66f4\u5b89\u5fc3\u7684\u5904\u7406\u3002',
+        addons: '\u9644\u52a0\u9879',
+        remove: '\u79fb\u9664',
+        quantity: '\u6570\u91cf',
+        qtyLabel: '\u6570\u91cf',
+        each: '\u6bcf\u4ef6',
+        increase: '\u589e\u52a0\u6570\u91cf',
+        decrease: '\u51cf\u5c11\u6570\u91cf',
+        emptyRecentlyViewed: '\u6682\u65e0\u6d4f\u89c8\u8bb0\u5f55',
+        viewedRecently: '\u521a\u521a\u67e5\u770b',
+        viewDetails: '\u67e5\u770b\u8be6\u60c5',
+        browseMore: '\u7ee7\u7eed\u901b\u901b',
+        recentHelper: '\u6700\u8fd1\u6d4f\u89c8\u4f1a\u968f\u4f60\u7684\u6d4f\u89c8\u52a8\u4f5c\u81ea\u52a8\u66f4\u65b0\u3002',
+        recentHint: '\u518d\u6b21\u70b9\u5f00\u5546\u54c1\u9875\uff0c\u5217\u8868\u4f1a\u7acb\u5373\u5237\u65b0\u3002',
       }
     : {
         recentlyViewed: 'Recently viewed',
+        loadingRecent: 'Loading recently viewed...',
+        close: 'Close cart',
+        loading: 'Loading cart...',
         orderNote: 'Order note',
         taxesNote: 'Taxes and shipping calculated at checkout',
         protection: 'Shipping protection',
         protectionNote:
           'We recommend adding shipping protection for peace of mind in case your package is lost, damaged, or stolen during delivery.',
         addons: 'Add-ons',
+        remove: 'Remove',
+        quantity: 'Quantity',
+        qtyLabel: 'Qty',
+        each: 'each',
+        increase: 'Increase quantity',
+        decrease: 'Decrease quantity',
+        emptyRecentlyViewed: 'Your recently viewed list is empty.',
+        viewedRecently: 'Viewed recently',
+        viewDetails: 'View details',
+        browseMore: 'Continue shopping',
+        recentHelper: 'Recently viewed updates automatically every time you open a product.',
+        recentHint: 'Use it as a quick way back to the items that caught your eye.',
       },
 )
 
+const itemLink = (item: any) => `/products/${item.slug || item.productId}`
+const recentlyViewedLink = (item: any) => `/products/${item.slug || item.id}`
+
+const itemMeta = (item: any) => {
+  const text = attributeText(item.attributes)
+  return text?.trim?.() || ''
+}
+
+const addonNames = (addons: any) => {
+  if (!Array.isArray(addons)) {
+    return []
+  }
+  return addons
+    .map((addon: any) => addon?.name || addon?.title || addon?.code)
+    .filter((value: string | undefined) => Boolean(value))
+}
+
+const primaryTag = (item: any) => {
+  if (!Array.isArray(item?.tags) || !item.tags.length) {
+    return ''
+  }
+  return String(item.tags[0] || '').trim()
+}
+
+const linePrice = (item: any) => {
+  const fallback = Number(item.unitPrice || 0) * Number(item.quantity || 1)
+  return money(item.lineAmount || fallback)
+}
+
+const showUnitPrice = (item: any) =>
+  Number(item.quantity || 1) > 1 || Number(item.addonAmount || 0) > 0
+
+const canIncrease = (item: any) => {
+  if (typeof item?.stock !== "number") {
+    return true
+  }
+  return Number(item.quantity || 0) < item.stock
+}
+
 const changeQty = async (item: any, quantity: number) => {
-  await cart.updateQuantity(item.cartItemId, quantity, item.addons?.map((addon: any) => addon.code))
+  if (quantity < 1 || isUpdating.value || quantity === Number(item.quantity || 1)) {
+    return
+  }
+
+  isUpdating.value = true
+  try {
+    await cart.updateQuantity(item.cartItemId, quantity, item.addons?.map((addon: any) => addon.code))
+  } finally {
+    isUpdating.value = false
+  }
 }
 
 const remove = async (cartItemId: number) => {
-  await cart.removeItem(cartItemId)
+  if (isUpdating.value) {
+    return
+  }
+
+  isUpdating.value = true
+  try {
+    await cart.removeItem(cartItemId)
+  } finally {
+    isUpdating.value = false
+  }
 }
 
 const handleClose = () => {
@@ -169,7 +410,7 @@ watch(
   async (newVal) => {
     if (newVal) {
       setPageScrollLocked(true)
-      await cart.refreshCart()
+      await Promise.all([cart.refreshCart(), recentlyViewed.refreshRecentlyViewed()])
     } else {
       clearPageScrollLock()
     }
@@ -182,415 +423,776 @@ watch(
 .cart-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  backdrop-filter: blur(2px);
+  background: rgba(20, 20, 20, 0.34);
+  backdrop-filter: blur(5px);
 }
 
 .cart-sidebar {
+  --cart-border: rgba(17, 17, 17, 0.08);
+  --cart-border-strong: rgba(17, 17, 17, 0.16);
+  --cart-muted: #6e6e6e;
+  --cart-muted-soft: #bcbcbc;
+  --cart-soft: #f8f5f0;
+  --cart-soft-strong: #f1ede7;
+  --cart-accent: #111111;
+  --cart-danger: #d92d4c;
+  --cart-ring: rgba(17, 17, 17, 0.18);
+
   position: fixed;
   top: 0;
   right: 0;
-  width: 100%;
-  max-width: 480px;
-  height: 100vh;
-  background: #fff;
+  width: min(100%, 548px);
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  border-top-left-radius: 30px;
+  border-bottom-left-radius: 30px;
+  background:
+    #ffffff;
+  color: #111111;
+  font-family: "Inter", "Noto Sans SC", "Segoe UI", sans-serif;
+  // box-shadow:
+  //   -28px 0 72px rgba(17, 17, 17, 0.16),
+  //   -2px 0 0 rgba(255, 255, 255, 0.7);
   z-index: 1001;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
 }
 
 .cart-header {
-  padding: 24px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #eee;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 30px 28px 24px;
+  border-bottom: 1px solid var(--cart-border);
+}
 
-  h2 {
-    font-size: 24px;
-    font-weight: 800;
-    margin: 0;
-    display: flex;
-    align-items: flex-start;
+.cart-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 26px;
+  min-width: 0;
+}
 
-    .count {
-      font-size: 12px;
-      margin-left: 4px;
-      margin-top: 2px;
-    }
-  }
+.tab-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 
-  .btn-recently-viewed {
-    margin-left: 16px;
-    color: #999;
-    background: none;
-    border: none;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
+.tab-button.is-active {
+  color: #111111;
+}
 
-    &:hover {
-      color: #111;
-    }
-  }
+.tab-button.is-muted {
+  color: var(--cart-muted-soft);
+}
 
-  .btn-close {
-    margin-left: auto;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #f5f5f5;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
+.tab-button.is-muted .tab-label {
+  font-weight: 760;
+}
 
-    &:hover {
-      background: #e0e0e0;
-    }
-  }
+.tab-label {
+  max-width: 100%;
+  font-size: clamp(2.05rem, 4vw, 2.32rem);
+  line-height: 0.96;
+  font-weight: 800;
+  letter-spacing: -0.058em;
+  white-space: nowrap;
+}
+
+.tab-count {
+  position: relative;
+  top: 0.06em;
+  font-size: 0.76rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.btn-close {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cart-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.98);
+  color: #111111;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn-close:hover {
+  background: var(--cart-soft);
+  border-color: var(--cart-border-strong);
 }
 
 .cart-body {
-  flex: 1;
+  padding: 28px 28px 10px;
   overflow-y: auto;
-  padding: 24px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
 
-  .cart-item {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #eee;
+.cart-body.is-recent {
+  padding-top: 22px;
+}
 
-    &:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
+.cart-body::-webkit-scrollbar {
+  width: 10px;
+}
 
-    .item-image {
-      width: 80px;
-      height: 80px;
-      flex-shrink: 0;
-      background: #f8f8f8;
-      border-radius: 8px;
-      overflow: hidden;
+.cart-body::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-    }
+.cart-body::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.18);
+  background-clip: padding-box;
+}
 
-    .item-details {
-      flex: 1;
+.cart-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(17, 17, 17, 0.28);
+  background-clip: padding-box;
+}
 
-      .title {
-        display: block;
-        font-size: 13px;
-        font-weight: 500;
-        line-height: 1.4;
-        margin-bottom: 8px;
-        color: #111;
-        text-decoration: none;
-      }
+.cart-items {
+  display: grid;
+  gap: 24px;
+}
 
-      .price-row {
-        margin-bottom: 8px;
+.recent-list {
+  display: grid;
+  gap: 16px;
+}
 
-        .current-price {
-          color: #e62332;
-          font-weight: 700;
-          font-size: 14px;
-        }
-      }
+.recent-item {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid rgba(17, 17, 17, 0.06);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(251, 249, 246, 0.8), rgba(255, 255, 255, 0.98));
+}
 
-      .meta {
-        margin: 0 0 8px;
-        font-size: 12px;
-        color: #667085;
-        line-height: 1.5;
-      }
+.recent-image {
+  display: block;
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(248, 245, 240, 0.96), rgba(241, 237, 231, 0.8));
+}
 
-      .bundle-sale {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0;
+.recent-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-        .tag {
-          font-size: 10px;
-          color: #e62332;
-          border: 1px solid #ffd6da;
-          padding: 2px 6px;
-          border-radius: 4px;
-          background: #fff0f2;
-        }
+.recent-main {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
 
-        .discount-amount {
-          color: #555;
-          font-size: 11px;
-          line-height: 1.4;
-        }
-      }
-    }
+.recent-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
 
-    .item-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: space-between;
+.recent-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cart-muted);
+  font-size: 0.8rem;
+  line-height: 1.1;
+  font-weight: 600;
+}
 
-      .quantity-selector {
-        display: flex;
-        align-items: center;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 4px 8px;
+.recent-tag {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #fff2f5;
+  color: var(--cart-danger);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
 
-        .qty {
-          font-size: 14px;
-          min-width: 20px;
-          text-align: center;
-        }
+.recent-title {
+  color: #111111;
+  text-decoration: none;
+  font-size: 1.03rem;
+  line-height: 1.28;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
 
-        .controls {
-          display: flex;
-          flex-direction: column;
-          margin-left: 8px;
+.recent-subtitle {
+  margin: -4px 0 0;
+  color: var(--cart-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
 
-          button {
-            background: none;
-            border: none;
-            font-size: 10px;
-            cursor: pointer;
-            padding: 0 4px;
-            line-height: 1;
-            color: #666;
+.recent-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
 
-            &:hover {
-              color: #111;
-            }
-          }
-        }
-      }
+.recent-price-row strong {
+  color: #111111;
+  font-size: 1.12rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
 
-      .btn-remove {
-        background: none;
-        border: none;
-        color: #999;
-        font-size: 12px;
-        text-decoration: underline;
-        cursor: pointer;
+.recent-old-price {
+  color: #9a9a9a;
+  font-size: 0.88rem;
+  text-decoration: line-through;
+}
 
-        &:hover {
-          color: #e62332;
-        }
-      }
-    }
-  }
+.recent-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.recent-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #111111;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.recent-link:hover,
+.recent-title:hover {
+  color: var(--cart-danger);
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--cart-border);
+}
+
+.item-image {
+  display: block;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(248, 245, 240, 0.96), rgba(241, 237, 231, 0.8));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-main {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.item-title {
+  display: -webkit-box;
+  margin: 0 0 6px;
+  overflow: hidden;
+  color: #111111;
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 1.28;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.item-title:hover {
+  color: #000000;
+}
+
+.item-meta {
+  margin: 0 0 8px;
+  color: var(--cart-muted);
+  font-size: 0.86rem;
+  line-height: 1.48;
+}
+
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+}
+
+.current-price {
+  color: var(--cart-danger);
+  font-size: 1.1rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.unit-price {
+  color: var(--cart-muted);
+  font-size: 0.79rem;
+  line-height: 1.4;
+}
+
+.addon-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.addon-badge,
+.addon-pill {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  line-height: 1;
+}
+
+.addon-badge {
+  border: 1px solid rgba(217, 45, 76, 0.1);
+  background: #fff2f5;
+  color: var(--cart-danger);
+  font-weight: 700;
+}
+
+.addon-pill {
+  border: 1px solid rgba(17, 17, 17, 0.05);
+  background: #f8f6f2;
+  color: #444444;
+}
+
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.quantity-box {
+  display: grid;
+  grid-template-columns: minmax(28px, auto) 24px;
+  gap: 10px;
+  align-items: center;
+  min-width: 78px;
+  padding: 12px 12px 12px 14px;
+  border: 1px solid rgba(17, 17, 17, 0.05);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfaf8, #f3efea);
+}
+
+.quantity-value {
+  text-align: center;
+  font-size: 0.98rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.quantity-buttons {
+  display: grid;
+  gap: 4px;
+}
+
+.qty-btn {
+  width: 24px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #111111;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: rgba(17, 17, 17, 0.08);
+}
+
+.qty-btn:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+
+.btn-remove {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #4e4e4e;
+  font-size: 0.84rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.btn-remove:hover:not(:disabled) {
+  color: var(--cart-danger);
+}
+
+.btn-remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .empty-cart {
-  p {
-    color: #475467;
-    margin: 0;
-  }
+  min-height: 100%;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  padding: 72px 0 48px;
+  text-align: center;
+}
+
+.empty-cart p {
+  margin: 0;
+  color: #4e4e4e;
+  font-size: 1rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.empty-visual {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #faf8f5, #f1ede7);
+  color: #111111;
+}
+
+.empty-cart.is-loading .empty-visual {
+  background: linear-gradient(90deg, #f3efea 18%, #fbfaf8 50%, #f3efea 82%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s linear infinite;
 }
 
 .cart-footer {
-  padding: 24px;
-  background: #fdfdfd;
-  border-top: 1px solid #eee;
+  padding: 12px 28px 28px;
+  border-top: 1px solid var(--cart-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(249, 247, 244, 0.99)),
+    #ffffff;
+}
 
-  .cart-options {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 24px;
+.recent-footer-copy {
+  display: grid;
+  gap: 6px;
+  padding-top: 14px;
+}
 
-    .btn-option {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: none;
-      border: none;
-      font-size: 14px;
-      font-weight: 500;
-      color: #333;
-      cursor: pointer;
+.recent-footer-copy p,
+.recent-footer-copy span {
+  margin: 0;
+}
 
-      &:first-child {
-        border-right: 1px solid #ddd;
-      }
+.recent-footer-copy p {
+  color: #1b1b1b;
+  font-size: 0.98rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
 
-      &:hover {
-        color: #58cc02;
-      }
-    }
-  }
+.recent-footer-copy span {
+  color: var(--cart-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
 
-  .subtotal-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 24px;
+.recent-actions-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
-    .taxes-note {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.4;
-      max-width: 180px;
-    }
+.cart-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--cart-border);
+}
 
-    .subtotal {
-      text-align: right;
-      display: flex;
-      flex-direction: column;
+.tool-button {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px 16px;
+  border: 0;
+  background: transparent;
+  color: #111111;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
 
-      .label {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 4px;
-      }
+.tool-button + .tool-button {
+  border-left: 1px solid var(--cart-border);
+}
 
-      .amount {
-        font-size: 24px;
-        font-weight: 800;
-        color: #111;
-      }
-    }
-  }
+.tool-button:hover {
+  color: var(--cart-danger);
+}
 
-  .shipping-protection {
-    display: flex;
-    gap: 16px;
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 24px;
+.summary-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0 20px;
+}
 
-    .icon-box {
-      font-size: 24px;
-    }
+.tax-note {
+  max-width: 214px;
+  margin: 0;
+  color: #474747;
+  font-size: 1rem;
+  line-height: 1.36;
+}
 
-    .content {
-      flex: 1;
+.summary-total {
+  text-align: right;
+}
 
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 4px;
+.summary-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #4b4b4b;
+  font-size: 0.96rem;
+}
 
-        strong {
-          font-size: 14px;
-          color: #111;
-        }
+.summary-amount {
+  display: block;
+  color: #111111;
+  font-size: clamp(2rem, 4vw, 2.35rem);
+  line-height: 0.98;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
 
-        .switch {
-          position: relative;
-          display: inline-block;
-          width: 40px;
-          height: 24px;
+.protection-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 16px 16px 16px 15px;
+  border: 1px solid rgba(17, 17, 17, 0.07);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(251, 249, 246, 0.98), rgba(247, 243, 238, 0.98));
+}
 
-          input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-          }
+.protection-icon {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #faf8f5, #f2eee8);
+  color: #111111;
+}
 
-          .slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background-color: #ccc;
-            transition: 0.4s;
-            border-radius: 34px;
+.protection-shield {
+  position: absolute;
+  right: 11px;
+  bottom: 11px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #9f9f9f;
+  box-shadow: 0 6px 18px rgba(17, 17, 17, 0.08);
+}
 
-            &:before {
-              position: absolute;
-              content: '';
-              height: 16px;
-              width: 16px;
-              left: 4px;
-              bottom: 4px;
-              background-color: white;
-              transition: 0.4s;
-              border-radius: 50%;
-            }
-          }
+.protection-copy {
+  min-width: 0;
+}
 
-          input:checked + .slider {
-            background-color: #58cc02;
-          }
+.protection-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
 
-          input:checked + .slider:before {
-            transform: translateX(16px);
-          }
-        }
-      }
+.protection-topline strong {
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
 
-      p {
-        font-size: 11px;
-        color: #666;
-        line-height: 1.4;
-        margin: 0;
-      }
-    }
-  }
+.protection-copy p {
+  margin: 0;
+  color: #4e4e4e;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
 
-  .checkout-actions {
-    display: flex;
-    gap: 12px;
+.switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+  display: inline-flex;
+}
 
-    .btn-checkout,
-    .btn-view-cart {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      padding: 16px;
-      font-size: 16px;
-      font-weight: 700;
-      border-radius: 30px;
-    }
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
 
-    .btn-checkout {
-      flex: 2;
-      background: #111;
-      color: #fff;
-      gap: 8px;
+.slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #a9a9a9;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
 
-      &:hover {
-        background: #333;
-      }
-    }
+.slider::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  transition: transform 0.25s ease;
+}
 
-    .btn-view-cart {
-      flex: 1;
-      background: #fff;
-      color: #111;
-      border: 1px solid #ddd;
+.switch input:checked + .slider {
+  background: #111111;
+}
 
-      &:hover {
-        border-color: #111;
-        background: #f5f5f5;
-      }
-    }
-  }
+.switch input:checked + .slider::before {
+  transform: translateX(18px);
+}
+
+.checkout-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-checkout,
+.btn-secondary {
+  min-height: 62px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 1.03rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-checkout {
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+}
+
+.btn-checkout:hover {
+  background: #1f1f1f;
+  box-shadow: 0 12px 24px rgba(17, 17, 17, 0.12);
+}
+
+.btn-secondary {
+  border: 1.5px solid rgba(17, 17, 17, 0.8);
+  background: transparent;
+  color: #111111;
+}
+
+.btn-secondary:hover {
+  background: #f8f5f0;
+}
+
+.tab-button:focus-visible,
+.btn-close:focus-visible,
+.qty-btn:focus-visible,
+.btn-remove:focus-visible,
+.tool-button:focus-visible,
+.switch input:focus-visible + .slider,
+.btn-checkout:focus-visible,
+.btn-secondary:focus-visible,
+.recent-image:focus-visible,
+.recent-link:focus-visible,
+.recent-title:focus-visible,
+.item-image:focus-visible,
+.item-title:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cart-ring);
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
 }
 
 .fade-enter-from,
@@ -600,11 +1202,108 @@ watch(
 
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: transform 0.35s cubic-bezier(0.22, 0.8, 0.3, 1);
 }
 
 .slide-right-enter-from,
 .slide-right-leave-to {
   transform: translateX(100%);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-cart.is-loading .empty-visual {
+    animation: none;
+  }
+
+  .fade-enter-active,
+  .fade-leave-active,
+  .slide-right-enter-active,
+  .slide-right-leave-active,
+  .btn-close,
+  .qty-btn,
+  .btn-remove,
+  .tool-button,
+  .btn-checkout,
+  .btn-secondary,
+  .slider,
+  .slider::before {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .cart-sidebar {
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .cart-header,
+  .cart-body,
+  .cart-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .cart-tabs {
+    gap: 14px;
+  }
+
+  .cart-item {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .recent-item {
+    grid-template-columns: 88px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .recent-image {
+    width: 88px;
+    height: 88px;
+  }
+
+  .item-actions {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .summary-row,
+  .checkout-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .recent-topline {
+    flex-wrap: wrap;
+  }
+
+  .summary-total {
+    text-align: left;
+  }
+
+  .tax-note {
+    max-width: none;
+  }
+
+  .protection-card {
+    grid-template-columns: 1fr;
+  }
+
+  .protection-icon {
+    width: 72px;
+    height: 72px;
+  }
 }
 </style>

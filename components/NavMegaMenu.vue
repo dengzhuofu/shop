@@ -303,6 +303,7 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   width: 100%;
+  overflow: hidden;
   background: #fff;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   border-top: 1px solid #ececec;
@@ -317,6 +318,9 @@ onUnmounted(() => {
   display: flex;
   gap: 60px;
   padding: 0 40px;
+  transition:
+    opacity 0.28s ease,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebar {
@@ -326,6 +330,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition:
+    opacity 0.26s ease,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .discount-tag {
@@ -439,6 +446,36 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  transition:
+    opacity 0.3s ease,
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fade-enter-active .sidebar,
+.fade-leave-active .sidebar {
+  transition-delay: 0.04s;
+}
+
+.fade-enter-active .content-area,
+.fade-leave-active .content-area {
+  transition-delay: 0.09s;
+}
+
+.fade-enter-from .mega-menu-inner,
+.fade-leave-to .mega-menu-inner {
+  opacity: 0.92;
+}
+
+.fade-enter-from .sidebar,
+.fade-leave-to .sidebar {
+  opacity: 0;
+  transform: translateX(-18px);
+}
+
+.fade-enter-from .content-area,
+.fade-leave-to .content-area {
+  opacity: 0;
+  transform: translateX(-26px);
 }
 
 .content-header {

@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS sms_coupon_user CASCADE;
 DROP TABLE IF EXISTS sms_coupon CASCADE;
 DROP TABLE IF EXISTS ums_user_address CASCADE;
 DROP TABLE IF EXISTS oms_cart_item CASCADE;
+DROP TABLE IF EXISTS ums_recently_viewed_product CASCADE;
 DROP TABLE IF EXISTS pms_review CASCADE;
 DROP TABLE IF EXISTS pms_sku CASCADE;
 DROP TABLE IF EXISTS pms_product CASCADE;
@@ -126,6 +127,20 @@ CREATE TABLE oms_cart_item (
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE ums_recently_viewed_product (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES sys_user(id),
+    product_id BIGINT NOT NULL REFERENCES pms_product(id),
+    view_count INT NOT NULL DEFAULT 1,
+    last_viewed_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, product_id)
+);
+
+CREATE INDEX idx_ums_recently_viewed_product_user_time
+    ON ums_recently_viewed_product (user_id, last_viewed_time DESC, id DESC);
 
 CREATE TABLE ums_user_address (
     id BIGSERIAL PRIMARY KEY,
@@ -1147,6 +1162,7 @@ SELECT setval('pms_product_id_seq', COALESCE((SELECT MAX(id) FROM pms_product), 
 SELECT setval('pms_sku_id_seq', COALESCE((SELECT MAX(id) FROM pms_sku), 1), TRUE);
 SELECT setval('pms_review_id_seq', COALESCE((SELECT MAX(id) FROM pms_review), 1), TRUE);
 SELECT setval('oms_cart_item_id_seq', COALESCE((SELECT MAX(id) FROM oms_cart_item), 1), TRUE);
+SELECT setval('ums_recently_viewed_product_id_seq', COALESCE((SELECT MAX(id) FROM ums_recently_viewed_product), 1), TRUE);
 SELECT setval('ums_user_address_id_seq', COALESCE((SELECT MAX(id) FROM ums_user_address), 1), TRUE);
 SELECT setval('sms_coupon_id_seq', COALESCE((SELECT MAX(id) FROM sms_coupon), 1), TRUE);
 SELECT setval('sms_coupon_user_id_seq', COALESCE((SELECT MAX(id) FROM sms_coupon_user), 1), TRUE);

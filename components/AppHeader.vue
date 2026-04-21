@@ -1,7 +1,7 @@
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
     <NuxtLink
-      v-if="resolvedActivity"
+      v-if="showHeaderPromo && resolvedActivity"
       :to="resolvedActivity.linkUrl || '/'"
       class="top-bar"
       :style="activityStyle"
@@ -41,15 +41,19 @@
         <div class="desktop-nav" @mouseleave="scheduleMenuClose">
           <ul class="nav-list">
             <li
-              v-for="item in navItems"
+              v-for="item in displayNavItems"
               :key="item.slug"
               class="nav-item"
-              :class="{ 'is-active': activeMenu?.slug === item.slug }"
+              :class="{
+                'is-active': activeMenu?.slug === item.slug,
+                'promo-item': item.slug === 'isinwheel-sale',
+              }"
               @mouseenter="handleNavEnter(item)"
             >
-              <NuxtLink :to="`/collections/${item.slug}`">{{
-                item.name
-              }}</NuxtLink>
+              <NuxtLink :to="item.linkUrl || `/collections/${item.slug}`">
+                <span>{{ item.name }}</span>
+                <span v-if="item.slug === 'isinwheel-sale'" class="nav-badge">HOT</span>
+              </NuxtLink>
             </li>
 
             <li
@@ -99,6 +103,7 @@
 
     <div
       class="mega-menus-container"
+      :class="{ 'has-open-menu': Boolean(activeMenu) }"
       @mouseenter="handleMegaMenuEnter"
       @mouseleave="handleMegaMenuLeave"
     >
@@ -114,11 +119,12 @@
     <div class="mobile-strip">
       <div class="container mobile-links">
         <NuxtLink
-          v-for="item in navItems"
+          v-for="item in displayNavItems"
           :key="`mobile-${item.slug}`"
-          :to="`/collections/${item.slug}`"
+          :to="item.linkUrl || `/collections/${item.slug}`"
         >
-          {{ item.name }}
+          <span>{{ item.name }}</span>
+          <span v-if="item.slug === 'isinwheel-sale'" class="nav-badge">HOT</span>
         </NuxtLink>
       </div>
     </div>
@@ -128,6 +134,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { SearchIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
+
+// Keep these promo switches in code so the Spring Sale experience can be restored quickly later.
+const showHeaderPromo = false
+const showSpringSaleNavItem = false
+
+// Keep these promo switches in code so the Spring Sale experience can be restored quickly later.
+const showHeaderPromo = false
+const showSpringSaleNavItem = false
 
 const { lang, t, toggleLang, nextLangPillText } = useShopLocale()
 const session = useShopSession()
@@ -151,6 +165,12 @@ const fallbackCategories = computed(() => [
   { slug: 'electric-skateboard', name: t('electricSkateboard') },
   { slug: 'accessories', name: t('accessories') },
 ])
+
+const springSaleItem = computed(() => ({
+  slug: 'isinwheel-sale',
+  name: copy.value.springSale || 'Spring Sale',
+  linkUrl: '/collections/isinwheel-sale',
+}))
 
 const normalizeMenuProducts = (products: unknown) =>
   Array.isArray(products) ? products.slice(0, 4) : []
@@ -199,6 +219,29 @@ const hasUsableMenuData = computed(() => categoryMenu.value.length > 0)
 const navItems = computed(() =>
   hasUsableMenuData.value ? categoryMenu.value : fallbackCategories.value,
 )
+const displayNavItems = computed(() => {
+  const source = Array.isArray(navItems.value) ? [...navItems.value] : []
+  const existingIndex = source.findIndex(
+    (item: any) => item?.slug === springSaleItem.value.slug,
+  )
+
+  if (!showSpringSaleNavItem) {
+    return source.filter((item: any) => item?.slug !== springSaleItem.value.slug)
+  }
+
+  if (existingIndex !== -1) {
+    source[existingIndex] = {
+      ...source[existingIndex],
+      linkUrl: source[existingIndex]?.linkUrl || springSaleItem.value.linkUrl,
+      name: source[existingIndex]?.name || springSaleItem.value.name,
+    }
+    return source
+  }
+
+  const insertAt = source.length > 1 ? 1 : source.length
+  source.splice(insertAt, 0, springSaleItem.value)
+  return source
+})
 const megaMenuItems = computed(() =>
   categoryMenu.value.filter(
     (item) => Array.isArray(item?.children) && item.children.length > 0,
@@ -228,6 +271,9 @@ const copy = computed(() =>
         about: '关于我们',
         contact: '联系我们',
         faq: '常见问题',
+        photos: '照片',
+        blog: '博客',
+        videos: 'Video Labs',
         orders: '订单追踪',
         dealers: '成为经销商',
       }
@@ -237,15 +283,22 @@ const copy = computed(() =>
         about: 'About Us',
         contact: 'Contact Us',
         faq: 'FAQ',
+        springSale: 'Spring Sale',
+        photos: 'Photos',
+        blog: 'Blog',
+        videos: 'Video Labs',
         orders: 'Track Your Order',
         dealers: 'Become A Dealer',
       },
 )
 
 const supportLinks = computed(() => [
-  { title: copy.value.about, url: '/account/profile' },
-  { title: copy.value.contact, url: '/account/profile' },
-  { title: copy.value.faq, url: '/account/profile' },
+  { title: copy.value.about, url: '/pages/about-us-1' },
+  { title: copy.value.contact, url: '/pages/contact-us' },
+  { title: copy.value.faq, url: '/pages/support-faq' },
+  { title: copy.value.photos, url: '/pages/photos' },
+  { title: copy.value.blog, url: '/blogs/news' },
+  { title: copy.value.videos, url: '/pages/isinwheel-videos' },
   { title: copy.value.orders, url: '/account/orders' },
   { title: copy.value.dealers, url: '/account/profile' },
 ])
@@ -385,20 +438,28 @@ const handleLogout = async () => {
 }
 
 const handleCartClick = async () => {
-  cart.openCart()
   await cart.refreshCart()
+  await router.push('/cart')
 }
 
 onMounted(async () => {
   handleScroll()
   window.addEventListener('scroll', handleScroll)
-  await Promise.allSettled([
+  const startupTasks = [
     fetchCategoryMenu(),
-    fetchActivity(),
     session.fetchMe(),
     cart.refreshCart(),
-  ])
-  countdownTimer = window.setInterval(updateCountdown, 1000)
+  ]
+
+  if (showHeaderPromo) {
+    startupTasks.push(fetchActivity())
+  }
+
+  await Promise.allSettled(startupTasks)
+
+  if (showHeaderPromo) {
+    countdownTimer = window.setInterval(updateCountdown, 1000)
+  }
 })
 
 onUnmounted(() => {
@@ -612,6 +673,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 50px;
   padding: 8px 16px;
   border: none;
@@ -634,15 +696,61 @@ onUnmounted(() => {
   border-radius: 200px;
 }
 
+.support-item > .support-trigger {
+  min-height: 46px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  // box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+
+.support-item:hover > .support-trigger {
+  background: #111;
+  color: #fff;
+  transform: none;
+  box-shadow:
+    0 8px 18px rgba(17, 17, 17, 0.12),
+    inset 0 0 0 1px rgba(17, 17, 17, 0.04);
+}
+
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e62332;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
 .mega-menus-container {
-  position: relative;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
   z-index: 110;
+  overflow: hidden;
+  height: 0;
+  pointer-events: none;
+  transition:
+    height 0.32s ease,
+    opacity 0.28s ease;
+}
+
+.mega-menus-container.has-open-menu {
+  height: 520px;
+  pointer-events: auto;
 }
 
 .support-item:hover :deep(.nav-dropdown) {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(-50%) translateY(0) scale(1);
   pointer-events: auto;
 }
 
@@ -728,6 +836,9 @@ onUnmounted(() => {
 }
 
 .mobile-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   color: #111;
   text-decoration: none;
@@ -738,14 +849,22 @@ onUnmounted(() => {
 .fade-enter-active,
 .fade-leave-active {
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    clip-path 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease,
+    filter 0.22s ease;
+  will-change: clip-path, opacity, filter;
 }
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
+  opacity: 0.72;
+  filter: blur(3px);
+  clip-path: inset(0 100% 0 0);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  clip-path: inset(0 0 0 0);
 }
 
 @media (max-width: 1100px) {
