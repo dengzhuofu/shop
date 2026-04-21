@@ -35,7 +35,7 @@
               </div>
 
               <img :src="activeImage" :alt="productDetail.title" class="main-image" />
-              
+
               <img
                 v-if="productDetail.appImage"
                 :src="productDetail.appImage"
@@ -161,9 +161,9 @@
               </button>
             </div>
 
-            <button type="button" class="btn-buy-with-shop">
+            <!-- <button type="button" class="btn-buy-with-shop">
               Buy with <strong>shop</strong>
-            </button>
+            </button> -->
 
             <NuxtLink :to="productLink" class="view-details" @click="close">
               {{ t('viewFullDetails') }}
