@@ -139,10 +139,6 @@ import { SearchIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
 const showHeaderPromo = false
 const showSpringSaleNavItem = false
 
-// Keep these promo switches in code so the Spring Sale experience can be restored quickly later.
-const showHeaderPromo = false
-const showSpringSaleNavItem = false
-
 const { lang, t, toggleLang, nextLangPillText } = useShopLocale()
 const session = useShopSession()
 const cart = useShopCart()
