@@ -10,7 +10,7 @@
                 <h2>{{ session.user.value?.email || '--' }}</h2>
               </div>
               <button type="button" class="ghost-btn" @click="toggleLang">
-                {{ lang.value === 'zh' ? 'EN' : 'ZH' }}
+                {{ nextLangShortText }}
               </button>
             </div>
           </section>
@@ -315,7 +315,7 @@ definePageMeta({
 
 const shippingMethod = 'UPS Ground/FedEx Home Delivery(2-5 Business Days)'
 
-const { lang, setLang, t } = useShopLocale()
+const { lang, t, toggleLang, nextLangShortText } = useShopLocale()
 const { money, attributeText, dateTime } = useShopFormat()
 const { start: startDeadlineTicker, stop: stopDeadlineTicker, countdownText, isExpired } = usePaymentDeadline()
 const cart = useShopCart()
@@ -763,13 +763,6 @@ const completePayment = async () => {
     }
   } finally {
     completingPayment.value = false
-  }
-}
-
-const toggleLang = () => {
-  setLang(lang.value === 'en' ? 'zh' : 'en')
-  if (process.client) {
-    window.location.reload()
   }
 }
 

@@ -46,7 +46,7 @@
     </section>
 
     <section class="explore-section container">
-      <h2 class="section-title explore-title">Explore <i>isinwheel</i></h2>
+      <h2 class="section-title explore-title">{{ t('exploreIsinwheel') }}</h2>
       <div class="category-grid">
         <NuxtLink
           v-for="category in categoryCards"
@@ -1450,7 +1450,7 @@ onUnmounted(() => {
   color: $secondary-color;
   font-size: 80px;
   line-height: 1;
-  font-family: Georgia, serif;
+  font-family: var(--shop-font-family-heading);
 }
 .review-title {
   margin-bottom: 40px;

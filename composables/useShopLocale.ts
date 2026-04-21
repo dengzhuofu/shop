@@ -10,6 +10,7 @@ const messages = {
       'We are rebuilding the isinwheel storefront with real catalog, cart, order, coupon, and payment-placeholder flows.',
     shopNow: 'Shop now',
     exploreCatalog: 'Explore catalog',
+    exploreIsinwheel: 'Explore isinwheel',
     featuredProducts: 'Featured products',
     categoryCollections: 'Shop collections',
     loadMore: 'Load more',
@@ -133,6 +134,7 @@ const messages = {
       '我们正在将 isinwheel 商城完善为包含真实商品、购物车、订单、优惠券和支付占位流程的完整体验。',
     shopNow: '立即选购',
     exploreCatalog: '浏览商品',
+    exploreIsinwheel: '探索 isinwheel',
     featuredProducts: '精选商品',
     categoryCollections: '分类选购',
     loadMore: '加载更多',
@@ -266,14 +268,26 @@ export function useShopLocale() {
     const value = langCookie.value
     return value === 'zh' ? 'zh' : 'en'
   })
+  const isZh = computed(() => lang.value === 'zh')
+  const nextLang = computed<ShopLang>(() => (isZh.value ? 'en' : 'zh'))
 
   watchEffect(() => {
     langCookie.value = lang.value
+    if (process.client) {
+      document.documentElement.lang = isZh.value ? 'zh-CN' : 'en-US'
+      document.documentElement.classList.toggle('lang-zh', isZh.value)
+      document.documentElement.classList.toggle('lang-en', !isZh.value)
+      document.body.classList.toggle('lang-zh', isZh.value)
+      document.body.classList.toggle('lang-en', !isZh.value)
+    }
   })
 
   const setLang = (value: ShopLang) => {
     lang.value = value
     langCookie.value = value
+  }
+  const toggleLang = () => {
+    setLang(nextLang.value)
   }
 
   const t = (key: keyof typeof messages.en) =>
@@ -281,9 +295,14 @@ export function useShopLocale() {
 
   return {
     lang,
-    isZh: computed(() => lang.value === 'zh'),
+    isZh,
+    nextLang,
+    nextLangText: computed(() => (isZh.value ? 'English' : '中文')),
+    nextLangShortText: computed(() => (isZh.value ? 'EN' : 'ZH')),
+    nextLangPillText: computed(() => (isZh.value ? '🇺🇸 EN' : '🇨🇳 中文')),
     t,
     setLang,
+    toggleLang,
     messages,
   }
 }

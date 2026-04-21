@@ -1436,7 +1436,7 @@ onUnmounted(() => {
   color: $secondary-color;
   font-size: 80px;
   line-height: 1;
-  font-family: Georgia, serif;
+  font-family: var(--shop-font-family-heading);
 }
 .review-title {
   margin-bottom: 40px;

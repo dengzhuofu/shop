@@ -66,7 +66,7 @@
 
         <div class="actions">
           <button type="button" class="country-pill" @click="toggleLang">
-            <span>{{ lang.value === 'en' ? '🇺🇸 EN' : '🇨🇳 中文' }}</span>
+            <span>{{ nextLangPillText }}</span>
           </button>
 
           <button type="button" class="icon-button" :aria-label="copy.search">
@@ -129,7 +129,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { SearchIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
 
-const { lang, t, setLang } = useShopLocale()
+const { lang, t, toggleLang, nextLangPillText } = useShopLocale()
 const session = useShopSession()
 const cart = useShopCart()
 const router = useRouter()
@@ -389,13 +389,6 @@ const handleCartClick = async () => {
   await cart.refreshCart()
 }
 
-const toggleLang = () => {
-  setLang(lang.value === 'en' ? 'zh' : 'en')
-  if (process.client) {
-    window.location.reload()
-  }
-}
-
 onMounted(async () => {
   handleScroll()
   window.addEventListener('scroll', handleScroll)
@@ -424,7 +417,7 @@ onUnmounted(() => {
   z-index: 100;
   width: 100%;
   background: #fff;
- 
+
   will-change: transform;
   box-shadow: none;
   filter: none;

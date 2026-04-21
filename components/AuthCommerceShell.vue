@@ -79,8 +79,6 @@ withDefaults(
 </script>
 
 <style scoped lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-
 .auth-shell {
   --auth-ink: #132016;
   --auth-ink-soft: rgba(19, 32, 22, 0.72);
@@ -97,7 +95,7 @@ withDefaults(
     radial-gradient(circle at top left, rgba(122, 166, 71, 0.18), transparent 32%),
     linear-gradient(135deg, #f6f1e7 0%, #efe8db 100%);
   color: var(--auth-ink);
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--shop-font-family-sans);
   overflow: hidden;
 }
 

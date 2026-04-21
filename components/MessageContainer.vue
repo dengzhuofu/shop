@@ -82,7 +82,7 @@ const { messages, removeMessage } = useMessage()
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: all 0.3s ease;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--shop-font-family-sans);
 }
 
 .msg-icon {

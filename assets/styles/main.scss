@@ -1,5 +1,10 @@
 @use "variables" as *;
 
+:root {
+  --shop-font-family-sans: #{$font-family};
+  --shop-font-family-heading: #{$font-family-heading};
+}
+
 // Reset
 * {
   margin: 0;
@@ -7,8 +12,25 @@
   box-sizing: border-box;
 }
 
+html.lang-zh,
+body.lang-zh {
+  --shop-font-family-sans:
+    'Noto Sans SC',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    'Source Han Sans SC',
+    sans-serif;
+  --shop-font-family-heading:
+    'Noto Serif SC',
+    'Source Han Serif SC',
+    'Songti SC',
+    'STSong',
+    serif;
+}
+
 body {
-  font-family: $font-family;
+  font-family: var(--shop-font-family-sans);
   color: $text-color;
   background-color: $white;
   line-height: 1.5;
@@ -17,7 +39,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: $font-family-heading;
+  font-family: var(--shop-font-family-heading);
 }
 
 a {

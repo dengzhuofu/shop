@@ -34,8 +34,8 @@
 
             <div class="dropdown-divider" />
 
-            <button type="button" class="dropdown-item" @click="toggleLang">
-              {{ lang.value === 'zh' ? 'English' : '中文' }}
+            <button type="button" class="dropdown-item" @click="handleLangToggle">
+              {{ nextLangText }}
             </button>
             <button type="button" class="dropdown-item" @click="goTo('/account/profile')">{{ t('profile') }}</button>
             <button type="button" class="dropdown-item" @click="goTo('/account/orders')">{{ t('orders') }}</button>
@@ -91,7 +91,7 @@ import { ChevronDownIcon } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
-const { lang, setLang, t } = useShopLocale()
+const { lang, t, toggleLang, nextLangText } = useShopLocale()
 const session = useShopSession()
 
 const userMenuOpen = ref(false)
@@ -154,12 +154,9 @@ const toggleUserMenu = async () => {
   userMenuOpen.value = !userMenuOpen.value
 }
 
-const toggleLang = () => {
-  setLang(lang.value === 'en' ? 'zh' : 'en')
+const handleLangToggle = () => {
+  toggleLang()
   userMenuOpen.value = false
-  if (process.client) {
-    window.location.reload()
-  }
 }
 
 const handleDocumentClick = (event: MouseEvent) => {
