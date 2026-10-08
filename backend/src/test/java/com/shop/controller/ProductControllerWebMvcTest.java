@@ -46,7 +46,7 @@ class ProductControllerWebMvcTest {
   void setUp() {
     mockMvc = MockMvcBuilders
         .standaloneSetup(new ProductController(productService, skuService, categoryService))
-        .addInterceptors(new LanguageInterceptor())
+        .addInterceptors(new LanguageInterceptor(new com.shop.config.PricingProperties()))
         .build();
   }
 

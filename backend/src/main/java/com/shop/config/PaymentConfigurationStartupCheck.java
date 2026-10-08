@@ -41,11 +41,14 @@ public class PaymentConfigurationStartupCheck implements ApplicationRunner {
       issues.add("payment.alipay.enabled=false");
     }
     issues.addAll(findMissingFields(alipay));
+    if (!paymentProperties.isMockEnabled() && !alipay.isProductionGateway()) {
+      issues.add("production payment gateway must be the implemented HTTPS Alipay OpenAPI endpoint");
+    }
 
     if (!issues.isEmpty()) {
       String message = "Alipay is expected in this environment but configuration is incomplete: " + String.join(", ", issues);
-      log.error(message);
-      throw new IllegalStateException(message);
+      alipay.setEnabled(false);
+      log.warn("{}; online Alipay payments disabled", message);
     }
   }
 
@@ -60,6 +63,7 @@ public class PaymentConfigurationStartupCheck implements ApplicationRunner {
     if (isBlank(alipay.getReturnUrl())) {
       missing.add("payment.alipay.return-url");
     }
+    if (isBlank(alipay.getNotifyUrl())) missing.add("payment.alipay.notify-url");
     if (alipay.isCrossBorderMode()) {
       if (isBlank(alipay.getPartner())) {
         missing.add("payment.alipay.partner");

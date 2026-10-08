@@ -28,6 +28,10 @@ public class AlipayGatewayService {
       PayPaymentIntent intent,
       OmsOrder order,
       String subject) {
+    if (!alipay.supportsCurrency(order.getCurrency()) || !order.getCurrency().equals(intent.getCurrency())
+        || order.getTotalAmount().compareTo(intent.getAmount()) != 0) {
+      throw new IllegalArgumentException("Alipay payment currency or amount mismatch");
+    }
     try {
       AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
       if (hasText(alipay.getNotifyUrl())) {

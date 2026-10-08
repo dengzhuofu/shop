@@ -3,6 +3,7 @@ package com.shop.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shop.common.ProductOptionUtils;
+import com.shop.common.PricingContext;
 import com.shop.common.Result;
 import com.shop.entity.PmsCategory;
 import com.shop.entity.PmsProduct;
@@ -39,11 +40,17 @@ public class ProductController {
       @RequestParam(required = false) String categorySlug,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) String stock,
+      @RequestParam(required = false) String keyword,
       @RequestParam(required = false) BigDecimal minPrice,
       @RequestParam(required = false) BigDecimal maxPrice) {
     Page<PmsProduct> page = new Page<>(pageNum, pageSize);
     QueryWrapper<PmsProduct> wrapper = new QueryWrapper<>();
     wrapper.eq("published", true);
+    if (keyword != null && !keyword.isBlank()) {
+      String term = keyword.trim();
+      if (term.length() > 100) throw new IllegalArgumentException("Search is too long");
+      wrapper.apply("name::text ILIKE {0}", "%" + term + "%");
+    }
     List<PmsCategory> categories = categoryService.list(new QueryWrapper<PmsCategory>()
         .eq("published", true)
         .orderByAsc("sort_order")
@@ -68,10 +75,10 @@ public class ProductController {
       wrapper.le("stock", 0);
     }
     if (minPrice != null) {
-      wrapper.ge("price", minPrice);
+      wrapper.ge("price", PricingContext.baseAmount(minPrice));
     }
     if (maxPrice != null) {
-      wrapper.le("price", maxPrice);
+      wrapper.le("price", PricingContext.baseAmount(maxPrice));
     }
     applyProductSort(wrapper, sort);
 
@@ -101,13 +108,14 @@ public class ProductController {
       return Result.error(404, "Product not found");
     }
 
-    List<PmsSku> skuList = skuService.list(new QueryWrapper<PmsSku>().eq("product_id", id));
+    List<PmsSku> skuList = skuService.list(new QueryWrapper<PmsSku>().eq("product_id", id).orderByAsc("id"));
     ProductVO vo = buildProductVO(product, skuList, publishedCategoryMap());
     return Result.success(vo);
   }
 
   @GetMapping("/slug/{slug}")
   public Result<ProductVO> detailBySlug(@PathVariable String slug) {
+    slug = slug.replaceFirst("(?i)^isinwheel-", "cbjj-");
     PmsProduct product = productService.getOne(new QueryWrapper<PmsProduct>()
         .eq("slug", slug)
         .eq("published", true));
@@ -115,7 +123,7 @@ public class ProductController {
       return Result.error(404, "Product not found");
     }
 
-    List<PmsSku> skuList = skuService.list(new QueryWrapper<PmsSku>().eq("product_id", product.getId()));
+    List<PmsSku> skuList = skuService.list(new QueryWrapper<PmsSku>().eq("product_id", product.getId()).orderByAsc("id"));
     ProductVO vo = buildProductVO(product, skuList, publishedCategoryMap());
     return Result.success(vo);
   }

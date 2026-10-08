@@ -9,6 +9,7 @@ let lastAuthErrorAt = 0
 export const useHttp = async (url: string, options: any = {}) => {
   const token = useCookie('token')
   const langCookie = useCookie('lang')
+  const marketCookie = useCookie('shop-market')
   const router = useRouter()
   const config = useRuntimeConfig()
   const { success, error } = useMessage()
@@ -63,11 +64,11 @@ export const useHttp = async (url: string, options: any = {}) => {
   const defaultOptions = {
     onRequest({ request, options }: any) {
       const currentLang =
-        langCookie.value ||
-        (process.client && navigator.language?.toLowerCase().startsWith('en') ? 'en' : 'zh')
+        langCookie.value || 'en'
 
-      options.headers = options.headers || {}
-      options.headers['Accept-Language'] = currentLang
+      options.headers = new Headers(options.headers)
+      options.headers.set('Accept-Language', currentLang)
+      options.query = { currency: marketCookie.value === 'CN' ? 'CNY' : 'USD', ...(options.query || {}) }
 
       if (
         typeof request === 'string' &&
@@ -78,7 +79,7 @@ export const useHttp = async (url: string, options: any = {}) => {
       }
 
       if (token.value) {
-        options.headers.Authorization = `${token.value}`
+        options.headers.set('Authorization', `${token.value}`)
       }
     },
     onResponse({ response, options }: any) {

@@ -1,7 +1,7 @@
 <template>
   <section class="product-reviews" aria-labelledby="customer-reviews-title">
     <div class="reviews-shell">
-      <h2 id="customer-reviews-title" class="reviews-title">Customer Reviews</h2>
+      <h2 id="customer-reviews-title" class="reviews-title">{{ isZh ? '客户评价' : 'Customer Reviews' }}</h2>
 
       <div class="reviews-summary">
         <div class="summary-panel average-panel">
@@ -13,8 +13,8 @@
               :class="{ filled: star <= roundedAverage }"
             />
           </div>
-          <p class="average-score">{{ averageRatingText }} out of 5</p>
-          <p class="based-on">Based on {{ summary.totalReviews }} reviews</p>
+          <p class="average-score">{{ averageRatingText }} {{ isZh ? '/ 5 分' : 'out of 5' }}</p>
+          <p class="based-on">{{ isZh ? '共' : 'Based on' }} {{ summary.totalReviews }} {{ isZh ? '条评价' : 'reviews' }}</p>
         </div>
 
         <div class="summary-panel distribution-panel">
@@ -36,14 +36,14 @@
 
         <div class="summary-panel summary-cta">
           <button type="button" class="write-review-btn" @click="openComposer">
-            Write a review
+            {{ isZh ? '撰写评价' : 'Write a review' }}
           </button>
-          <p class="summary-note">Share your setup, photos, and ride impressions.</p>
+          <p class="summary-note">{{ isZh ? '分享使用体验和照片。' : 'Share your setup, photos, and ride impressions.' }}</p>
         </div>
       </div>
 
       <div v-if="allPhotos.length" class="customer-media">
-        <p class="media-title">Customer photos &amp; videos</p>
+        <p class="media-title">{{ isZh ? '客户照片' : 'Customer photos & videos' }}</p>
         <div class="media-strip">
           <button
             v-for="(photo, index) in visiblePhotos"
@@ -60,28 +60,28 @@
             class="media-more"
             @click="showAllPhotos = !showAllPhotos"
           >
-            {{ showAllPhotos ? 'Show less' : 'See more' }}
+            {{ showAllPhotos ? (isZh ? '收起' : 'Show less') : (isZh ? '查看更多' : 'See more') }}
           </button>
         </div>
       </div>
 
       <div class="reviews-toolbar">
         <label class="sort-label">
-          <span>Sort by</span>
+          <span>{{ isZh ? '排序方式' : 'Sort by' }}</span>
           <select v-model="sortBy" class="sort-select">
-            <option value="pictures">Pictures First</option>
-            <option value="recent">Most Recent</option>
-            <option value="highest">Highest Rating</option>
+            <option value="pictures">{{ isZh ? '照片优先' : 'Pictures First' }}</option>
+            <option value="recent">{{ isZh ? '最新评价' : 'Most Recent' }}</option>
+            <option value="highest">{{ isZh ? '评分最高' : 'Highest Rating' }}</option>
           </select>
         </label>
       </div>
 
       <div v-if="loading && !reviews.length" class="reviews-empty">
-        Loading reviews...
+        {{ isZh ? '正在加载评价…' : 'Loading reviews...' }}
       </div>
 
       <div v-else-if="!sortedReviews.length" class="reviews-empty">
-        No reviews yet. Be the first to share how your ride feels.
+        {{ isZh ? '暂无评价，欢迎分享您的使用体验。' : 'No reviews yet. Be the first to share how your ride feels.' }}
       </div>
 
       <div v-else class="reviews-list">
@@ -100,7 +100,7 @@
             <div class="review-meta-text">
               <div class="reviewer-line">
                 <span class="reviewer-name">{{ review.userName }}</span>
-                <span v-if="review.verifiedPurchase" class="verified-badge">Verified</span>
+                <span v-if="review.verifiedPurchase" class="verified-badge">{{ isZh ? '已验证购买' : 'Verified' }}</span>
               </div>
               <span class="review-date">{{ formatDate(review.createTime) }}</span>
             </div>
@@ -122,16 +122,14 @@
           </div>
 
           <div v-if="review.merchantReply" class="merchant-reply">
-            <p class="merchant-title">&gt;&gt; iSinwheel Official Store replied:</p>
+            <p class="merchant-title">{{ isZh ? 'CBJJ 官方商店回复：' : '>> CBJJ Official Store replied:' }}</p>
             <p class="merchant-body">{{ review.merchantReply }}</p>
           </div>
         </article>
       </div>
 
       <div v-if="hasMore && !loading" class="load-more-row">
-        <button type="button" class="load-more-btn" @click="loadMore">
-          Load more reviews
-        </button>
+        <button type="button" class="load-more-btn" @click="loadMore">{{ isZh ? '加载更多评价' : 'Load more reviews' }}</button>
       </div>
     </div>
 
@@ -140,7 +138,7 @@
         <div class="review-modal-card">
           <div class="modal-header">
             <div>
-              <p class="modal-eyebrow">Write a review</p>
+              <p class="modal-eyebrow">{{ isZh ? '撰写评价' : 'Write a review' }}</p>
               <h3>{{ productTitle }}</h3>
             </div>
             <button type="button" class="modal-close" @click="composerOpen = false">
@@ -150,7 +148,7 @@
 
           <form class="review-form" @submit.prevent="submitReview">
             <label class="field">
-              <span>Rating</span>
+              <span>{{ isZh ? '评分' : 'Rating' }}</span>
               <div class="rating-picker">
                 <button
                   v-for="star in 5"
@@ -166,31 +164,30 @@
             </label>
 
             <label class="field">
-              <span>Title</span>
-              <input v-model="draft.title" type="text" maxlength="255" placeholder="Summarize your ride in a few words" />
+              <span>{{ isZh ? '标题' : 'Title' }}</span>
+              <input v-model="draft.title" type="text" maxlength="255" :placeholder="isZh ? '简要概括您的使用体验' : 'Summarize your experience in a few words'" />
             </label>
 
             <label class="field">
-              <span>Review</span>
+              <span>{{ isZh ? '评价' : 'Review' }}</span>
               <textarea
                 v-model="draft.content"
                 rows="5"
+                required
                 maxlength="2000"
-                placeholder="How does the scooter feel on daily rides, pavement cracks, hills, or evening commutes?"
+                :placeholder="isZh ? '分享商品的使用感受与建议' : 'Share your product experience and suggestions'"
               />
             </label>
 
             <div class="field">
               <div class="field-heading">
-                <span>Photo URLs</span>
+                <span>{{ isZh ? '照片链接（选填）' : 'Photo URLs' }}</span>
                 <button
                   v-if="draft.images.length < 4"
                   type="button"
                   class="inline-action"
                   @click="draft.images.push('')"
-                >
-                  Add one
-                </button>
+                >{{ isZh ? '添加照片链接' : 'Add one' }}</button>
               </div>
               <div class="image-inputs">
                 <div v-for="(_, index) in draft.images" :key="`draft-image-${index}`" class="image-input-row">
@@ -205,19 +202,15 @@
                     type="button"
                     class="remove-image-btn"
                     @click="draft.images.splice(index, 1)"
-                  >
-                    Remove
-                  </button>
+                  >{{ isZh ? '移除' : 'Remove' }}</button>
                 </div>
               </div>
             </div>
 
             <div class="modal-actions">
-              <button type="button" class="secondary-btn" @click="composerOpen = false">
-                Cancel
-              </button>
+              <button type="button" class="secondary-btn" @click="composerOpen = false">{{ isZh ? '取消' : 'Cancel' }}</button>
               <button type="submit" class="primary-btn" :disabled="submitting">
-                {{ submitting ? 'Publishing...' : 'Publish review' }}
+                {{ submitting ? (isZh ? '正在发布…' : 'Publishing...') : (isZh ? '发布评价' : 'Publish review') }}
               </button>
             </div>
           </form>
@@ -267,6 +260,7 @@ const emit = defineEmits<{
   (event: 'summary-change', payload: ReviewSummary): void
 }>()
 
+const { isZh } = useShopLocale()
 const session = useShopSession()
 const loading = ref(false)
 const submitting = ref(false)
@@ -336,11 +330,11 @@ const reviewerInitial = (value: string) =>
 
 const formatDate = (value: string) => {
   if (!value) {
-    return 'Just now'
+    return isZh.value ? '刚刚' : 'Just now'
   }
 
   try {
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(isZh.value ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -450,7 +444,7 @@ const submitReview = async () => {
     const res = await useHttp(`/api/review/product/${props.productId}`, {
       method: 'POST',
       body: payload,
-      successMsg: 'Review published',
+      successMsg: isZh.value ? '评价已发布' : 'Review published',
       handleAuthError: false,
     })
 

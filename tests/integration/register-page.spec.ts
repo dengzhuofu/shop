@@ -12,7 +12,7 @@ describe('register page integration', () => {
     const html = await response.text()
 
     expect(response.status).toBe(200)
-    expect(html).toContain('Create your rider account')
+    expect(html).toContain('Create account')
     expect(html).toContain('First name')
     expect(html).toContain('Last name')
     expect(html).toContain('Email')

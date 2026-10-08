@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.common.LanguageContext;
+import com.shop.common.PricingContext;
 import com.shop.common.ProductAddonUtils;
 import com.shop.common.Result;
 import com.shop.dto.CartAddDTO;
@@ -100,6 +101,7 @@ public class CartController {
       PmsSku sku = skuService.getById(item.getSkuId());
       PmsProduct product = productService.getById(item.getProductId());
       CartItemVO vo = new CartItemVO();
+      vo.setCurrency(PricingContext.currency());
       vo.setCartItemId(item.getId());
       vo.setProductId(item.getProductId());
       vo.setSkuId(item.getSkuId());
@@ -110,14 +112,18 @@ public class CartController {
             extractAddonCodes(item.getSelectedAddonsSnapshot()),
             lang);
         vo.setProductPic(sku.getPic());
-        vo.setUnitPrice(sku.getPrice());
-        vo.setAddonAmount(addonAmount.multiply(BigDecimal.valueOf(item.getQuantity())));
-        vo.setLineAmount(sku.getPrice().add(addonAmount).multiply(BigDecimal.valueOf(item.getQuantity())));
+        BigDecimal unitPrice = PricingContext.money(sku.getPrice());
+        BigDecimal convertedAddons = ProductAddonUtils.resolveSelectedAddons(
+            product == null ? null : product.getUpsells(), extractAddonCodes(item.getSelectedAddonsSnapshot()), lang)
+            .stream().map(addon -> PricingContext.money(new BigDecimal(String.valueOf(((java.util.Map<?, ?>) addon).get("price")))))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        vo.setUnitPrice(unitPrice);
+        vo.setAddonAmount(convertedAddons.multiply(BigDecimal.valueOf(item.getQuantity())));
+        vo.setLineAmount(unitPrice.add(convertedAddons).multiply(BigDecimal.valueOf(item.getQuantity())));
         vo.setStock(sku.getStock());
-        vo.setAttributes(item.getSelectedAttributesSnapshot() != null
-            ? item.getSelectedAttributesSnapshot()
-            : SkuVO.buildSnapshot(sku.getSpecs(), lang));
-        vo.setAddons(item.getSelectedAddonsSnapshot());
+        vo.setAttributes(SkuVO.buildSnapshot(sku.getSpecs(), lang));
+        vo.setAddons(PricingContext.prices(ProductAddonUtils.resolveSelectedAddons(
+            product == null ? null : product.getUpsells(), extractAddonCodes(item.getSelectedAddonsSnapshot()), lang)));
       }
       if (product != null) {
         vo.setTitle(ProductVO.extractLang(product.getName(), lang));

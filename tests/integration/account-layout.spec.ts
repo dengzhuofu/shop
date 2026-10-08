@@ -12,7 +12,7 @@ describe('account shell integration', () => {
     const html = await response.text()
 
     expect(response.status).toBe(200)
-    expect(html).toContain('isinwheel')
+    expect(html).toContain('CBJJ')
     expect(html).toContain('Profile')
     expect(html).toContain('Refund policy')
     expect(html).not.toContain('Limited Time Offer!')

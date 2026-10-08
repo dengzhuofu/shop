@@ -25,6 +25,8 @@ public class OrderController {
     try {
       OrderPreviewVO previewVO = orderService.previewOrder(dto, userId);
       return Result.success(previewVO);
+    } catch (IllegalArgumentException e) {
+      return Result.error(400, e.getMessage());
     } catch (Exception e) {
       return Result.error(500, e.getMessage());
     }
@@ -37,6 +39,8 @@ public class OrderController {
     try {
       OmsOrder order = orderService.createOrder(dto, userId);
       return Result.success(order);
+    } catch (IllegalArgumentException e) {
+      return Result.error(400, e.getMessage());
     } catch (Exception e) {
       return Result.error(500, e.getMessage());
     }

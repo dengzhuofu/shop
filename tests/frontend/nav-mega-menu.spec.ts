@@ -25,7 +25,7 @@ describe('NavMegaMenu', () => {
                 {
                   id: 1,
                   slug: 'u8-electric-bike',
-                  title: 'isinwheel U8 Electric Bike',
+                  title: 'CBJJ U8 Electric Bike',
                   price: 609.99,
                   compareAtPrice: 799.99,
                   pic: 'https://example.com/u8.jpg',
@@ -53,8 +53,8 @@ describe('NavMegaMenu', () => {
     expect(wrapper.text()).toContain('Collections')
     expect(wrapper.text()).toContain('Commuter & City Road')
     expect(wrapper.text()).toContain('All Commuter & City Road')
-    expect(wrapper.text()).toContain('isinwheel U8 Electric Bike')
-    expect(wrapper.text()).toContain('$609.99')
+    expect(wrapper.text()).toContain('CBJJ U8 Electric Bike')
+    expect(wrapper.text()).toMatch(/USD\s*609\.99/)
     expect(wrapper.find('.spring-sale-badge').exists()).toBe(true)
   })
 })

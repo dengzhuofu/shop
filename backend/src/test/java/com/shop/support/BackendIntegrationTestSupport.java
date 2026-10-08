@@ -33,7 +33,15 @@ public abstract class BackendIntegrationTestSupport {
 
   @BeforeEach
   void resetDatabase() {
-    ResourceDatabasePopulator populator = new ResourceDatabasePopulator(new ClassPathResource("schema.sql"));
+    try (var connection = dataSource.getConnection()) {
+      if (!connection.getCatalog().startsWith("shop_cbjj_test")) {
+        throw new IllegalStateException("Integration tests may reset only an isolated shop_cbjj_test database");
+      }
+    } catch (java.sql.SQLException exception) {
+      throw new IllegalStateException("Cannot validate isolated test database", exception);
+    }
+    ResourceDatabasePopulator populator = new ResourceDatabasePopulator(new ClassPathResource("schema.sql"),
+        new ClassPathResource("db/migration/V5__cbjj_catalog_content.sql"));
     populator.execute(dataSource);
   }
 

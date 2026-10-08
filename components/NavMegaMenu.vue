@@ -21,15 +21,6 @@
         </div>
 
         <div v-if="menuData.banner" class="sidebar-bottom">
-          <div v-if="menuData.banner.trustpilot" class="trustpilot">
-            <span class="star-icon">&#9733;</span>
-            <span>Trustpilot</span>
-            <span class="rating-stars">
-              <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star half">&#9733;</span>
-            </span>
-            <span class="score">{{ menuData.banner.trustpilot }}</span>
-          </div>
-
           <NuxtLink :to="menuData.banner.linkUrl" class="combo-link">
             {{ menuData.banner.linkText }}
             <span class="arrow">&rarr;</span>
@@ -124,7 +115,7 @@
               <h3 class="title">{{ product.title }}</h3>
               <div class="price-area">
                 <span class="current-price">
-                  <template v-if="isFromPrice(product)">From </template>
+                  <template v-if="isFromPrice(product)">{{ lang === 'zh' ? '起价 ' : 'From ' }}</template>
                   {{ money(product.price) }}
                 </span>
                 <span v-if="product.compareAtPrice" class="old-price">{{ money(product.compareAtPrice) }}</span>
@@ -169,11 +160,11 @@ const copy = computed(() =>
   lang.value === 'zh'
     ? {
         collections: '分类',
-        popular: '热门推荐',
+        popular: '商品推荐',
       }
     : {
         collections: 'Collections',
-        popular: 'MOST POPULAR',
+        popular: 'PRODUCTS',
       },
 )
 
@@ -235,7 +226,7 @@ const hasSpringSale = (product: Record<string, any>) =>
 
 const displayImages = (product: Record<string, any>) => {
   const images = mergeProductImages(product.images, product.pic).slice(0, 3)
-  return images.length ? images : ['https://via.placeholder.com/640x640?text=isinwheel']
+  return images.length ? images : ['/cbjj/products/1/main.png']
 }
 
 const activeImageIndex = (productId: number) => activeImageIndices.value[productId] || 0

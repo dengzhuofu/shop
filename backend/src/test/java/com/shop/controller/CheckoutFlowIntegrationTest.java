@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@org.springframework.boot.test.context.SpringBootTest(properties = "payment.mock-enabled=true")
 class CheckoutFlowIntegrationTest extends BackendIntegrationTestSupport {
 
   @Autowired
@@ -48,7 +49,7 @@ class CheckoutFlowIntegrationTest extends BackendIntegrationTestSupport {
             .param("lang", "en")
             .header("Authorization", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data[0].title").value("S Nova Pro Commuting Electric Scooter"))
+        .andExpect(jsonPath("$.data[0].title").value("CBJJ S Nova Pro Commuting Electric Scooter"))
         .andExpect(jsonPath("$.data[0].addons[0].code").value("warranty-2y"))
         .andReturn()
         .getResponse()
@@ -71,7 +72,7 @@ class CheckoutFlowIntegrationTest extends BackendIntegrationTestSupport {
                 """.formatted(cartItemId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.coupon.code").value("SAVE50"))
-        .andExpect(jsonPath("$.data.paymentMethods[0].code").value("credit_card"))
+        .andExpect(jsonPath("$.data.paymentMethods[1].code").value("credit_card"))
         .andReturn()
         .getResponse()
         .getContentAsString();
@@ -79,7 +80,7 @@ class CheckoutFlowIntegrationTest extends BackendIntegrationTestSupport {
     JsonNode previewJson = objectMapper.readTree(previewResponse);
     String previewToken = previewJson.path("data").path("previewToken").asText();
     assertThat(previewToken).isNotBlank();
-    assertThat(previewJson.path("data").path("totalAmount").decimalValue()).isEqualByComparingTo("584.53");
+    assertThat(previewJson.path("data").path("totalAmount").decimalValue()).isEqualByComparingTo("539.98");
 
     String createResponse = mockMvc.perform(post("/order/create")
             .header("Authorization", token)

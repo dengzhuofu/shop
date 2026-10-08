@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shop.common.ProductOptionUtils;
 import com.shop.common.Result;
+import com.shop.common.PricingContext;
 import com.shop.entity.PmsCategory;
 import com.shop.entity.PmsProduct;
 import com.shop.entity.PmsSku;
@@ -121,10 +122,10 @@ public class CategoryController {
       wrapper.le("stock", 0);
     }
     if (minPrice != null) {
-      wrapper.ge("price", minPrice);
+      wrapper.ge("price", PricingContext.baseAmount(minPrice));
     }
     if (maxPrice != null) {
-      wrapper.le("price", maxPrice);
+      wrapper.le("price", PricingContext.baseAmount(maxPrice));
     }
     applyProductSort(wrapper, sort);
 
@@ -235,17 +236,15 @@ public class CategoryController {
         .in("category_id", categoryIds)
         .eq("published", true)));
     groupVO.setAllLinkUrl("/collections/" + group.getSlug());
-    groupVO.setAllLinkText("All " + groupVO.getName() + " (" + groupVO.getProductCount() + ")");
+    groupVO.setAllLinkText(("zh".equals(com.shop.common.JsonLocaleUtils.currentLanguage()) ? "全部 " : "All ") + groupVO.getName() + " (" + groupVO.getProductCount() + ")");
     groupVO.setProducts(products);
     return groupVO;
   }
 
   private CategoryMenuBannerVO buildMenuBanner(PmsCategory root, Long productCount) {
     CategoryMenuBannerVO banner = new CategoryMenuBannerVO();
-    banner.setTag("Save $20");
-    banner.setTrustpilot("4.4");
     banner.setLinkUrl("/collections/" + root.getSlug());
-    banner.setLinkText("All " + CategoryVO.from(root, productCount).getName() + " (" + productCount + ")");
+    banner.setLinkText(("zh".equals(com.shop.common.JsonLocaleUtils.currentLanguage()) ? "全部 " : "All ") + CategoryVO.from(root, productCount).getName() + " (" + productCount + ")");
     return banner;
   }
 

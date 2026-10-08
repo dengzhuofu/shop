@@ -237,7 +237,8 @@ const PAGE_SIZE = 12
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useShopLocale()
+const { t, lang } = useShopLocale()
+const { money } = useShopFormat()
 
 const category = ref<any | null>(null)
 const menuItems = ref<any[]>([])
@@ -274,9 +275,9 @@ const stockOptions = computed(() => [
 
 const priceOptions = computed(() => [
   { value: 'all' as const, label: t('allProducts') },
-  { value: 'under-500' as const, label: t('under500') },
-  { value: '500-1000' as const, label: t('between500And1000') },
-  { value: '1000-plus' as const, label: t('over1000') },
+  { value: 'under-500' as const, label: (lang.value === 'zh' ? '低于 ' : 'Under ') + money(500) },
+  { value: '500-1000' as const, label: money(500) + ' – ' + money(1000) },
+  { value: '1000-plus' as const, label: (lang.value === 'zh' ? '高于 ' : 'Over ') + money(1000) },
 ])
 
 const currentSlug = computed(() => String(route.params.slug || ''))

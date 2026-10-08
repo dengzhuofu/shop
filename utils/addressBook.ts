@@ -17,7 +17,7 @@ const normalizeText = (value: unknown) =>
     .toLowerCase()
 
 export const createEmptyAddressDraft = (): AddressDraft => ({
-  country: 'United States',
+  country: 'US',
   firstName: '',
   lastName: '',
   phone: '',
@@ -28,8 +28,12 @@ export const createEmptyAddressDraft = (): AddressDraft => ({
   zipCode: '',
 })
 
+const normalizeCountry = (value: unknown) => {
+  const country = String(value || 'US')
+  return ({'United States':'US',USA:'US',Canada:'CA',China:'CN','中国':'CN','中国大陆':'CN'} as Record<string,string>)[country] || country
+}
 export const toAddressDraft = (source: Partial<AddressDraft> | null | undefined): AddressDraft => ({
-  country: String(source?.country || 'United States'),
+  country: normalizeCountry(source?.country),
   firstName: String(source?.firstName || ''),
   lastName: String(source?.lastName || ''),
   phone: String(source?.phone || ''),

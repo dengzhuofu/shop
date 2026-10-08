@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.shop.common.AlipaySignatureUtils;
 import com.shop.common.JsonLocaleUtils;
 import com.shop.common.PaymentMethodCatalog;
+import com.shop.common.PricingContext;
 import com.shop.common.Result;
 import com.shop.config.PaymentProperties;
 import com.shop.dto.PaymentIntentCreateDTO;
@@ -51,7 +52,7 @@ public class PaymentController {
 
   @GetMapping("/methods")
   public Result<List<PaymentMethodVO>> methods() {
-    return Result.success(PaymentMethodCatalog.methods(JsonLocaleUtils.currentLanguage()));
+    return Result.success(PaymentMethodCatalog.methods(JsonLocaleUtils.currentLanguage(), paymentProperties, PricingContext.currency()));
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -63,6 +64,9 @@ public class PaymentController {
     if (order == null || !order.getUserId().equals(userId)) {
       return Result.error(404, "Order not found");
     }
+    boolean enabled = PaymentMethodCatalog.methods(JsonLocaleUtils.currentLanguage(), paymentProperties, order.getCurrency())
+        .stream().anyMatch(method -> paymentMethod.equals(method.getCode()) && Boolean.TRUE.equals(method.getEnabled()));
+    if (!enabled) return Result.error(400, "Online payment is not available for this currency and payment method");
     if (orderService.expireOrderIfNeeded(order) || isExpiredState(order)) {
       return Result.error(400, "Order payment window expired");
     }
@@ -116,6 +120,7 @@ public class PaymentController {
   @Transactional(rollbackFor = Exception.class)
   @PostMapping("/mock/complete")
   public Result<PaymentIntentVO> mockComplete(@RequestBody PaymentMockCompleteDTO dto) {
+    if (!paymentProperties.isMockEnabled()) return Result.error(403, "Test payments are disabled");
     Long userId = StpUtil.getLoginIdAsLong();
     PayPaymentIntent intent = paymentIntentService.getById(dto.getPaymentIntentId());
     if (intent == null || !intent.getUserId().equals(userId)) {
@@ -163,6 +168,7 @@ public class PaymentController {
   }
 
   private PaymentIntentVO prepareMockIntent(PayPaymentIntent intent, boolean fallbackFromAlipay) {
+    if (!paymentProperties.isMockEnabled()) throw new IllegalStateException("Test payments are disabled");
     intent.setProviderKey("mock");
     intent.setStatus("CREATED");
     intent.setPaidTime(null);
@@ -183,7 +189,7 @@ public class PaymentController {
   private PaymentIntentVO prepareAlipayIntent(PayPaymentIntent intent, OmsOrder order) {
     PaymentProperties.AlipayProperties alipay = paymentProperties.getAlipay();
     if (!alipay.isConfigured()) {
-      if (!alipay.isFallbackToMock()) {
+      if (!alipay.isFallbackToMock() || !paymentProperties.isMockEnabled()) {
         throw new IllegalStateException("Alipay sandbox is enabled but not fully configured");
       }
       return prepareMockIntent(intent, true);
@@ -225,7 +231,6 @@ public class PaymentController {
       throw new IllegalArgumentException("Invalid Alipay signature");
     }
     if (!alipay.isCrossBorderMode()
-        && hasText(normalizedParams.get("app_id"))
         && !alipay.getAppId().equals(normalizedParams.get("app_id"))) {
       throw new IllegalArgumentException("Alipay appId mismatch");
     }
@@ -252,27 +257,35 @@ public class PaymentController {
       throw new IllegalArgumentException("Order not found");
     }
 
+    if (!alipay.supportsCurrency(order.getCurrency()) || (!paymentProperties.isMockEnabled() && !alipay.isProductionGateway())) {
+      throw new IllegalArgumentException("Payment channel is not enabled for this currency");
+    }
+    if (!(alipay.isSandbox() ? "alipay_sandbox" : "alipay").equals(intent.getProviderKey())) {
+      throw new IllegalArgumentException("Payment environment mismatch");
+    }
+
     String tradeStatus = normalizedParams.get("trade_status");
+    if (!"CNY".equals(intent.getCurrency()) || !intent.getCurrency().equals(order.getCurrency())) {
+      throw new IllegalArgumentException("Payment currency mismatch");
+    }
+    String callbackCurrency = normalizedParams.get("currency");
+    if (hasText(callbackCurrency) && !intent.getCurrency().equalsIgnoreCase(callbackCurrency)) {
+      throw new IllegalArgumentException("Payment currency mismatch");
+    }
     String tradeNo = normalizedParams.get("trade_no");
-    BigDecimal paidAmount = parseAmount(firstNonBlank(
-        normalizedParams.get("total_amount"),
-        normalizedParams.get("receipt_amount"),
-        normalizedParams.get("buyer_pay_amount"),
-        normalizedParams.get("total_fee")
-    ));
+    BigDecimal paidAmount = parseAmount(normalizedParams.get("total_amount"));
 
     if (preferAuthoritativeQuery || !hasText(tradeStatus)) {
       AlipayGatewayService.TradeQueryResult tradeQueryResult = alipayGatewayService.queryTrade(alipay, outTradeNo, tradeNo);
       if (tradeQueryResult.success()) {
         tradeStatus = firstNonBlank(tradeQueryResult.tradeStatus(), tradeStatus);
         tradeNo = firstNonBlank(tradeQueryResult.tradeNo(), tradeNo);
-        if (paidAmount == null) {
-          paidAmount = tradeQueryResult.totalAmount();
-        }
+        if (tradeQueryResult.totalAmount() != null) paidAmount = tradeQueryResult.totalAmount();
       }
     }
 
-    if (paidAmount != null && (intent.getAmount() == null || intent.getAmount().compareTo(paidAmount) != 0)) {
+    if (paidAmount == null || intent.getAmount() == null || intent.getAmount().compareTo(paidAmount) != 0
+        || order.getTotalAmount().compareTo(paidAmount) != 0) {
       throw new IllegalArgumentException("Paid amount mismatch");
     }
 
@@ -290,6 +303,7 @@ public class PaymentController {
     }
 
     if (isSuccessfulTrade(tradeStatus)) {
+      if (!hasText(tradeNo)) throw new IllegalArgumentException("Missing payment transaction number");
       markPaymentSucceeded(intent, order, tradeNo);
     } else if ("TRADE_CLOSED".equalsIgnoreCase(tradeStatus)) {
       markPaymentFailed(intent, order, "closed");

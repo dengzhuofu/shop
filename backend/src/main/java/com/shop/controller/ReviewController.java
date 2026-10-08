@@ -49,7 +49,7 @@ public class ReviewController {
         
         Page<PmsReview> page = new Page<>(pageNum, pageSize);
         QueryWrapper<PmsReview> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("product_id", productId).orderByDesc("create_time").orderByDesc("id");
+        queryWrapper.eq("product_id", productId).eq("is_demo", false).orderByDesc("create_time").orderByDesc("id");
         
         Page<PmsReview> resultPage = reviewService.page(page, queryWrapper);
         return Result.success(resultPage);
@@ -58,7 +58,7 @@ public class ReviewController {
     @GetMapping("/product/{productId}/summary")
     public Result<ReviewSummaryVO> getReviewSummary(@PathVariable Long productId) {
         QueryWrapper<PmsReview> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("product_id", productId);
+        queryWrapper.eq("product_id", productId).eq("is_demo", false);
         List<PmsReview> reviews = reviewService.list(queryWrapper);
 
         ReviewSummaryVO summary = new ReviewSummaryVO();
@@ -111,6 +111,7 @@ public class ReviewController {
 
         PmsReview review = new PmsReview();
         review.setProductId(productId);
+        review.setIsDemo(false);
         review.setUserId(userId);
         review.setUserName(resolveReviewerName(user));
         review.setRating(dto.getRating());
@@ -181,6 +182,8 @@ public class ReviewController {
 
         return orderService.count(new QueryWrapper<OmsOrder>()
                 .eq("user_id", userId)
+                .isNotNull("pay_txn_no")
+                .notLikeRight("pay_txn_no", "MOCK_TXN_")
                 .in("id", orderIds)
                 .and(wrapper -> wrapper
                         .eq("payment_status", "PAID")

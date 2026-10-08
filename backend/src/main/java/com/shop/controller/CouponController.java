@@ -3,6 +3,7 @@ package com.shop.controller;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.shop.common.Result;
+import com.shop.common.PricingContext;
 import com.shop.dto.CouponValidateDTO;
 import com.shop.entity.SmsCoupon;
 import com.shop.entity.SmsCouponUser;
@@ -77,8 +78,10 @@ public class CouponController {
     Long userId = StpUtil.getLoginIdAsLong();
     List<SmsCouponUser> couponUsers = couponUserService.list(new QueryWrapper<SmsCouponUser>()
         .eq("user_id", userId)
+        .eq("status", "CLAIMED")
         .orderByDesc("claimed_time"));
     List<CouponVO> result = couponUsers.stream()
+        .filter(couponUser -> { SmsCoupon coupon = couponService.getById(couponUser.getCouponId()); return coupon != null && Boolean.TRUE.equals(coupon.getActive()); })
         .map(couponUser -> CouponVO.from(couponService.getById(couponUser.getCouponId()), couponUser))
         .collect(Collectors.toList());
     return Result.success(result);
@@ -95,10 +98,11 @@ public class CouponController {
     if (coupon == null || !Boolean.TRUE.equals(coupon.getActive())) {
       return Result.error(400, "Coupon is unavailable");
     }
-    if (dto.getSubtotalAmount().compareTo(coupon.getThresholdAmount()) < 0) {
+    if (dto.getSubtotalAmount() == null || dto.getSubtotalAmount().signum() < 0) return Result.error(400, "Invalid subtotal");
+    if (dto.getSubtotalAmount().compareTo(PricingContext.money(coupon.getThresholdAmount())) < 0) {
       return Result.error(400, "Coupon threshold not met");
     }
-    BigDecimal maxDiscount = dto.getSubtotalAmount().min(coupon.getDiscountAmount());
+    BigDecimal maxDiscount = dto.getSubtotalAmount().min(PricingContext.money(coupon.getDiscountAmount()));
     CouponVO vo = CouponVO.from(coupon, couponUser);
     vo.setDiscountAmount(maxDiscount);
     return Result.success(vo);

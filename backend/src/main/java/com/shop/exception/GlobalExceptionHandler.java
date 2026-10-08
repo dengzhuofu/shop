@@ -15,6 +15,11 @@ public class GlobalExceptionHandler {
         return Result.error(401, LOGIN_EXPIRED_MESSAGE);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Result<Void> handleInvalidRequest(IllegalArgumentException e) {
+        return Result.error(400, e.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
         return Result.error(500, e.getMessage());

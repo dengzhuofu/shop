@@ -15,6 +15,7 @@ public class OrderVO {
     private String status;
     private String paymentStatus;
     private String currency;
+    private BigDecimal pricingExchangeRate;
     private String country;
     private String receiverName;
     private String receiverPhone;

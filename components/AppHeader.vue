@@ -1,41 +1,10 @@
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <NuxtLink
-      v-if="showHeaderPromo && resolvedActivity"
-      :to="resolvedActivity.linkUrl || '/'"
-      class="top-bar"
-      :style="activityStyle"
-    >
-      <div class="container top-bar-content">
-        <div class="offer-copy">
-          <p class="offer-kicker">{{ resolvedActivity.title }}</p>
-          <p class="offer-title">{{ resolvedActivity.subtitle }}</p>
-        </div>
-
-        <div class="countdown-panel">
-          <div class="countdown">
-            <template v-for="(item, index) in countdownItems" :key="item.label">
-              <span class="time-block">{{ item.value }}</span>
-              <span
-                v-if="index < countdownItems.length - 1"
-                class="time-separator"
-                >:</span
-              >
-            </template>
-          </div>
-          <div class="countdown-labels">
-            <span v-for="item in countdownItems" :key="`${item.label}-label`">{{
-              item.label
-            }}</span>
-          </div>
-        </div>
-      </div>
-    </NuxtLink>
 
     <div class="main-nav">
       <div class="container nav-content">
         <NuxtLink to="/" class="logo">
-          <h2><i>isinwheel</i></h2>
+          <h2>CBJJ</h2>
         </NuxtLink>
 
         <div class="desktop-nav" @mouseleave="scheduleMenuClose">
@@ -46,13 +15,13 @@
               class="nav-item"
               :class="{
                 'is-active': activeMenu?.slug === item.slug,
-                'promo-item': item.slug === 'isinwheel-sale',
+                'promo-item': item.slug === 'cbjj-sale',
               }"
               @mouseenter="handleNavEnter(item)"
             >
               <NuxtLink :to="item.linkUrl || `/collections/${item.slug}`">
                 <span>{{ item.name }}</span>
-                <span v-if="item.slug === 'isinwheel-sale'" class="nav-badge">HOT</span>
+                <span v-if="item.slug === 'cbjj-sale'" class="nav-badge">HOT</span>
               </NuxtLink>
             </li>
 
@@ -69,13 +38,14 @@
         </div>
 
         <div class="actions">
+          <MarketSelector />
           <button type="button" class="country-pill" @click="toggleLang">
             <span>{{ nextLangPillText }}</span>
           </button>
 
-          <button type="button" class="icon-button" :aria-label="copy.search">
+          <NuxtLink to="/search" class="icon-button" :aria-label="copy.search">
             <SearchIcon class="icon muted" />
-          </button>
+          </NuxtLink>
 
           <div class="user-menu-wrapper">
             <button
@@ -124,7 +94,7 @@
           :to="item.linkUrl || `/collections/${item.slug}`"
         >
           <span>{{ item.name }}</span>
-          <span v-if="item.slug === 'isinwheel-sale'" class="nav-badge">HOT</span>
+          <span v-if="item.slug === 'cbjj-sale'" class="nav-badge">HOT</span>
         </NuxtLink>
       </div>
     </div>
@@ -135,24 +105,16 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { SearchIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
 
-// Keep these promo switches in code so the Spring Sale experience can be restored quickly later.
-const showHeaderPromo = false
-const showSpringSaleNavItem = false
-
 const { lang, t, toggleLang, nextLangPillText } = useShopLocale()
 const session = useShopSession()
 const cart = useShopCart()
 const router = useRouter()
 
 const categoryMenu = ref<any[]>([])
-const activity = ref<Record<string, any> | null>(null)
 const isScrolled = ref(false)
 const hoverMenuSlug = ref<string | null>(null)
 const activeMenuCacheSlug = ref<string | null>(null)
 const isHoveringMegaMenu = ref(false)
-const countdownTarget = ref(0)
-const countdownMs = ref(0)
-let countdownTimer: ReturnType<typeof window.setInterval> | null = null
 let closeMenuTimer: ReturnType<typeof window.setTimeout> | null = null
 
 const fallbackCategories = computed(() => [
@@ -161,12 +123,6 @@ const fallbackCategories = computed(() => [
   { slug: 'electric-skateboard', name: t('electricSkateboard') },
   { slug: 'accessories', name: t('accessories') },
 ])
-
-const springSaleItem = computed(() => ({
-  slug: 'isinwheel-sale',
-  name: copy.value.springSale || 'Spring Sale',
-  linkUrl: '/collections/isinwheel-sale',
-}))
 
 const normalizeMenuProducts = (products: unknown) =>
   Array.isArray(products) ? products.slice(0, 4) : []
@@ -194,50 +150,11 @@ const normalizeMenuItem = (item: any) => ({
   children: normalizeMenuGroups(item?.children, item?.slug),
 })
 
-const fallbackActivity = computed(() => ({
-  title: lang.value === 'zh' ? '复活节促销' : 'Easter Sale',
-  subtitle:
-    lang.value === 'zh'
-      ? '本周热卖车型限时优惠'
-      : "Save on this week's hottest rides",
-  countdownEndAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-  desktopBg:
-    'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
-  mobileBg:
-    'https://www.isinwheel.com/cdn/shop/files/4_fa32ee9a-10f9-4743-8a0a-f0c74bc54f07.png?v=1775033994',
-  linkUrl: '/collections/electric-bike',
-}))
-
-const resolvedActivity = computed(
-  () => activity.value || fallbackActivity.value,
-)
 const hasUsableMenuData = computed(() => categoryMenu.value.length > 0)
 const navItems = computed(() =>
   hasUsableMenuData.value ? categoryMenu.value : fallbackCategories.value,
 )
-const displayNavItems = computed(() => {
-  const source = Array.isArray(navItems.value) ? [...navItems.value] : []
-  const existingIndex = source.findIndex(
-    (item: any) => item?.slug === springSaleItem.value.slug,
-  )
-
-  if (!showSpringSaleNavItem) {
-    return source.filter((item: any) => item?.slug !== springSaleItem.value.slug)
-  }
-
-  if (existingIndex !== -1) {
-    source[existingIndex] = {
-      ...source[existingIndex],
-      linkUrl: source[existingIndex]?.linkUrl || springSaleItem.value.linkUrl,
-      name: source[existingIndex]?.name || springSaleItem.value.name,
-    }
-    return source
-  }
-
-  const insertAt = source.length > 1 ? 1 : source.length
-  source.splice(insertAt, 0, springSaleItem.value)
-  return source
-})
+const displayNavItems = computed(() => navItems.value.filter((item: any) => item?.slug !== 'cbjj-sale'))
 const megaMenuItems = computed(() =>
   categoryMenu.value.filter(
     (item) => Array.isArray(item?.children) && item.children.length > 0,
@@ -254,11 +171,6 @@ const activeMenu = computed(
     null,
 )
 
-const activityStyle = computed(() => ({
-  '--activity-desktop-bg': `url("${resolvedActivity.value.desktopBg}")`,
-  '--activity-mobile-bg': `url("${resolvedActivity.value.mobileBg || resolvedActivity.value.desktopBg}")`,
-}))
-
 const copy = computed(() =>
   lang.value === 'zh'
     ? {
@@ -269,7 +181,7 @@ const copy = computed(() =>
         faq: '常见问题',
         photos: '照片',
         blog: '博客',
-        videos: 'Video Labs',
+        videos: '使用与保养',
         orders: '订单追踪',
         dealers: '成为经销商',
       }
@@ -279,10 +191,9 @@ const copy = computed(() =>
         about: 'About Us',
         contact: 'Contact Us',
         faq: 'FAQ',
-        springSale: 'Spring Sale',
         photos: 'Photos',
         blog: 'Blog',
-        videos: 'Video Labs',
+        videos: 'Care guides',
         orders: 'Track Your Order',
         dealers: 'Become A Dealer',
       },
@@ -294,44 +205,10 @@ const supportLinks = computed(() => [
   { title: copy.value.faq, url: '/pages/support-faq' },
   { title: copy.value.photos, url: '/pages/photos' },
   { title: copy.value.blog, url: '/blogs/news' },
-  { title: copy.value.videos, url: '/pages/isinwheel-videos' },
+  { title: copy.value.videos, url: '/pages/cbjj-videos' },
   { title: copy.value.orders, url: '/account/orders' },
-  { title: copy.value.dealers, url: '/account/profile' },
+  { title: copy.value.dealers, url: '/pages/become-a-dealer' },
 ])
-
-const formatCountdownValue = (value: number) => String(value).padStart(2, '0')
-
-const countdownParts = computed(() => {
-  const totalSeconds = Math.floor(Math.max(countdownMs.value, 0) / 1000)
-  const days = Math.floor(totalSeconds / (24 * 60 * 60))
-  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return { days, hours, minutes, seconds }
-})
-
-const countdownItems = computed(() => [
-  {
-    label: lang.value === 'zh' ? '天' : 'Days',
-    value: formatCountdownValue(countdownParts.value.days),
-  },
-  {
-    label: lang.value === 'zh' ? '时' : 'Hours',
-    value: formatCountdownValue(countdownParts.value.hours),
-  },
-  {
-    label: lang.value === 'zh' ? '分' : 'Mins',
-    value: formatCountdownValue(countdownParts.value.minutes),
-  },
-  {
-    label: lang.value === 'zh' ? '秒' : 'Secs',
-    value: formatCountdownValue(countdownParts.value.seconds),
-  },
-])
-
-const updateCountdown = () => {
-  countdownMs.value = Math.max(countdownTarget.value - Date.now(), 0)
-}
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 0
@@ -351,19 +228,6 @@ const fetchCategoryMenu = async () => {
   } catch {
     categoryMenu.value = []
   }
-}
-
-const fetchActivity = async () => {
-  try {
-    const res = await useHttp('/api/marketing/activities/current')
-    activity.value = res?.code === 200 && res.data ? res.data : null
-  } catch {
-    activity.value = null
-  }
-  countdownTarget.value = new Date(
-    resolvedActivity.value.countdownEndAt,
-  ).getTime()
-  updateCountdown()
 }
 
 const clearMenuCloseTimer = () => {
@@ -447,21 +311,12 @@ onMounted(async () => {
     cart.refreshCart(),
   ]
 
-  if (showHeaderPromo) {
-    startupTasks.push(fetchActivity())
-  }
 
   await Promise.allSettled(startupTasks)
 
-  if (showHeaderPromo) {
-    countdownTimer = window.setInterval(updateCountdown, 1000)
-  }
 })
 
 onUnmounted(() => {
-  if (countdownTimer) {
-    window.clearInterval(countdownTimer)
-  }
   clearMenuCloseTimer()
   window.removeEventListener('scroll', handleScroll)
 })
@@ -927,11 +782,20 @@ onUnmounted(() => {
   }
 
   .actions {
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100% - 76px);
   }
 
   .country-pill {
-    display: none;
+    padding: 6px 9px;
+    min-height: 38px;
   }
+
+  .nav-content { gap: 12px; align-items: flex-start; }
+  .logo { padding-top: 7px; }
+  .actions :deep(.market-selector select) { max-width: 158px; }
+  .icon-button, .cart-icon { min-width: 32px; min-height: 38px; }
 }
 </style>

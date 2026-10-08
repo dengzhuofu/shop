@@ -1,7 +1,7 @@
 <template>
   <div class="auth-shell">
     <section class="auth-showcase">
-      <NuxtLink to="/" class="auth-brand">iSinwheel</NuxtLink>
+      <NuxtLink to="/" class="auth-brand">CBJJ</NuxtLink>
 
       <div class="auth-showcase__copy">
         <p class="auth-showcase__eyebrow">{{ heroEyebrow }}</p>

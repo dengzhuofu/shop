@@ -9,6 +9,7 @@ import java.util.List;
 public class OrderPreviewVO {
   private List<CartItemVO> items;
   private String currency;
+  private BigDecimal pricingExchangeRate;
   private String country;
   private BigDecimal subtotal;
   private BigDecimal shippingAmount;

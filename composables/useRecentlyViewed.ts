@@ -11,6 +11,7 @@ type RecentlyViewedItem = {
   pic?: string | null
   price?: number | null
   compareAtPrice?: number | null
+  currency?: string
   tags?: any
   isNew?: boolean
   categorySlug?: string | null
@@ -49,6 +50,7 @@ const normalizeProduct = (product: Record<string, any> | null | undefined): Rece
     pic: normalizeImage(product),
     price: normalizeNumber(product?.price),
     compareAtPrice: normalizeNumber(product?.compareAtPrice),
+    currency: product?.currency,
     tags: product?.tags || [],
     isNew: Boolean(product?.isNew),
     categorySlug: product?.categorySlug || null,
@@ -109,6 +111,15 @@ export function useRecentlyViewed() {
   const syncedToken = useState<string | null>('shop-recently-viewed-synced-token', () => null)
   const session = useShopSession()
 
+  // Stored records supply IDs only: prices, language and media come from the server.
+  const refreshLocalProducts = async (localItems: RecentlyViewedItem[]) => {
+    const results = await Promise.all(localItems.map(async (item) => {
+      const response = await useHttp(`/api/product/${item.id}`, { showError: false, handleAuthError: false })
+      return response?.code === 200 ? normalizeProduct(response.data) : null
+    }))
+    return results.filter((item): item is RecentlyViewedItem => Boolean(item))
+  }
+
   const applyLocalItems = (nextItems: RecentlyViewedItem[]) => {
     items.value = nextItems.slice(0, MAX_RECENTLY_VIEWED)
     writeStorage(items.value)
@@ -155,7 +166,7 @@ export function useRecentlyViewed() {
 
       if (!session.token.value) {
         syncedToken.value = null
-        items.value = localItems
+        items.value = await refreshLocalProducts(localItems)
         return items.value
       }
 
@@ -172,10 +183,10 @@ export function useRecentlyViewed() {
         remoteItems = Array.isArray(res?.data) ? res.data : null
       }
 
-      items.value = Array.isArray(remoteItems) && remoteItems.length ? remoteItems : localItems
+      items.value = Array.isArray(remoteItems) && remoteItems.length ? remoteItems : await refreshLocalProducts(localItems)
       return items.value
     } catch {
-      items.value = readStorage()
+      items.value = []
       return items.value
     } finally {
       loading.value = false

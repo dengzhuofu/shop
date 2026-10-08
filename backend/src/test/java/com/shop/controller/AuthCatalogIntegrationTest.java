@@ -53,9 +53,7 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
 
     mockMvc.perform(get("/marketing/activities/current").param("lang", "zh"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.code").value("spring-ride-festival"))
-        .andExpect(jsonPath("$.data.title").value("复活节促销"))
-        .andExpect(jsonPath("$.data.enabled").value(true));
+        .andExpect(jsonPath("$.data").doesNotExist());
 
     mockMvc.perform(get("/category/menu").param("lang", "zh"))
         .andExpect(status().isOk())
@@ -71,7 +69,7 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
             .header("Authorization", loginToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.slug").value("s-nova-pro-commuting-electric-scooter"))
-        .andExpect(jsonPath("$.data.title").value("S Nova Pro 通勤电动滑板车"))
+        .andExpect(jsonPath("$.data.title").value("CBJJ S Nova Pro 通勤电动滑板车"))
         .andExpect(jsonPath("$.data.skuList[0].attributes.color").value("石墨黑"))
         .andExpect(jsonPath("$.data.skuAttributeOptions.color[0]").value("石墨黑"))
         .andReturn()
@@ -137,7 +135,7 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
             .param("lang", "en")
             .header("Authorization", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.slug").value("isinwheel-v8-electric-skateboard-with-remote"))
+        .andExpect(jsonPath("$.data.slug").value("cbjj-v8-electric-skateboard-with-remote"))
         .andExpect(jsonPath("$.data.skuAttributeOptions.color[1]").value("Forest Green"))
         .andExpect(jsonPath("$.data.skuAttributeOptions.bundle[2]").value("Travel Kit"))
         .andReturn()
@@ -158,7 +156,7 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
       }
     }
 
-    assertThat(uniquePics.size()).isGreaterThanOrEqualTo(4);
+    assertThat(uniquePics).containsExactly("/cbjj/products/5/main.png");
     assertThat(uniquePrices.size()).isGreaterThanOrEqualTo(5);
     assertThat(selectableCount).isEqualTo(4);
   }
@@ -171,7 +169,7 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
             .param("lang", "en")
             .header("Authorization", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.slug").value("isinwheel-long-range-3-wheel-kids-electric-scooter"))
+        .andExpect(jsonPath("$.data.slug").value("cbjj-long-range-3-wheel-kids-electric-scooter"))
         .andReturn()
         .getResponse()
         .getContentAsString();
@@ -192,13 +190,13 @@ class AuthCatalogIntegrationTest extends BackendIntegrationTestSupport {
       }
     }
     assertThat(kidsSelectableCount).isGreaterThanOrEqualTo(8);
-    assertThat(kidsUniquePics.size()).isGreaterThanOrEqualTo(8);
+    assertThat(kidsUniquePics).containsExactly("/cbjj/products/11/main.png");
 
     String commuterResponse = mockMvc.perform(get("/product/slug/isinwheel-s9-pro-pneumatic-tire-electric-scooter-2026")
             .param("lang", "en")
             .header("Authorization", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.slug").value("isinwheel-s9-pro-pneumatic-tire-electric-scooter-2026"))
+        .andExpect(jsonPath("$.data.slug").value("cbjj-s9-pro-pneumatic-tire-electric-scooter-2026"))
         .andReturn()
         .getResponse()
         .getContentAsString();

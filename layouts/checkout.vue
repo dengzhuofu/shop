@@ -4,7 +4,7 @@
       <div class="container checkout-header__inner">
         <NuxtLink to="/" class="checkout-brand">
           <span class="checkout-brand__mark">O</span>
-          <span class="checkout-brand__word">isinwheel</span>
+          <span class="checkout-brand__word">CBJJ</span>
         </NuxtLink>
 
         <div class="checkout-header__meta">
@@ -30,6 +30,7 @@
     <main class="checkout-main">
       <slot />
     </main>
+    <footer class="container checkout-policy-links"><NuxtLink v-for="link in policyLinks" :key="link[0]" :to="`/pages/${link[0]}`">{{ lang === 'zh' ? link[2] : link[1] }}</NuxtLink></footer>
   </div>
 </template>
 
@@ -38,6 +39,7 @@ import { computed, onMounted } from 'vue'
 
 const { lang } = useShopLocale()
 const session = useShopSession()
+const policyLinks = [['shipping-policy','Shipping policy','配送政策'],['refund-policy','Returns & refunds','退换货与退款'],['warranty','Warranty','有限保修'],['payment-methods','Payment methods','支付方式'],['terms-of-service','Terms of service','服务条款'],['privacy-policy','Privacy policy','隐私政策'],['contact-us','Contact us','联系我们']]
 
 const copy = computed(() =>
   lang.value === 'zh'
@@ -63,6 +65,7 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+.checkout-policy-links { display:flex; flex-wrap:wrap; justify-content:center; gap:18px; padding-top:24px; padding-bottom:32px; font-size:13px; }
 .layout-checkout {
   min-height: 100vh;
   background:

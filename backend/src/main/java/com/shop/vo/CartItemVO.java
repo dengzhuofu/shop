@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 @Data
 public class CartItemVO {
   private Long cartItemId;
+  private String currency;
   private Long productId;
   private Long skuId;
   private String title;

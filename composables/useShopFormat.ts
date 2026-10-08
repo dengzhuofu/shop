@@ -2,12 +2,14 @@ import { formatSkuAttributeKey } from '~/utils/skuAttributes'
 
 export function useShopFormat() {
   const { lang, t } = useShopLocale()
+  const { currency } = useShopMarket()
 
-  const money = (value: number | string | null | undefined) => {
+  const money = (value: number | string | null | undefined, amountCurrency: string = currency.value) => {
     const numeric = Number(value || 0)
     return new Intl.NumberFormat(lang.value === 'zh' ? 'zh-CN' : 'en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: amountCurrency,
+      currencyDisplay: 'code',
       minimumFractionDigits: 2,
     }).format(numeric)
   }
@@ -19,7 +21,7 @@ export function useShopFormat() {
     const source = attributes.attributes || attributes.attributeDisplay || attributes
     const entries = Object.entries(source)
       .filter(([, value]) => value !== null && value !== undefined && `${value}`.trim() !== '')
-      .map(([key, value]) => `${formatSkuAttributeKey(key)}: ${value}`)
+      .map(([key, value]) => `${formatSkuAttributeKey(key, lang.value)}: ${value}`)
     return entries.join(' / ')
   }
 

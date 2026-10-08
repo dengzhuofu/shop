@@ -42,21 +42,19 @@ export function isOptionSelectable(
   attributeKey: string,
   optionValue: string,
 ) {
-  return skuList.some((sku) => {
-    if (!isSkuAvailable(sku)) {
-      return false
-    }
-    const attributes = sku.attributes || {}
-    if (attributes[attributeKey] !== optionValue) {
-      return false
-    }
-    return Object.entries(selection).every(([key, value]) => {
-      if (key === attributeKey || !value) {
-        return true
-      }
-      return attributes[key] === value
-    })
-  })
+  return skuList.some((sku) => isSkuAvailable(sku) && sku.attributes?.[attributeKey] === optionValue)
+}
+
+export function selectSkuOption(
+  skuList: ProductSku[], selection: ProductSelection, attributeKey: string, optionValue: string,
+) {
+  const candidates = skuList.filter((sku) => isSkuAvailable(sku) && sku.attributes?.[attributeKey] === optionValue)
+  const keys = sortAttributeKeys(Object.keys(selection))
+  // Keep earlier controls (color before kit before version) when combinations differ.
+  const score = (sku: ProductSku) => keys.reduce((total, key, index) =>
+    total + (key !== attributeKey && sku.attributes?.[key] === selection[key] ? 2 ** (keys.length - index) : 0), 0)
+  candidates.sort((left, right) => score(right) - score(left))
+  return candidates.length ? { ...candidates[0].attributes } as ProductSelection : { ...selection }
 }
 
 export function isSkuAvailable(sku: ProductSku) {

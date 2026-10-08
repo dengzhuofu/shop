@@ -89,40 +89,16 @@
             />
           </div>
 
-          <div class="protection-card">
-            <div class="protection-icon" aria-hidden="true">
-              <span class="protection-box" />
-              <span class="protection-shield" />
-            </div>
 
-            <div class="protection-copy">
-              <div class="protection-topline">
-                <strong>{{ copy.protection }} ({{ money(protectionPrice) }})</strong>
-                <label class="switch">
-                  <input v-model="shippingProtectionEnabled" type="checkbox" />
-                  <span class="slider" />
-                </label>
-              </div>
-              <p>{{ copy.protectionHint }}</p>
-            </div>
-          </div>
 
           <div class="summary-actions">
             <NuxtLink to="/checkout" class="checkout-btn">
               <span class="lock-dot" />
               <span>{{ t('checkout') }}</span>
             </NuxtLink>
-            <button type="button" class="wallet-btn shop-btn">shop</button>
-            <button type="button" class="wallet-btn paypal-btn">PayPal</button>
-            <button type="button" class="wallet-btn gpay-btn">G Pay</button>
           </div>
 
-          <div class="payment-strip">
-            <p>{{ copy.accept }}</p>
-            <div class="payment-grid">
-              <span v-for="item in paymentMethods" :key="item">{{ item }}</span>
-            </div>
-          </div>
+          <NuxtLink to="/pages/payment-methods">{{ lang === 'zh' ? '实际支付方式以结算页为准' : 'Checkout shows the available payment methods' }}</NuxtLink>
         </aside>
       </div>
 
@@ -178,12 +154,9 @@ const { lang, t } = useShopLocale()
 const { money, attributeText } = useShopFormat()
 
 const loadingPage = ref(true)
-const orderNote = ref('')
-const shippingProtectionEnabled = ref(false)
-const protectionPrice = 18.17
+const orderNote = useState('shop-order-note', () => '')
 const lineQuantities = reactive<Record<number, number>>({})
 const updatingIds = reactive(new Set<number>())
-const paymentMethods = ['AMEX', 'Apple Pay', 'Discover', 'G Pay', 'Mastercard', 'PayPal', 'Shop', 'Venmo', 'Visa']
 
 const copy = computed(() =>
   lang.value === 'zh'
@@ -192,13 +165,9 @@ const copy = computed(() =>
         loading: '\u6b63\u5728\u52a0\u8f7d\u8d2d\u7269\u8f66...',
         empty: '\u60a8\u7684\u8d2d\u7269\u8f66\u6682\u65f6\u8fd8\u662f\u7a7a\u7684\u3002',
         remove: '\u79fb\u9664',
-        taxHint: '\u7a0e\u8d39\u4e0e\u8fd0\u8d39\u5c06\u5728\u7ed3\u8d26\u65f6\u8ba1\u7b97',
+        taxHint: '售价含商户收取的税，标准配送免运费；适用进口税费可能另行收取。',
         noteTitle: '\u6dfb\u52a0\u8ba2\u5355\u5907\u6ce8',
         notePlaceholder: '\u8f93\u5165\u7ed9\u5546\u5bb6\u7684\u5907\u6ce8',
-        protection: '\u914d\u9001\u4fdd\u969c',
-        protectionHint:
-          '\u5efa\u8bae\u5f00\u542f\u914d\u9001\u4fdd\u969c\uff0c\u4ee5\u4fbf\u5728\u5305\u88f9\u4e22\u5931\u3001\u7834\u635f\u6216\u88ab\u76d7\u65f6\u83b7\u5f97\u66f4\u5b89\u5fc3\u7684\u5904\u7406\u3002',
-        accept: '\u652f\u6301\u4ed8\u6b3e',
         recentKicker: '\u521a\u521a\u770b\u8fc7',
         recentTitle: '\u6700\u8fd1\u6d4f\u89c8',
       }
@@ -207,13 +176,9 @@ const copy = computed(() =>
         loading: 'Loading cart...',
         empty: 'Your cart is currently empty.',
         remove: 'Remove',
-        taxHint: 'Taxes and shipping calculated at checkout',
+        taxHint: 'Prices include merchant-collected taxes. Standard delivery is free; applicable import fees may be payable.',
         noteTitle: 'Add a note to your order',
         notePlaceholder: 'Order note',
-        protection: 'Shipping protection',
-        protectionHint:
-          'We recommend adding shipping protection for peace of mind in case your package is lost, damaged, or stolen during delivery.',
-        accept: 'We accept',
         recentKicker: 'From your browsing',
         recentTitle: 'Recently viewed',
       },

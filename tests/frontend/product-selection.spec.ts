@@ -2,6 +2,7 @@ import {
   findInitialSelection,
   findSelectedSku,
   isOptionSelectable,
+  selectSkuOption,
   sortAttributeKeys,
 } from '~/utils/productSelection'
 
@@ -58,5 +59,31 @@ describe('product selection helpers', () => {
       'White',
     )
     expect(selectable).toBe(false)
+  })
+
+  it('allows switching to a stocked color whose kit differs from the current selection', () => {
+    const variants = [
+      { id: 1, stock: 5, attributes: { color: 'Black', bundle: 'Standard' } },
+      { id: 2, stock: 5, attributes: { color: 'Orange', bundle: 'Twin Pack' } },
+      { id: 3, stock: 0, attributes: { color: 'White', bundle: 'Twin Pack' } },
+    ]
+    const current = { color: 'Black', bundle: 'Standard' }
+    expect(isOptionSelectable(variants, current, 'color', 'Orange')).toBe(true)
+    expect(selectSkuOption(variants, current, 'color', 'Orange')).toEqual({ color: 'Orange', bundle: 'Twin Pack' })
+    expect(selectSkuOption(variants, current, 'color', 'White')).toEqual(current)
+  })
+
+  it('keeps the chosen color when switching a kit also requires a different version', () => {
+    const variants = [
+      { id: 1, stock: 5, attributes: { color: 'Black', bundle: 'Standard', style: 'Pro' } },
+      { id: 2, stock: 5, attributes: { color: 'Grey', bundle: 'Commuter', style: 'Pro' } },
+      { id: 3, stock: 5, attributes: { color: 'Black', bundle: 'Commuter', style: 'Lite' } },
+      { id: 4, stock: 5, attributes: { color: 'Grey', bundle: 'Standard', style: 'Lite' } },
+    ]
+    let current = { color: 'Black', bundle: 'Commuter', style: 'Lite' }
+    current = selectSkuOption(variants, current, 'color', 'Grey') as typeof current
+    current = selectSkuOption(variants, current, 'bundle', 'Standard') as typeof current
+    current = selectSkuOption(variants, current, 'style', 'Lite') as typeof current
+    expect(findSelectedSku(variants, current)?.id).toBe(4)
   })
 })

@@ -20,11 +20,7 @@
         </span>
       </div>
 
-      <div v-if="hasSpringSale" class="tags-right">
-        <div class="spring-sale-badge">
-          <span class="text">Spring<br />Sale</span>
-        </div>
-      </div>
+
 
       <div class="image-carousel">
         <div
@@ -141,7 +137,7 @@ const displayImages = computed(() => {
   ).slice(0, 3);
   return images.length
     ? images
-    : ["https://via.placeholder.com/600x600?text=isinwheel"];
+    : ["/cbjj/products/1/main.png"];
 });
 
 const leftTags = computed(() => {
@@ -158,29 +154,14 @@ const leftTags = computed(() => {
   );
 });
 
-const hasSpringSale = computed(() => {
-  const tags = Array.isArray(props.product.tags) ? props.product.tags : [];
-  return tags.some((tag) => String(tag).toLowerCase().includes("spring sale"));
-});
-
 const isSoldOut = computed(() => {
-  const skuList = Array.isArray(props.product.skuList)
-    ? props.product.skuList
-    : [];
-  if (skuList.length) {
-    return !skuList.some(
-      (sku) =>
-        (sku.status || "ACTIVE") === "ACTIVE" && Number(sku.stock || 0) > 0,
-    );
-  }
-  return Number(props.product.stock || 0) <= 0;
+  const skus = Array.isArray(props.product.skuList) ? props.product.skuList : [];
+  return skus.length
+    ? !skus.some(sku => (sku.status || 'ACTIVE') === 'ACTIVE' && Number(sku.stock || 0) > 0)
+    : Number(props.product.stock || 0) <= 0;
 });
-
 const hasOptions = computed(() => productHasOptions(props.product));
-
-const actionText = computed(() =>
-  hasOptions.value ? t("chooseOptions") : t("addToCart"),
-);
+const actionText = computed(() => hasOptions.value ? t('chooseOptions') : t('addToCart'));
 const actionButtonText = computed(() =>
   actionBusy.value && !hasOptions.value ? t("adding") : actionText.value,
 );

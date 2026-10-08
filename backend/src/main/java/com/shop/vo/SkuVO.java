@@ -2,6 +2,7 @@ package com.shop.vo;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.shop.common.JsonLocaleUtils;
+import com.shop.common.PricingContext;
 import com.shop.entity.PmsSku;
 import lombok.Data;
 
@@ -13,6 +14,7 @@ import java.util.Map;
 @Data
 public class SkuVO {
   private Long id;
+  private String currency;
   private Long productId;
   private String skuCode;
   private BigDecimal price;
@@ -31,8 +33,9 @@ public class SkuVO {
     vo.setId(sku.getId());
     vo.setProductId(sku.getProductId());
     vo.setSkuCode(sku.getSkuCode());
-    vo.setPrice(sku.getPrice());
-    vo.setCompareAtPrice(sku.getCompareAtPrice());
+    vo.setCurrency(PricingContext.currency());
+    vo.setPrice(PricingContext.money(sku.getPrice()));
+    vo.setCompareAtPrice(PricingContext.money(sku.getCompareAtPrice()));
     vo.setStock(sku.getStock());
     vo.setPic(sku.getPic());
     vo.setImages(JsonLocaleUtils.localizedObject(sku.getImages()));

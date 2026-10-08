@@ -28,11 +28,7 @@
                 </span>
               </div>
 
-              <div v-if="hasSpringSale" class="tags-right">
-                <div class="spring-sale-badge">
-                  <span class="text">Spring<br />Sale</span>
-                </div>
-              </div>
+
 
               <img :src="activeImage" :alt="productDetail.title" class="main-image" />
 
@@ -56,7 +52,7 @@
           </section>
 
           <section class="info-panel">
-            <p class="brand">iSinwheel Official Store</p>
+            <p class="brand">{{ lang === 'zh' ? 'CBJJ 官方商店' : 'CBJJ official store' }}</p>
             <div class="title-price-row">
               <h2 class="title">{{ productDetail.title }}</h2>
               <div class="price-box">
@@ -67,59 +63,19 @@
               </div>
             </div>
 
-            <div class="reviews">
-              <StarIcon v-for="index in 5" :key="index" class="star-icon filled" />
-              <span>| {{ reviewCount }} reviews</span>
-            </div>
 
-            <div v-if="hasSpringSale" class="sale-timer">
-              <div class="sale-timer-left">
-                <ZapIcon class="timer-icon" />
-                <div class="timer-text">
-                  <span class="timer-title">Hurry up!</span>
-                  <span class="timer-subtitle">SALE END IN:</span>
-                </div>
-              </div>
-              <div class="sale-timer-right">
-                <div class="time-block">
-                  <span class="time-val">4</span>
-                  <span class="time-label">HOURS</span>
-                </div>
-                <span class="time-sep">:</span>
-                <div class="time-block">
-                  <span class="time-val">58</span>
-                  <span class="time-label">MINS</span>
-                </div>
-                <span class="time-sep">:</span>
-                <div class="time-block">
-                  <span class="time-val">45</span>
-                  <span class="time-label">SECS</span>
-                </div>
-              </div>
-            </div>
 
-            <div v-if="attributeKeys.length" class="variant-selectors">
+
+
+            <p style="font-size:12px;line-height:1.6;color:#555">{{ lang === 'zh' ? '图片展示基础款，颜色、套装及数量以所选规格文字为准。' : 'Images illustrate the base model; selected colors, kits and quantities are specified in the options.' }}</p>
+              <div v-if="attributeKeys.length" class="variant-selectors">
               <div v-for="attributeKey in attributeKeys" :key="attributeKey" class="selector-group">
                 <p class="selector-label">
                   {{ formatAttributeKey(attributeKey) }}:
                   <strong>{{ selection[attributeKey] }}</strong>
                 </p>
 
-                <div v-if="attributeKey === 'color'" class="color-options">
-                  <button
-                    v-for="option in attributeOptions[attributeKey] || []"
-                    :key="option"
-                    type="button"
-                    class="color-btn"
-                    :class="{ 'is-active': selection[attributeKey] === option }"
-                    :disabled="!isSelectable(attributeKey, option)"
-                    @click="selection[attributeKey] = option"
-                  >
-                    <img :src="optionThumbnail(attributeKey, option)" :alt="String(option)" />
-                  </button>
-                </div>
-
-                <div v-else class="options-list">
+                <div class="options-list">
                   <button
                     v-for="option in attributeOptions[attributeKey] || []"
                     :key="option"
@@ -127,7 +83,7 @@
                     class="text-btn"
                     :class="{ 'is-active': selection[attributeKey] === option }"
                     :disabled="!isSelectable(attributeKey, option)"
-                    @click="selection[attributeKey] = option"
+                    @click="selectOption(attributeKey, option)"
                   >
                     {{ option }}
                   </button>
@@ -179,7 +135,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon, MinusIcon, PlusIcon, StarIcon, XIcon, ZapIcon } from 'lucide-vue-next'
-import { findInitialSelection, findSelectedSku, isOptionSelectable, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
+import { findInitialSelection, findSelectedSku, isOptionSelectable, selectSkuOption, isSkuAvailable, sortAttributeKeys } from '~/utils/productSelection'
 import { formatSkuAttributeKey } from '~/utils/skuAttributes'
 import { mergeProductImages } from '~/utils/productMedia'
 
@@ -192,7 +148,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { t } = useShopLocale()
+const { t, lang } = useShopLocale()
 const { money } = useShopFormat()
 const cart = useShopCart()
 const session = useShopSession()
@@ -214,7 +170,6 @@ const selectedSku = computed(() => findSelectedSku(productDetail.value?.skuList 
 const selectedSkuAvailable = computed(() => Boolean(selectedSku.value && isSkuAvailable(selectedSku.value)))
 const selectedPrice = computed(() => selectedSku.value?.price || productDetail.value?.price || 0)
 const selectedCompareAtPrice = computed(() => selectedSku.value?.compareAtPrice || productDetail.value?.compareAtPrice || 0)
-const reviewCount = computed(() => Math.max(Number(productDetail.value?.reviewCount || 0), 61))
 const galleryImages = computed(() => {
   return mergeProductImages(
     selectedSku.value?.images,
@@ -240,11 +195,6 @@ const leftTags = computed(() =>
     ['NEW', 'HOT'].includes(String(tag).toUpperCase()),
   ),
 )
-const hasSpringSale = computed(() =>
-  (Array.isArray(productDetail.value?.tags) ? productDetail.value.tags : []).some((tag: string) =>
-    String(tag).toLowerCase().includes('spring sale'),
-  ),
-)
 const productLink = computed(() => `/products/${productDetail.value?.slug || productDetail.value?.id || ''}`)
 
 const syncActiveImage = () => {
@@ -258,7 +208,7 @@ const resetSelection = () => {
   Object.assign(selection, nextSelection)
 }
 
-const formatAttributeKey = (value: string) => formatSkuAttributeKey(value)
+const formatAttributeKey = (value: string) => formatSkuAttributeKey(value, lang.value)
 
 const optionThumbnail = (attributeKey: string, option: string) => {
   const skuList = Array.isArray(productDetail.value?.skuList) ? productDetail.value.skuList : []
@@ -271,6 +221,12 @@ const optionThumbnail = (attributeKey: string, option: string) => {
 
 const isSelectable = (attributeKey: string, option: string) =>
   isOptionSelectable(productDetail.value?.skuList || [], selection, attributeKey, option)
+
+const selectOption = (attributeKey: string, option: string) => {
+  const next = selectSkuOption(productDetail.value?.skuList || [], selection, attributeKey, option)
+  Object.keys(selection).forEach(key => delete selection[key])
+  Object.assign(selection, next)
+}
 
 const cycleImage = (step: number) => {
   if (!galleryImages.value.length) {

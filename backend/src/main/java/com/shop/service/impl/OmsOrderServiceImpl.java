@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.common.JsonLocaleUtils;
 import com.shop.common.PaymentMethodCatalog;
+import com.shop.common.PricingContext;
+import com.shop.config.PricingProperties;
 import com.shop.common.PreviewTokenUtils;
 import com.shop.common.ProductAddonUtils;
 import com.shop.config.PaymentProperties;
@@ -62,11 +64,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> implements OmsOrderService {
 
-  private static final String DEFAULT_CURRENCY = "USD";
-  private static final String DEFAULT_COUNTRY = "US";
-  private static final String DEFAULT_SHIPPING_METHOD = "UPS Ground/FedEx Home Delivery(2-5 Business Days)";
+  private static final String DEFAULT_SHIPPING_METHOD = "Standard delivery";
   private static final BigDecimal FIXED_SHIPPING_AMOUNT = BigDecimal.ZERO;
-  private static final BigDecimal FIXED_TAX_RATE = new BigDecimal("0.0825");
 
   private final OmsCartItemService cartItemService;
   private final OmsOrderItemService orderItemService;
@@ -77,11 +76,20 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
   private final SmsCouponUserService couponUserService;
   private final PayPaymentIntentService paymentIntentService;
   private final PaymentProperties paymentProperties;
+  private final PricingProperties pricingProperties;
   private final AlipayGatewayService alipayGatewayService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   public OrderPreviewVO previewOrder(OrderPreviewDTO dto, Long userId) {
+    OmsOrder address = new OmsOrder();
+    applyAddress(address, dto.getAddressId(), dto.getAddressSnapshot(), userId);
+    String country = PricingContext.country(address.getReceiverCountry());
+    String currency = PricingContext.currencyForCountry(country);
+    if (dto.getCurrency() != null && !currency.equals(dto.getCurrency())) {
+      throw new IllegalArgumentException("Currency does not match the shipping country. Preview again.");
+    }
+    PricingContext.set(currency, pricingProperties.getUsdCnyRate());
     String language = JsonLocaleUtils.currentLanguage();
     List<ResolvedCheckoutItem> resolvedItems = resolveCheckoutItems(dto.getCartItemIds(), userId, language);
     if (resolvedItems.isEmpty()) {
@@ -96,22 +104,23 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     BigDecimal discountAmount = couponResolution.getDiscountAmount();
     BigDecimal shippingAmount = FIXED_SHIPPING_AMOUNT;
     BigDecimal taxableAmount = subtotal.subtract(discountAmount).add(shippingAmount);
-    BigDecimal taxAmount = roundCurrency(taxableAmount.multiply(FIXED_TAX_RATE));
+    BigDecimal taxAmount = new BigDecimal("0.00");
     BigDecimal totalAmount = roundCurrency(taxableAmount.add(taxAmount));
 
     OrderPreviewVO previewVO = new OrderPreviewVO();
     previewVO.setItems(resolvedItems.stream().map(ResolvedCheckoutItem::getCartItemVO).collect(Collectors.toList()));
-    previewVO.setCurrency(DEFAULT_CURRENCY);
-    previewVO.setCountry(DEFAULT_COUNTRY);
+    previewVO.setCurrency(currency);
+    previewVO.setCountry(country);
+    previewVO.setPricingExchangeRate(PricingContext.rate());
     previewVO.setSubtotal(roundCurrency(subtotal));
     previewVO.setShippingAmount(shippingAmount);
     previewVO.setTaxAmount(taxAmount);
     previewVO.setDiscountAmount(discountAmount);
     previewVO.setTotalAmount(totalAmount);
     previewVO.setCoupon(couponResolution.getCouponVO());
-    previewVO.setPaymentMethods(PaymentMethodCatalog.methods(language));
+    previewVO.setPaymentMethods(PaymentMethodCatalog.methods(language, paymentProperties, currency));
     previewVO.setPreviewToken(buildPreviewToken(userId, resolvedItems, dto.getCouponUserId(), shippingAmount, taxAmount,
-        totalAmount));
+        totalAmount, address));
     return previewVO;
   }
 
@@ -122,12 +131,14 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     previewDTO.setSource(dto.getSource());
     previewDTO.setCartItemIds(dto.getCartItemIds());
     previewDTO.setAddressId(dto.getAddressId());
+    previewDTO.setAddressSnapshot(dto.getAddressSnapshot());
+    previewDTO.setCurrency(dto.getCurrency());
     previewDTO.setShippingMethod(dto.getShippingMethod());
     previewDTO.setCouponUserId(dto.getCouponUserId());
 
     OrderPreviewVO preview = previewOrder(previewDTO, userId);
     if (dto.getPreviewToken() == null || !dto.getPreviewToken().equals(preview.getPreviewToken())) {
-      throw new RuntimeException("Preview token mismatch. Please preview again before creating the order.");
+      throw new IllegalArgumentException("Preview token mismatch. Please preview again before creating the order.");
     }
 
     List<ResolvedCheckoutItem> resolvedItems = resolveCheckoutItems(dto.getCartItemIds(), userId, JsonLocaleUtils.currentLanguage());
@@ -143,14 +154,15 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     order.setTotalAmount(preview.getTotalAmount());
     order.setStatus("PENDING_PAYMENT");
     order.setPaymentStatus("PENDING");
-    order.setCurrency(DEFAULT_CURRENCY);
-    order.setCountry(DEFAULT_COUNTRY);
+    order.setCurrency(preview.getCurrency());
+    order.setCountry(preview.getCountry());
+    order.setPricingExchangeRate(preview.getPricingExchangeRate());
     order.setPreviewToken(preview.getPreviewToken());
     order.setCouponUserId(dto.getCouponUserId());
     order.setCouponCode(extractCouponCode(preview.getCoupon()));
     order.setCouponDiscountAmount(preview.getDiscountAmount());
     order.setCheckoutSource(dto.getSource() == null ? "cart" : dto.getSource());
-    order.setShippingMethod(dto.getShippingMethod() == null ? DEFAULT_SHIPPING_METHOD : dto.getShippingMethod());
+    order.setShippingMethod(DEFAULT_SHIPPING_METHOD);
     order.setShippingAmount(preview.getShippingAmount());
     order.setDiscountAmount(preview.getDiscountAmount());
     order.setRemark(dto.getRemark());
@@ -180,10 +192,10 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
       orderItem.setProductName(item.getProduct().getName());
       orderItem.setProductPic(sku.getPic());
       orderItem.setSkuCode(sku.getSkuCode());
-      orderItem.setSkuAttributesSnapshot(item.getCartItem().getSelectedAttributesSnapshot());
-      orderItem.setAddonsSnapshot(item.getCartItem().getSelectedAddonsSnapshot());
+      orderItem.setSkuAttributesSnapshot(objectMapper.valueToTree(item.getCartItemVO().getAttributes()));
+      orderItem.setAddonsSnapshot(objectMapper.valueToTree(item.getCartItemVO().getAddons()));
       orderItem.setQuantity(item.getQuantity());
-      orderItem.setUnitPrice(sku.getPrice());
+      orderItem.setUnitPrice(PricingContext.money(sku.getPrice()));
       orderItem.setLineAmount(item.getLineAmount());
       orderItem.setCreateTime(LocalDateTime.now());
       orderItem.setUpdateTime(LocalDateTime.now());
@@ -340,25 +352,28 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
         continue;
       }
 
-      BigDecimal addonAmount = resolveAddonAmount(product.getUpsells(), cartItem.getSelectedAddonsSnapshot(), language);
-      BigDecimal lineAmount = sku.getPrice().add(addonAmount).multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+      List<Object> selectedAddons = ProductAddonUtils.resolveSelectedAddons(
+          product.getUpsells(), extractAddonCodes(cartItem.getSelectedAddonsSnapshot()), language);
+      BigDecimal addonAmount = selectedAddons.stream()
+          .map(addon -> PricingContext.money(new BigDecimal(String.valueOf(((Map<?, ?>) addon).get("price")))))
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+      BigDecimal unitPrice = PricingContext.money(sku.getPrice());
+      BigDecimal lineAmount = unitPrice.add(addonAmount).multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
       CartItemVO itemVO = new CartItemVO();
+      itemVO.setCurrency(PricingContext.currency());
       itemVO.setCartItemId(cartItem.getId());
       itemVO.setProductId(product.getId());
       itemVO.setSkuId(sku.getId());
       itemVO.setTitle(ProductVO.extractLang(product.getName(), language));
       itemVO.setSlug(product.getSlug());
       itemVO.setProductPic(sku.getPic());
-      itemVO.setUnitPrice(sku.getPrice());
+      itemVO.setUnitPrice(unitPrice);
       itemVO.setAddonAmount(addonAmount.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
       itemVO.setQuantity(cartItem.getQuantity());
       itemVO.setLineAmount(roundCurrency(lineAmount));
-      itemVO.setAttributes(cartItem.getSelectedAttributesSnapshot() != null
-          ? objectMapper.convertValue(cartItem.getSelectedAttributesSnapshot(), Object.class)
-          : SkuVO.buildSnapshot(sku.getSpecs(), language));
-      itemVO.setAddons(cartItem.getSelectedAddonsSnapshot() == null ? List.of()
-          : objectMapper.convertValue(cartItem.getSelectedAddonsSnapshot(), Object.class));
+      itemVO.setAttributes(SkuVO.buildSnapshot(sku.getSpecs(), language));
+      itemVO.setAddons(PricingContext.prices(selectedAddons));
       itemVO.setStock(sku.getStock());
 
       ResolvedCheckoutItem resolved = new ResolvedCheckoutItem();
@@ -391,11 +406,12 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     if (coupon == null || !Boolean.TRUE.equals(coupon.getActive())) {
       throw new RuntimeException("Coupon is unavailable");
     }
-    if (subtotal.compareTo(coupon.getThresholdAmount()) < 0) {
+    if (!"CLAIMED".equals(couponUser.getStatus())) throw new RuntimeException("Coupon is not available");
+    if (subtotal.compareTo(PricingContext.money(coupon.getThresholdAmount())) < 0) {
       throw new RuntimeException("Coupon threshold not met");
     }
 
-    resolution.setDiscountAmount(coupon.getDiscountAmount());
+    resolution.setDiscountAmount(subtotal.min(PricingContext.money(coupon.getDiscountAmount())));
     resolution.setCouponVO(CouponVO.from(coupon, couponUser));
     return resolution;
   }
@@ -424,7 +440,7 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     }
     validateAddressSnapshot(resolvedSnapshot);
 
-    order.setReceiverCountry(resolvedSnapshot.getCountry());
+    order.setReceiverCountry(PricingContext.country(resolvedSnapshot.getCountry()));
     order.setReceiverFirstName(resolvedSnapshot.getFirstName());
     order.setReceiverLastName(resolvedSnapshot.getLastName());
     order.setReceiverPhone(resolvedSnapshot.getPhone());
@@ -465,8 +481,15 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
       itemVO.setId(item.getId());
       itemVO.setProductId(item.getProductId());
       itemVO.setSkuId(item.getSkuId());
-      itemVO.setProductName(JsonLocaleUtils.localizedText(item.getProductName(), language));
-      itemVO.setProductPic(item.getProductPic());
+      String displayName = JsonLocaleUtils.localizedText(item.getProductName(), language);
+      itemVO.setProductName(displayName == null ? null : displayName.replaceAll("(?i)isinwheel", "CBJJ"));
+      String displayPic = item.getProductPic();
+      if (displayPic != null && displayPic.toLowerCase().contains("isinwheel")) {
+        PmsSku currentSku = skuService.getById(item.getSkuId());
+        PmsProduct currentProduct = productService.getById(item.getProductId());
+        displayPic = currentSku != null ? currentSku.getPic() : currentProduct != null ? currentProduct.getPic() : null;
+      }
+      itemVO.setProductPic(displayPic);
       itemVO.setSkuCode(item.getSkuCode());
       itemVO.setSkuAttributesSnapshot(item.getSkuAttributesSnapshot() == null ? null
           : objectMapper.convertValue(item.getSkuAttributesSnapshot(), Object.class));
@@ -504,8 +527,14 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
   }
 
   private String buildPreviewToken(Long userId, List<ResolvedCheckoutItem> items, Long couponUserId,
-      BigDecimal shippingAmount, BigDecimal taxAmount, BigDecimal totalAmount) {
+      BigDecimal shippingAmount, BigDecimal taxAmount, BigDecimal totalAmount, OmsOrder address) {
     StringBuilder payload = new StringBuilder();
+    payload.append(PricingContext.currency()).append('|').append(PricingContext.rate()).append('|')
+        .append(address.getReceiverCountry()).append('|').append(address.getReceiverFirstName()).append('|')
+        .append(address.getReceiverLastName()).append('|').append(address.getReceiverPhone()).append('|')
+        .append(address.getReceiverAddressLine1()).append('|').append(address.getReceiverAddressLine2()).append('|')
+        .append(address.getReceiverCity()).append('|').append(address.getReceiverState()).append('|')
+        .append(address.getReceiverZipCode()).append('|');
     payload.append(couponUserId == null ? "none" : couponUserId).append("|")
         .append(shippingAmount).append("|")
         .append(taxAmount).append("|")

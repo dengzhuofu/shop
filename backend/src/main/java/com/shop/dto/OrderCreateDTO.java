@@ -9,6 +9,7 @@ import java.util.Map;
 @Data
 public class OrderCreateDTO {
   private String source;
+  private String currency;
   private List<Long> cartItemIds;
   private List<Item> items;
   private Long addressId;

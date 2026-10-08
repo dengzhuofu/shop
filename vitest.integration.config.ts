@@ -5,6 +5,7 @@ export default defineConfig({
     name: 'frontend-integration',
     environment: 'node',
     globals: true,
+    fileParallelism: false,
     include: ['tests/integration/**/*.spec.ts'],
     exclude: ['node_modules/**', '.nuxt/**'],
   },

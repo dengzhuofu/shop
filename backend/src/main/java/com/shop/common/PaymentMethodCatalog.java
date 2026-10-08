@@ -1,6 +1,7 @@
 package com.shop.common;
 
 import com.shop.vo.PaymentMethodVO;
+import com.shop.config.PaymentProperties;
 
 import java.util.List;
 
@@ -9,16 +10,13 @@ public final class PaymentMethodCatalog {
   private PaymentMethodCatalog() {
   }
 
-  public static List<PaymentMethodVO> methods(String language) {
-    boolean zh = "zh".equalsIgnoreCase(language);
+  public static List<PaymentMethodVO> methods(String language, PaymentProperties properties, String currency) {
+    boolean test = properties.isMockEnabled();
+    boolean alipay = properties.getAlipay().supportsCurrency(currency)
+        && (properties.getAlipay().isProductionGateway() || test);
     return List.of(
-        new PaymentMethodVO("credit_card", zh ? "Credit / Debit Card" : "Credit / Debit Card", "card", true),
-        new PaymentMethodVO("alipay", zh ? "Alipay Sandbox" : "Alipay Sandbox", "wallet", true),
-        new PaymentMethodVO("paypal", "PayPal", "wallet", true),
-        new PaymentMethodVO("shop_pay", "Shop Pay", "wallet", true),
-        new PaymentMethodVO("apple_pay", "Apple Pay", "wallet", true),
-        new PaymentMethodVO("google_pay", "Google Pay", "wallet", true),
-        new PaymentMethodVO("affirm", "Affirm", "installment", true),
-        new PaymentMethodVO("klarna", "Klarna", "installment", true));
+        new PaymentMethodVO("alipay", test && properties.getAlipay().isSandbox() ? "Alipay (test)" : "Alipay", "wallet", alipay),
+        new PaymentMethodVO("credit_card", test ? "Card (test)" : "Visa / Mastercard", "card", test),
+        new PaymentMethodVO("klarna", "Klarna", "installment", false));
   }
 }

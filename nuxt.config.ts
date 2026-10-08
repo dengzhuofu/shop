@@ -29,7 +29,9 @@ export default defineNuxtConfig({
     },
   },
 
-  devtools: { enabled: true },
+  devtools: { enabled: false },
+  debug: false,
+  experimental: { browserDevtoolsTiming: false },
   modules: [
     '@pinia/nuxt'
   ],

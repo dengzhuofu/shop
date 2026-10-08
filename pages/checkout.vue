@@ -46,49 +46,53 @@
 
             <form v-if="selectedAddressId === 'manual' || !selectedSavedAddress" class="address-form" @submit.prevent>
               <div class="form-group">
-                <label>{{ t('country') }}</label>
-                <input v-model="addressForm.country" type="text" autocomplete="country-name" />
+                <label for="checkout-country">{{ t('country') }}</label>
+                <select id="checkout-country" v-model="addressForm.country" autocomplete="country">
+                  <option value="US">{{ lang === 'zh' ? '美国' : 'United States' }}</option>
+                  <option value="CA">{{ lang === 'zh' ? '加拿大' : 'Canada' }}</option>
+                  <option value="CN">{{ lang === 'zh' ? '中国大陆' : 'Mainland China' }}</option>
+                </select>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>{{ t('firstName') }}</label>
-                  <input v-model="addressForm.firstName" type="text" autocomplete="given-name" />
+                  <label for="checkout-firstName">{{ t('firstName') }}</label>
+                  <input id="checkout-firstName" v-model="addressForm.firstName" type="text" autocomplete="given-name" />
                 </div>
                 <div class="form-group">
-                  <label>{{ t('lastName') }}</label>
-                  <input v-model="addressForm.lastName" type="text" autocomplete="family-name" />
+                  <label for="checkout-lastName">{{ t('lastName') }}</label>
+                  <input id="checkout-lastName" v-model="addressForm.lastName" type="text" autocomplete="family-name" />
                 </div>
               </div>
 
               <div class="form-group">
-                <label>{{ t('addressLine1') }}</label>
-                <input v-model="addressForm.addressLine1" type="text" autocomplete="address-line1" />
+                <label for="checkout-addressLine1">{{ t('addressLine1') }}</label>
+                <input id="checkout-addressLine1" v-model="addressForm.addressLine1" type="text" autocomplete="address-line1" />
               </div>
 
               <div class="form-group">
-                <label>{{ t('addressLine2') }}</label>
-                <input v-model="addressForm.addressLine2" type="text" autocomplete="address-line2" />
+                <label for="checkout-addressLine2">{{ t('addressLine2') }}</label>
+                <input id="checkout-addressLine2" v-model="addressForm.addressLine2" type="text" autocomplete="address-line2" />
               </div>
 
               <div class="form-row three-cols">
                 <div class="form-group">
-                  <label>{{ t('city') }}</label>
-                  <input v-model="addressForm.city" type="text" autocomplete="address-level2" />
+                  <label for="checkout-city">{{ t('city') }}</label>
+                  <input id="checkout-city" v-model="addressForm.city" type="text" autocomplete="address-level2" />
                 </div>
                 <div class="form-group">
-                  <label>{{ t('state') }}</label>
-                  <input v-model="addressForm.state" type="text" autocomplete="address-level1" />
+                  <label for="checkout-state">{{ t('state') }}</label>
+                  <input id="checkout-state" v-model="addressForm.state" type="text" autocomplete="address-level1" />
                 </div>
                 <div class="form-group">
-                  <label>{{ t('zipCode') }}</label>
-                  <input v-model="addressForm.zipCode" type="text" autocomplete="postal-code" />
+                  <label for="checkout-zipCode">{{ t('zipCode') }}</label>
+                  <input id="checkout-zipCode" v-model="addressForm.zipCode" type="text" autocomplete="postal-code" />
                 </div>
               </div>
 
               <div class="form-group">
-                <label>{{ t('phone') }}</label>
-                <input v-model="addressForm.phone" type="tel" autocomplete="tel" />
+                <label for="checkout-phone">{{ t('phone') }}</label>
+                <input id="checkout-phone" v-model="addressForm.phone" type="tel" autocomplete="tel" />
               </div>
 
               <button type="button" class="secondary-btn" @click="saveAddressFromForm">
@@ -108,7 +112,7 @@
                 <h2>{{ checkoutCopy.shippingMethod }}</h2>
               </div>
             </div>
-            <div class="info-box">{{ shippingMethod }}</div>
+            <div class="info-box">{{ shippingLabel }}</div>
           </section>
 
           <section class="checkout-section">
@@ -120,43 +124,11 @@
             </div>
 
             <div class="payment-methods">
-              <div class="payment-option" :class="{ selected: selectedPaymentMethod === 'alipay' }">
-                <button type="button" class="option-header" @click="selectedPaymentMethod = 'alipay'">
-                  <div class="radio-wrap">
-                    <div v-if="selectedPaymentMethod === 'alipay'" class="radio-inner"></div>
-                  </div>
-                  <span class="option-name">Alipay</span>
-                  <span class="brand-text alipay">Sandbox</span>
-                </button>
-                <div v-if="selectedPaymentMethod === 'alipay'" class="option-body">
-                  <p class="payment-hint">{{ paymentUiCopy.alipayHint }}</p>
-                </div>
-              </div>
-
-              <div class="payment-option" :class="{ selected: selectedPaymentMethod === 'credit_card' }">
-                <button type="button" class="option-header" @click="selectedPaymentMethod = 'credit_card'">
-                  <div class="radio-wrap">
-                    <div v-if="selectedPaymentMethod === 'credit_card'" class="radio-inner"></div>
-                  </div>
-                  <span class="option-name">Credit card</span>
-                  <div class="card-icons">
-                    <span class="card-icon visa">VISA</span>
-                    <span class="card-icon master">MC</span>
-                    <span class="card-icon amex">AMEX</span>
-                  </div>
-                </button>
-                <div v-if="selectedPaymentMethod === 'credit_card'" class="option-body">
-                  <div class="card-form">
-                    <input type="text" :placeholder="checkoutCopy.cardNumber" />
-                    <div class="form-row">
-                      <input type="text" :placeholder="checkoutCopy.expiry" />
-                      <input type="text" :placeholder="checkoutCopy.cvc" />
-                    </div>
-                    <input type="text" :placeholder="checkoutCopy.nameOnCard" />
-                  </div>
-                  <p class="payment-hint">{{ paymentUiCopy.mockHint }}</p>
-                </div>
-              </div>
+              <label v-for="method in availablePaymentMethods" :key="method.code" class="payment-option">
+                <input v-model="selectedPaymentMethod" type="radio" :value="method.code" /> {{ method.name }}
+              </label>
+              <p v-if="!availablePaymentMethods.length" role="status">{{ lang === 'zh' ? '此币种暂不可在线付款。请联系客户服务了解销售安排。' : 'Online payment is currently unavailable for this currency. Contact customer support for sales assistance.' }}</p>
+              <NuxtLink to="/pages/payment-methods">{{ lang === 'zh' ? '查看支付方式说明' : 'Payment information' }}</NuxtLink>
             </div>
 
             <div class="payment-note-container">
@@ -181,15 +153,7 @@
               >
                 {{ isPaying ? checkoutCopy.processing : checkoutCopy.payNow }}
               </button>
-              <button
-                v-if="isMockFlow"
-                type="button"
-                class="pay-now-btn ghost"
-                :disabled="!paymentIntent?.id || completingPayment"
-                @click="completePayment"
-              >
-                {{ completingPayment ? checkoutCopy.completing : paymentUiCopy.completeMockPayment }}
-              </button>
+
             </div>
 
             <p v-if="message" class="status-message">{{ message }}</p>
@@ -208,8 +172,8 @@
 
       <aside class="checkout-sidebar">
         <div class="sidebar-inner">
-          <div v-if="cart.items.value.length" class="cart-items">
-            <div v-for="item in cart.items.value" :key="item.cartItemId" class="cart-item">
+          <div v-if="(preview.items || cart.items.value).length" class="cart-items">
+            <div v-for="item in (preview.items || cart.items.value)" :key="item.cartItemId" class="cart-item">
               <div class="item-img-wrapper">
                 <img :src="item.productPic" :alt="item.title" class="item-img" />
                 <span class="item-qty">{{ item.quantity }}</span>
@@ -221,7 +185,7 @@
                   + {{ item.addons.map((addon: any) => addon.name || addon.code).join(', ') }}
                 </p>
               </div>
-              <div class="item-price">{{ money(item.lineAmount) }}</div>
+              <div class="item-price">{{ money(item.lineAmount, item.currency || checkoutCurrency) }}</div>
             </div>
           </div>
           <div v-else class="empty-state">
@@ -229,25 +193,33 @@
           </div>
 
           <div class="summary-lines">
+            <label for="checkout-coupon">{{ t('coupon') }}</label>
+            <select id="checkout-coupon" v-model="selectedCouponUserId" :disabled="previewing || !canPreviewAddress">
+              <option value="">{{ lang === 'zh' ? '不使用优惠券' : 'No coupon' }}</option>
+              <option v-for="coupon in coupons" :key="coupon.couponUserId" :value="String(coupon.couponUserId)" :disabled="!preview.previewToken || preview.subtotal < coupon.thresholdAmount">
+                {{ coupon.code }} · {{ money(coupon.discountAmount, coupon.currency) }} ({{ lang === 'zh' ? '满' : 'Minimum' }} {{ money(coupon.thresholdAmount, coupon.currency) }})
+              </option>
+            </select>
             <div class="line">
               <span>{{ checkoutCopy.subtotal }}</span>
-              <span>{{ money(preview.subtotal || cart.subtotal.value) }}</span>
+              <span>{{ preview.subtotal != null ? money(preview.subtotal, checkoutCurrency) : '--' }}</span>
             </div>
             <div class="line">
-              <span>{{ shippingMethod }}</span>
-              <span>{{ money(preview.shippingAmount || 0) }}</span>
+              <span>{{ shippingLabel }}</span>
+              <span>{{ money(preview.shippingAmount || 0, checkoutCurrency) }}</span>
             </div>
             <div class="line" v-if="preview.taxAmount != null">
               <span>{{ checkoutCopy.tax }}</span>
-              <span>{{ money(preview.taxAmount) }}</span>
+              <span>{{ money(preview.taxAmount, checkoutCurrency) }}</span>
             </div>
+            <div v-if="preview.discountAmount > 0" class="line"><span>{{ lang === 'zh' ? '优惠券抵扣' : 'Coupon discount' }}</span><span>−{{ money(preview.discountAmount, checkoutCurrency) }}</span></div>
           </div>
 
           <div class="total-line">
             <span>{{ checkoutCopy.total }}</span>
             <div class="total-price-group">
-              <span class="currency-code">USD</span>
-              <strong>{{ money(preview.totalAmount || cart.subtotal.value) }}</strong>
+              <span class="currency-code">{{ checkoutCurrency }}</span>
+              <strong>{{ preview.totalAmount != null ? money(preview.totalAmount, checkoutCurrency) : '--' }}</strong>
             </div>
           </div>
         </div>
@@ -313,7 +285,8 @@ definePageMeta({
   layout: 'checkout',
 })
 
-const shippingMethod = 'UPS Ground/FedEx Home Delivery(2-5 Business Days)'
+const shippingMethod = 'standard'
+const shippingLabel = computed(() => lang.value === 'zh' ? '免费标准配送 · 发货后预计 ' + (checkoutCurrency.value === 'CNY' ? '3–7' : '5–10') + ' 个工作日' : 'Free standard delivery · ' + (checkoutCurrency.value === 'CNY' ? '3–7' : '5–10') + ' business days after dispatch')
 
 const { lang, t, toggleLang, nextLangShortText } = useShopLocale()
 const { money, attributeText, dateTime } = useShopFormat()
@@ -323,7 +296,7 @@ const session = useShopSession()
 
 const addresses = ref<any[]>([])
 const selectedAddressId = ref<string>('manual')
-const selectedPaymentMethod = ref<'alipay' | 'credit_card'>('alipay')
+const selectedPaymentMethod = ref('alipay')
 const preview = ref<Record<string, any>>({})
 const paymentIntent = ref<Record<string, any> | null>(null)
 const currentOrderId = ref<number | null>(null)
@@ -333,14 +306,17 @@ const currentOrderPaymentStatus = ref<string | null>(null)
 const message = ref('')
 const bootstrapped = ref(false)
 const previewing = ref(false)
+const coupons = ref<any[]>([])
+const selectedCouponUserId = ref('')
+const orderNote = useState('shop-order-note', () => '')
 const isPaying = ref(false)
-const completingPayment = ref(false)
 
 const addressListOpen = ref(false)
 const addAddressModalOpen = ref(false)
 let currentOrderPollTimer: ReturnType<typeof setInterval> | null = null
 
-const addressForm = reactive(createEmptyAddressDraft())
+const { market } = useShopMarket()
+const addressForm = reactive({ ...createEmptyAddressDraft(), country: market.value })
 
 const checkoutCopy = computed(() =>
   lang.value === 'zh'
@@ -370,7 +346,7 @@ const checkoutCopy = computed(() =>
         addAddress: '\u65b0\u589e\u5730\u5740',
         emptyCart: '\u8d2d\u7269\u8f66\u4e3a\u7a7a\uff0c\u8bf7\u5148\u6dfb\u52a0\u5546\u54c1\u3002',
         subtotal: '\u5c0f\u8ba1',
-        tax: '\u7a0e\u8d39',
+        tax: '额外商户税费（售价已含税）',
         total: '\u5408\u8ba1',
       }
     : {
@@ -399,7 +375,7 @@ const checkoutCopy = computed(() =>
         addAddress: 'Add address',
         emptyCart: 'Your cart is empty.',
         subtotal: 'Subtotal',
-        tax: 'Tax',
+        tax: 'Additional merchant tax (included in prices)',
         total: 'Total',
       },
 )
@@ -407,9 +383,6 @@ const checkoutCopy = computed(() =>
 const paymentUiCopy = computed(() =>
   lang.value === 'zh'
     ? {
-        alipayHint: '\u4f18\u5148\u8d70\u652f\u4ed8\u5b9d\u6c99\u76d2\u652f\u4ed8\uff0c\u652f\u4ed8\u5b8c\u6210\u540e\u4f1a\u56de\u8df3\u7ad9\u5185\u786e\u8ba4\u7ed3\u679c\u3002',
-        mockHint: '\u5982\u679c\u6c99\u76d2\u914d\u7f6e\u6682\u4e0d\u53ef\u7528\uff0c\u4f1a\u81ea\u52a8\u56de\u9000\u5230 mock \u652f\u4ed8\u6d41\u7a0b\u3002',
-        completeMockPayment: '\u5b8c\u6210 mock \u652f\u4ed8',
         redirectingToAlipay: '\u6b63\u5728\u8df3\u8f6c\u5230\u652f\u4ed8\u5b9d...',
         orderCreated: '\u5f53\u524d\u8ba2\u5355\u5df2\u521b\u5efa\uff0c\u53ef\u968f\u65f6\u53bb\u8ba2\u5355\u9875\u7ee7\u7eed\u652f\u4ed8',
         payBefore: '\u8bf7\u5728',
@@ -419,9 +392,6 @@ const paymentUiCopy = computed(() =>
         goToOrders: '\u524d\u5f80\u8ba2\u5355\u9875\u7ee7\u7eed\u652f\u4ed8',
       }
     : {
-        alipayHint: 'Preferred path: redirect to Alipay Sandbox and confirm the result on return.',
-        mockHint: 'If sandbox credentials are unavailable, checkout falls back to the mock flow.',
-        completeMockPayment: 'Complete mock payment',
         redirectingToAlipay: 'Redirecting to Alipay...',
         orderCreated: 'This order has been created and can be resumed from your orders page',
         payBefore: 'Please complete payment before',
@@ -461,9 +431,12 @@ const isPayDisabled = computed(
     || !canPreviewAddress.value
     || previewing.value
     || isPaying.value
-    || currentOrderExpired.value,
+    || currentOrderExpired.value
+    || !preview.value.previewToken
+    || !availablePaymentMethods.value.some(method => method.code === selectedPaymentMethod.value),
 )
-const isMockFlow = computed(() => paymentIntent.value?.providerKey === 'mock')
+const availablePaymentMethods = computed<any[]>(() => (preview.value.paymentMethods || []).filter((method: any) => method.enabled))
+const checkoutCurrency = computed(() => preview.value.currency || (['CN', 'China', '中国', '中国大陆'].includes(addressForm.country) ? 'CNY' : 'USD'))
 
 const applyAddress = (address: any) => {
   Object.assign(addressForm, toAddressDraft(address))
@@ -652,12 +625,19 @@ const buildPreviewPayload = () => ({
   source: 'cart',
   cartItemIds: cart.items.value.map((item) => item.cartItemId),
   addressId: selectedSavedAddress.value?.id,
+  addressSnapshot: selectedSavedAddress.value ? undefined : toAddressDraft(addressForm),
+  currency: checkoutCurrency.value,
+  couponUserId: selectedCouponUserId.value ? Number(selectedCouponUserId.value) : undefined,
   shippingMethod,
 })
 
+let previewRevision = 0
 const previewOrder = async () => {
-  if (previewing.value || !cart.items.value.length || !canPreviewAddress.value) {
+  const revision = ++previewRevision
+  preview.value = {}
+  if ( !cart.items.value.length || !canPreviewAddress.value) {
     preview.value = {}
+    previewing.value = false
     return
   }
 
@@ -668,12 +648,15 @@ const previewOrder = async () => {
       body: buildPreviewPayload(),
     })
 
-    if (res?.code === 200) {
+    if (revision === previewRevision && res?.code === 200) {
       preview.value = res.data
+      if (!availablePaymentMethods.value.some(method => method.code === selectedPaymentMethod.value)) {
+        selectedPaymentMethod.value = availablePaymentMethods.value[0]?.code || ''
+      }
       message.value = lang.value === 'zh' ? '\u8ba2\u5355\u9884\u89c8\u5df2\u66f4\u65b0\u3002' : 'Order preview updated.'
     }
   } finally {
-    previewing.value = false
+    if (revision === previewRevision) previewing.value = false
   }
 }
 
@@ -714,8 +697,9 @@ const startPayment = async () => {
       body: {
         ...buildPreviewPayload(),
         previewToken: preview.value.previewToken,
+        remark: orderNote.value.trim() || undefined,
         addressSnapshot: selectedSavedAddress.value ? undefined : toAddressDraft(addressForm),
-        remark: 'Checkout creates order on pay action',
+
       },
       showError: false,
     }).catch(() => null)
@@ -739,33 +723,6 @@ const startPayment = async () => {
   }
 }
 
-const completePayment = async () => {
-  if (!paymentIntent.value?.id) {
-    return
-  }
-
-  completingPayment.value = true
-  try {
-    const res = await useHttp('/api/payment/mock/complete', {
-      method: 'POST',
-      body: {
-        paymentIntentId: paymentIntent.value.id,
-        mockResult: 'success',
-      },
-    })
-
-    if (res?.code === 200) {
-      paymentIntent.value = res.data
-      await refreshCurrentOrderStatus(true)
-      message.value = t('orderSuccess')
-      await cart.refreshCart()
-      await navigateTo('/account/orders')
-    }
-  } finally {
-    completingPayment.value = false
-  }
-}
-
 watch(selectedAddressId, (value) => {
   if (value === 'manual') {
     return
@@ -777,7 +734,7 @@ watch(selectedAddressId, (value) => {
   }
 })
 
-watch([selectedAddressId, cartSignature], async () => {
+watch([selectedAddressId, cartSignature, selectedCouponUserId], async () => {
   if (!bootstrapped.value) {
     return
   }
@@ -839,7 +796,18 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', syncVisibilityState)
   }
   bootstrapped.value = true
+  await fetchCoupons()
   await previewOrder()
+})
+
+const fetchCoupons = async () => {
+  const res = await useHttp('/api/coupon/my', { query: { currency: checkoutCurrency.value }, showError: false })
+  coupons.value = res?.code === 200 ? res.data || [] : []
+}
+watch(checkoutCurrency, async () => {
+  if (!bootstrapped.value) return
+  selectedCouponUserId.value = ''
+  await fetchCoupons()
 })
 
 onBeforeUnmount(() => {

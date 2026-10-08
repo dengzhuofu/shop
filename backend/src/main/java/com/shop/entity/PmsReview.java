@@ -18,6 +18,7 @@ public class PmsReview {
     private Long id;
 
     private Long productId;
+    private Boolean isDemo;
 
     private Long userId;
 

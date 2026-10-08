@@ -1,6 +1,5 @@
 <template>
   <div class="layout-default">
-    <div class="global-discount-tag">$20 OFF</div>
     <AppHeader />
     <main class="main-content">
       <slot />

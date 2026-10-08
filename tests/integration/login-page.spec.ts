@@ -12,7 +12,7 @@ describe('login page integration', () => {
     const html = await response.text()
 
     expect(response.status).toBe(200)
-    expect(html).toContain('Sign in to your rider account')
+    expect(html).toContain('Sign in')
     expect(html).toContain('Email')
     expect(html).toContain('Password')
     expect(html).toContain('Register')

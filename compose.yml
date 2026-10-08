@@ -30,6 +30,10 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-shop}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JAVA_OPTS: ${JAVA_OPTS:-}
+      SPRING_FLYWAY_ENABLED: false
+      SHOP_USD_CNY_RATE: ${SHOP_USD_CNY_RATE:-7.00}
+      PAYMENT_MOCK_ENABLED: false
+      PAYMENT_ALIPAY_FALLBACK_TO_MOCK: false
     depends_on:
       db:
         condition: service_healthy

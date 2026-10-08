@@ -2,6 +2,7 @@ package com.shop.vo;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.shop.common.JsonLocaleUtils;
+import com.shop.common.PricingContext;
 import com.shop.entity.PmsProduct;
 import lombok.Data;
 
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 @Data
 public class ProductVO {
   private Long id;
+  private String currency;
   private Long categoryId;
   private String categorySlug;
   private String slug;
@@ -45,8 +47,9 @@ public class ProductVO {
     vo.setId(product.getId());
     vo.setCategoryId(product.getCategoryId());
     vo.setSlug(product.getSlug());
-    vo.setPrice(product.getPrice());
-    vo.setCompareAtPrice(product.getCompareAtPrice());
+    vo.setCurrency(PricingContext.currency());
+    vo.setPrice(PricingContext.money(product.getPrice()));
+    vo.setCompareAtPrice(PricingContext.money(product.getCompareAtPrice()));
     vo.setStock(product.getStock());
     vo.setPic(product.getPic());
     vo.setIsNew(Boolean.TRUE.equals(product.getIsNew()));
@@ -63,7 +66,7 @@ public class ProductVO {
     vo.setSpecTable(extractLangObject(product.getSpecTable(), lang));
     vo.setBoxItems(extractLangObject(product.getBoxItems(), lang));
     vo.setFaqs(extractLangObject(product.getFaqs(), lang));
-    vo.setUpsells(extractLangObject(product.getUpsells(), lang));
+    vo.setUpsells(PricingContext.prices(extractLangObject(product.getUpsells(), lang)));
 
     if (skus != null) {
       vo.setSkuList(skus.stream().map(SkuVO::from).collect(Collectors.toList()));

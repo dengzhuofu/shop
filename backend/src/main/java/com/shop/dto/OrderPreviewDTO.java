@@ -10,6 +10,8 @@ public class OrderPreviewDTO {
   private List<Long> cartItemIds;
   private List<OrderCreateDTO.Item> items;
   private Long addressId;
+  private OrderCreateDTO.AddressSnapshot addressSnapshot;
+  private String currency;
   private String shippingMethod;
   private Long couponUserId;
 }

@@ -21,12 +21,9 @@
       <div class="feature-hero-overlay" />
       <div class="feature-hero-content">
         <div class="feature-hero-text">
-          <span class="hero-kicker">S Nova Story</span>
-          <h3>Commuter comfort that still feels distinctive.</h3>
-          <p>
-            The reference page leans on oversized marketing visuals. This section restores that rhythm so the detail page
-            does not end right after the buy box.
-          </p>
+          <span class="hero-kicker">CBJJ</span>
+          <h3>{{ story.title }}</h3>
+          <p>{{ story.subtitle }}</p>
         </div>
 
         <div class="feature-metrics">

@@ -26,7 +26,7 @@
               <span class="status-chip" :class="statusTone(order.status)">{{ statusText(order.status) }}</span>
               <div class="order-top__total">
                 <span>{{ t('total') }}</span>
-                <strong>{{ money(order.totalAmount) }}</strong>
+                <strong>{{ money(order.totalAmount, order.currency) }}</strong>
               </div>
             </div>
           </div>
@@ -84,8 +84,8 @@
                 </div>
               </div>
               <div class="line-item__meta">
-                <span>{{ money(item.lineAmount) }}</span>
-                <small>{{ ui.unitPrice }} {{ money(item.unitPrice) }}</small>
+                <span>{{ money(item.lineAmount, order.currency) }}</span>
+                <small>{{ ui.unitPrice }} {{ money(item.unitPrice, order.currency) }}</small>
               </div>
             </div>
           </div>
@@ -96,11 +96,12 @@
                 v-if="canContinuePayment(order)"
                 type="button"
                 class="action-btn primary"
-                :disabled="payingOrderId === order.id"
+                :disabled="payingOrderId === order.id || !paymentAvailable(order)"
                 @click="continuePayment(order)"
               >
                 {{ payingOrderId === order.id ? ui.processingPayment : ui.continuePayment }}
               </button>
+              <p v-if="canContinuePayment(order) && !paymentAvailable(order)">{{ lang === 'zh' ? '此订单币种暂不可在线付款，请联系客服。' : 'Online payment is unavailable for this order currency. Please contact support.' }}</p>
               <button
                 v-if="canCancelOrder(order)"
                 type="button"
@@ -138,6 +139,8 @@ const orders = ref<any[]>([])
 const loading = ref(false)
 const payingOrderId = ref<number | null>(null)
 const cancellingOrderId = ref<number | null>(null)
+const paymentMethods = ref<Record<string, any[]>>({})
+const paymentAvailable = (order: any) => (paymentMethods.value[order.currency] || []).some(method => method.enabled && method.code === (order.paymentMethod || 'alipay'))
 let ordersPollTimer: ReturnType<typeof setInterval> | null = null
 
 const ui = computed(() =>
@@ -281,6 +284,11 @@ const fetchOrders = async () => {
   try {
     const res = await useHttp('/api/order/list?pageNum=1&pageSize=20')
     orders.value = res?.code === 200 ? res.data?.records || [] : []
+    const currencies = [...new Set(orders.value.map(order => order.currency))]
+    await Promise.all(currencies.map(async currency => {
+      const response = await useHttp('/api/payment/methods', { query: { currency }, showError: false })
+      paymentMethods.value[currency] = response?.code === 200 ? response.data || [] : []
+    }))
   } finally {
     loading.value = false
   }
@@ -318,6 +326,12 @@ const refreshOnVisibility = () => {
 }
 
 const continuePayment = async (order: any) => {
+  const methods = await useHttp('/api/payment/methods', { query: { currency: order.currency }, showError: false }).catch(() => null)
+  const method = (methods?.data || []).find((item: any) => item.enabled && item.code === (order.paymentMethod || 'alipay'))
+  if (!method) {
+    window.alert(lang.value === 'zh' ? '此订单币种暂不可在线付款，请联系客服。' : 'Online payment is unavailable for this order currency. Please contact support.')
+    return
+  }
   payingOrderId.value = order.id
   try {
     const intentRes = await useHttp('/api/payment/intent', {
@@ -337,20 +351,6 @@ const continuePayment = async (order: any) => {
     if (intentRes.data?.nextAction === 'REDIRECT' && intentRes.data?.redirectUrl && process.client) {
       window.location.href = intentRes.data.redirectUrl
       return
-    }
-
-    if (intentRes.data?.providerKey === 'mock' && intentRes.data?.id) {
-      const completeRes = await useHttp('/api/payment/mock/complete', {
-        method: 'POST',
-        body: {
-          paymentIntentId: intentRes.data.id,
-          mockResult: 'success',
-        },
-      }).catch(() => null)
-
-      if (completeRes?.code === 200) {
-        await cart.refreshCart()
-      }
     }
 
     await fetchOrders()

@@ -4,7 +4,7 @@
       <div class="account-container header-inner">
         <NuxtLink to="/" class="brand-mark">
           <span class="brand-logo">◎</span>
-          <span class="brand-word">isinwheel</span>
+          <span class="brand-word">CBJJ</span>
         </NuxtLink>
 
         <nav class="account-nav">
@@ -68,17 +68,15 @@
     <footer class="account-footer">
       <div class="container footer-inner">
         <div class="footer-region">
-          <span class="region-flag">🌎</span>
-          <span>{{ footerCopy.region }}</span>
-          <ChevronDownIcon class="footer-arrow" />
+          <MarketSelector />
         </div>
 
         <nav class="footer-links">
-          <NuxtLink to="/account/profile">{{ footerCopy.refund }}</NuxtLink>
-          <NuxtLink to="/checkout">{{ t('shipping') }}</NuxtLink>
-          <NuxtLink to="/account/profile">{{ footerCopy.privacy }}</NuxtLink>
-          <NuxtLink to="/account/profile">{{ footerCopy.terms }}</NuxtLink>
-          <NuxtLink to="/account/profile">{{ footerCopy.contact }}</NuxtLink>
+          <NuxtLink to="/pages/refund-policy">{{ footerCopy.refund }}</NuxtLink>
+          <NuxtLink to="/pages/shipping-policy">{{ t('shipping') }}</NuxtLink>
+          <NuxtLink to="/pages/privacy-policy">{{ footerCopy.privacy }}</NuxtLink>
+          <NuxtLink to="/pages/terms-of-service">{{ footerCopy.terms }}</NuxtLink>
+          <NuxtLink to="/pages/contact-us">{{ footerCopy.contact }}</NuxtLink>
         </nav>
       </div>
     </footer>

@@ -14,30 +14,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ReviewControllerIntegrationTest extends BackendIntegrationTestSupport {
 
   @Test
-  void seededSnoVaReviewsExposeSummaryPhotosAndMerchantReplies() throws Exception {
-    String summaryResponse = mockMvc.perform(get("/review/product/15/summary"))
+  void unattributedSeedReviewsAreNotShown() throws Exception {
+    mockMvc.perform(get("/review/product/15/summary"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(200))
-        .andExpect(jsonPath("$.data.totalReviews").value(6))
-        .andExpect(jsonPath("$.data.ratingDistribution.5").value(5))
-        .andExpect(jsonPath("$.data.ratingDistribution.4").value(1))
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode summary = objectMapper.readTree(summaryResponse).path("data");
-    assertThat(summary.path("averageRating").asDouble()).isGreaterThan(4.8);
-
-    mockMvc.perform(get("/review/product/15").param("pageNum", "1").param("pageSize", "10"))
+        .andExpect(jsonPath("$.data.totalReviews").value(0));
+    mockMvc.perform(get("/review/product/15"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.records.length()").value(6))
-        .andExpect(jsonPath("$.data.records[0].images[0]").isNotEmpty())
-        .andExpect(jsonPath("$.data.records[4].merchantReply").isNotEmpty())
-        .andExpect(jsonPath("$.data.records[4].verifiedPurchase").value(true));
+        .andExpect(jsonPath("$.data.records.length()").value(0));
   }
 
   @Test
-  void signedInUserCanCreateReviewAndReceiveVerifiedPurchaseBadge() throws Exception {
+  void signedInUserCanReviewButMockOrdersDoNotEarnVerifiedBadge() throws Exception {
     String token = loginAndGetToken("admin@isinwheel.local", "123456");
 
     String payload = """
@@ -58,12 +45,12 @@ class ReviewControllerIntegrationTest extends BackendIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code").value(200))
         .andExpect(jsonPath("$.data.userName").value("Admin User"))
-        .andExpect(jsonPath("$.data.verifiedPurchase").value(true))
+        .andExpect(jsonPath("$.data.verifiedPurchase").value(false))
         .andExpect(jsonPath("$.data.images[0]").value("https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=1200"));
 
     mockMvc.perform(get("/review/product/15/summary"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.totalReviews").value(7))
-        .andExpect(jsonPath("$.data.ratingDistribution.5").value(6));
+        .andExpect(jsonPath("$.data.totalReviews").value(1))
+        .andExpect(jsonPath("$.data.ratingDistribution.5").value(1));
   }
 }

@@ -46,11 +46,7 @@
                 >{{ tag }}</span
               >
             </div>
-            <div v-if="hasSpringSale" class="tags-right">
-              <div class="spring-sale-badge">
-                <span class="text">Spring<br />Sale</span>
-              </div>
-            </div>
+
             <img :src="activeImage" :alt="product.title" class="main-image" />
 
             <div v-if="galleryImages.length > 1" class="gallery-controls">
@@ -125,7 +121,7 @@
         <section class="product-info">
           <div class="product-badges">
             <span class="badge success">{{ copy.badgePrimary }}</span>
-            <span class="badge danger">{{ copy.badgeSecondary }}</span>
+            <span class="badge danger">{{ lang === 'zh' ? '一年有限保修' : '1-year limited warranty' }}</span>
           </div>
 
           <h1 class="product-title">{{ product.title }}</h1>
@@ -136,7 +132,7 @@
               money(selectedCompareAtPrice)
             }}</span>
             <span v-if="selectedCompareAtPrice" class="save-badge">
-              Save
+              {{ lang === 'zh' ? '节省' : 'Save' }}
               {{
                 money(Number(selectedCompareAtPrice) - Number(selectedPrice))
               }}
@@ -152,18 +148,13 @@
                 :class="{ filled: i <= roundedReviewAverage }"
               />
             </div>
-            <span class="review-count">{{ reviewSummary.averageRating.toFixed(2) }} · {{ reviewCount }} reviews</span>
+            <span class="review-count">{{ reviewSummary.averageRating.toFixed(2) }} · {{ reviewCount }} {{ lang === "zh" ? "条评价" : "reviews" }}</span>
           </div>
 
           <div class="installment-info">
-            <p>
-              {{ copy.installmentPrefix }}
-              <strong>{{
-                money(Math.max(Number(selectedPrice || 0) / 4, 1))
-              }}</strong>
-              {{ copy.installmentSuffix }}
-            </p>
+            <NuxtLink to="/pages/klarna">{{ lang === 'zh' ? '了解 Klarna：本站尚未开通收款' : 'About Klarna: payments are not yet enabled on this store' }}</NuxtLink>
           </div>
+          <p class="product-image-note">{{ lang === 'zh' ? '图片展示基础款，颜色、套装及数量以所选规格文字为准。购买前请核对包装清单及适配条件。' : 'Images illustrate the base model. Selected colors, kits and quantities are specified in the options, not depicted individually. Check package contents and compatibility before ordering.' }}</p>
 
           <div class="variant-selectors">
             <div
@@ -176,24 +167,7 @@
                 <strong>{{ selection[attributeKey] }}</strong>
               </p>
 
-              <div v-if="attributeKey === 'color'" class="color-options">
-                <button
-                  v-for="option in attributeOptions[attributeKey] || []"
-                  :key="option"
-                  type="button"
-                  class="color-btn"
-                  :class="{ 'is-active': selection[attributeKey] === option }"
-                  :disabled="!isSelectable(attributeKey, option)"
-                  @click="selection[attributeKey] = option"
-                >
-                  <img
-                    :src="optionThumbnail(attributeKey, option)"
-                    :alt="String(option)"
-                  />
-                </button>
-              </div>
-
-              <div v-else class="options-list">
+              <div class="options-list">
                 <button
                   v-for="option in attributeOptions[attributeKey] || []"
                   :key="option"
@@ -201,7 +175,7 @@
                   class="text-btn"
                   :class="{ 'is-active': selection[attributeKey] === option }"
                   :disabled="!isSelectable(attributeKey, option)"
-                  @click="selection[attributeKey] = option"
+                  @click="selectOption(attributeKey, option)"
                 >
                   {{ option }}
                 </button>
@@ -400,8 +374,8 @@
     <section ref="faqSection" class="detail-section faq-section">
       <div class="container section-shell">
         <div class="section-heading">
-          <span class="section-kicker">FAQs</span>
-          <h2>Questions riders ask before they commute with {{ product.title }}.</h2>
+          <span class="section-kicker">{{ t('faq') }}</span>
+          <h2>{{ lang === 'zh' ? '关于此商品的常见问题' : 'Common questions about this product' }}</h2>
         </div>
 
         <div class="faq-grid">
@@ -480,6 +454,7 @@ import {
   findInitialSelection,
   findSelectedSku,
   isOptionSelectable,
+  selectSkuOption,
   isSkuAvailable,
   sortAttributeKeys,
 } from "~/utils/productSelection";
@@ -495,6 +470,12 @@ const { money, attributeText } = useShopFormat();
 const recentlyViewed = useRecentlyViewed();
 
 const product = ref<any | null>(null);
+useSeoMeta({
+  title: () => product.value?.title || 'CBJJ',
+  description: () => product.value?.subtitle || '',
+  ogTitle: () => product.value?.title || 'CBJJ',
+  ogImage: () => product.value?.pic ? `https://cbjjpower.com${product.value.pic}` : undefined,
+});
 const activeImage = ref("");
 const thumbStartIndex = ref(0);
 const quantity = ref(1);
@@ -522,20 +503,16 @@ const iconMap = { ZapIcon, NavigationIcon, ActivityIcon, BatteryIcon } as const;
 const copy = computed(() =>
   lang.value === "zh"
     ? {
-        badgePrimary: "\u9a91\u884c\u597d\u4ef7",
+        badgePrimary: "CBJJ 官方商店",
         badgeSecondary: "\u65b0\u54c1\u4e0a\u67b6",
-        installmentPrefix: "\u652f\u6301\u5206\u671f\uff0c\u5355\u671f\u7ea6",
-        installmentSuffix: "/ 4 \u671f",
         quickKnow: "\u5feb\u901f\u4e86\u89e3",
         addonTitle: "\u9644\u52a0\u670d\u52a1",
       }
     : {
-        badgePrimary: "Ride Deals",
+        badgePrimary: "CBJJ official store",
         badgeSecondary: "Fresh Rides, Fresh Start",
-        installmentPrefix: "4 interest-free installments from",
-        installmentSuffix: "with flexible payment options",
         quickKnow: "Quick Know",
-        addonTitle: "Spring Sale Add-ons",
+        addonTitle: "Optional add-ons",
       },
 );
 
@@ -575,9 +552,9 @@ const resolvedSpecs = computed(() =>
 );
 
 const sectionTabs = computed(() => [
-  { id: "features", label: "Features" },
-  { id: "faqs", label: "FAQs" },
-  { id: "reviews", label: "Reviews" },
+  { id: "features", label: lang.value === 'zh' ? '商品特点' : 'Features' },
+  { id: "faqs", label: t('faq') },
+  { id: "reviews", label: lang.value === 'zh' ? '客户评价' : 'Reviews' },
 ]);
 
 const featureStory = computed(() =>
@@ -605,11 +582,6 @@ const selectedCompareAtPrice = computed(
 const leftTags = computed(() =>
   (Array.isArray(product.value?.tags) ? product.value.tags : []).filter(
     (tag: string) => ["NEW", "HOT"].includes(String(tag).toUpperCase()),
-  ),
-);
-const hasSpringSale = computed(() =>
-  (Array.isArray(product.value?.tags) ? product.value.tags : []).some(
-    (tag: string) => String(tag).toLowerCase().includes("spring sale"),
   ),
 );
 const reviewCount = computed(() => Number(reviewSummary.totalReviews || 0));
@@ -683,7 +655,13 @@ const isSelectable = (attributeKey: string, option: string) =>
     option,
   );
 
-const formatAttributeKey = (value: string) => formatSkuAttributeKey(value);
+const selectOption = (attributeKey: string, option: string) => {
+  const next = selectSkuOption(product.value?.skuList || [], selection, attributeKey, option);
+  Object.keys(selection).forEach((key) => delete selection[key]);
+  Object.assign(selection, next);
+};
+
+const formatAttributeKey = (value: string) => formatSkuAttributeKey(value, lang.value);
 
 const optionThumbnail = (attributeKey: string, option: string) => {
   const skuList = Array.isArray(product.value?.skuList)
@@ -838,6 +816,19 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateScrollState);
   document.body.classList.remove("product-tabs-mode");
 });
+
+const identifier = String(route.params.id);
+const { currency } = useShopMarket();
+const { data: initialProduct } = await useAsyncData(`product-${identifier}-${lang.value}-${currency.value}`, async () => {
+  const endpoint = /^\d+$/.test(identifier) ? `/api/product/${identifier}` : `/api/product/slug/${identifier}`;
+  const response = await useHttp(endpoint, { showError: false });
+  return response?.code === 200 ? response.data : null;
+});
+if (initialProduct.value) {
+  product.value = initialProduct.value;
+  resetSelection();
+  syncActiveImage();
+}
 </script>
 
 <style scoped lang="scss">
@@ -876,13 +867,13 @@ onBeforeUnmount(() => {
   border: 1px solid #e8edf4;
   overflow: hidden;
   aspect-ratio: 1.1;
-  min-height: 600px;
+  min-height: 0;
 }
 .main-image {
   width: 100%;
   height: 100%;
   border-radius: 28px;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.3s ease;
   padding: 10px;
 }
@@ -1532,7 +1523,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 14px 300px;
+  padding: 14px 20px;
   border: 1px solid rgba(17, 24, 39, 0.08);
   background: rgba(255, 255, 255, 0.96);
 }
@@ -1642,7 +1633,7 @@ onBeforeUnmount(() => {
 }
 @media (max-width: 1024px) {
   .product-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 40px;
   }
   .product-media {
@@ -1651,7 +1642,7 @@ onBeforeUnmount(() => {
   }
   .main-image-container {
     max-height: none;
-    min-height: 560px;
+    min-height: 0;
   }
   .thumbnails {
     max-width: 100%;
@@ -1688,7 +1679,7 @@ onBeforeUnmount(() => {
     padding: 18px;
   }
   .main-image-container {
-    min-height: 420px;
+    min-height: 0;
   }
   .thumbs-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1713,12 +1704,14 @@ onBeforeUnmount(() => {
 
   .sticky-cart-content,
   .sticky-cart-actions {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
   }
 
+  .sticky-cart-content { padding: 12px; gap: 12px; }
+
   .sticky-cart-product {
-    width: 100%;
+    display: none;
   }
 
   .sticky-cart-actions {
@@ -1727,15 +1720,24 @@ onBeforeUnmount(() => {
   }
 
   .sticky-cart-price {
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
+  .sticky-cart-price .current-price { font-size: 18px; }
+  .sticky-cart-price .old-price { display: none; }
 
   .mini-title {
     max-width: 180px;
   }
 
   .btn-add-to-cart.mini {
-    width: 100%;
+    width: auto;
+    min-width: 0;
+    flex: 1;
+    white-space: nowrap;
+    padding: 0 12px;
+    font-size: 14px;
   }
 
   .sticky-cart-bar {

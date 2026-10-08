@@ -175,14 +175,14 @@
         <footer class="cart-footer">
           <template v-if="activeTab === 'cart'">
           <div class="cart-tools">
-            <button type="button" class="tool-button">
+            <NuxtLink to="/cart#cart-note" class="tool-button" @click="handleClose">
               <NotebookText :size="18" :stroke-width="1.9" />
               <span>{{ copy.orderNote }}</span>
-            </button>
-            <button type="button" class="tool-button">
+            </NuxtLink>
+            <NuxtLink to="/account/profile" class="tool-button" @click="handleClose">
               <BadgePercent :size="18" :stroke-width="1.9" />
               <span>{{ t('coupon') }}</span>
-            </button>
+            </NuxtLink>
           </div>
 
           <div class="summary-row">
@@ -193,23 +193,7 @@
             </div>
           </div>
 
-          <div class="protection-card">
-            <div class="protection-icon" aria-hidden="true">
-              <Package :size="30" :stroke-width="1.9" />
-              <ShieldCheck class="protection-shield" :size="18" :stroke-width="2" />
-            </div>
 
-            <div class="protection-copy">
-              <div class="protection-topline">
-                <strong>{{ copy.protection }}</strong>
-                <label class="switch">
-                  <input v-model="shippingProtectionEnabled" type="checkbox" />
-                  <span class="slider" />
-                </label>
-              </div>
-              <p>{{ copy.protectionNote }}</p>
-            </div>
-          </div>
 
           <div class="checkout-actions">
             <NuxtLink to="/checkout" class="btn-checkout" @click="handleClose">
@@ -283,10 +267,7 @@ const copy = computed(() =>
         close: '\u5173\u95ed\u8d2d\u7269\u8f66',
         loading: '\u6b63\u5728\u52a0\u8f7d\u8d2d\u7269\u8f66...',
         orderNote: '\u8ba2\u5355\u5907\u6ce8',
-        taxesNote: '\u7a0e\u8d39\u4e0e\u8fd0\u8d39\u5c06\u5728\u7ed3\u8d26\u65f6\u8ba1\u7b97',
-        protection: '\u914d\u9001\u4fdd\u969c',
-        protectionNote:
-          '\u5efa\u8bae\u5f00\u542f\u914d\u9001\u4fdd\u969c\uff0c\u4ee5\u4fbf\u5728\u5305\u88f9\u4e22\u5931\u3001\u7834\u635f\u6216\u88ab\u76d7\u65f6\u83b7\u5f97\u66f4\u5b89\u5fc3\u7684\u5904\u7406\u3002',
+        taxesNote: '售价含商户收取的税，标准配送免运费；适用进口税费可能另行收取。',
         addons: '\u9644\u52a0\u9879',
         remove: '\u79fb\u9664',
         quantity: '\u6570\u91cf',
@@ -307,10 +288,7 @@ const copy = computed(() =>
         close: 'Close cart',
         loading: 'Loading cart...',
         orderNote: 'Order note',
-        taxesNote: 'Taxes and shipping calculated at checkout',
-        protection: 'Shipping protection',
-        protectionNote:
-          'We recommend adding shipping protection for peace of mind in case your package is lost, damaged, or stolen during delivery.',
+        taxesNote: 'Prices include merchant-collected taxes. Standard delivery is free; applicable import fees may be payable.',
         addons: 'Add-ons',
         remove: 'Remove',
         quantity: 'Quantity',

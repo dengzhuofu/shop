@@ -1,0 +1,2 @@
+<template><div class="container" style="padding:60px 20px"><h1>{{ lang === 'zh' ? 'CBJJ 商品' : 'CBJJ products' }}</h1><p>{{ lang === 'zh' ? '商品价格与有效优惠以商品页和结算预览为准。' : 'See each product page and checkout preview for current prices and valid discounts.' }}</p><NuxtLink to="/collections/electric-scooters">{{ t('electricScooters') }}</NuxtLink></div></template>
+<script setup lang="ts">const {lang, t} = useShopLocale(); useSeoMeta({title:'CBJJ products'})</script>
